@@ -950,3 +950,17 @@ A ultima milha do M3, na parte que da pra fechar+testar aqui. (1) SupabaseTokenV
 
 **Body**:
 Mesmo padrao dos #0042/#0045 (validar ao vivo, nao so mock). Com as creds do .env rodei o SupabaseTokenVerifier contra https://<proj>.supabase.co/auth/v1/user: token real -> 200 -> AccessToken com user id (escopo multi-tenant ok); 'jwt.invalido' -> 403 -> None (rejeitado). Confirma o RS de ponta a ponta. Falta so o Authorization Server (DCR/auth-code) dos conectores hospedados — decisao de arquitetura/integracao, nao codigo do nosso lado.
+
+### #0049 — 2026-05-31T03:28:18.742815+00:00 — open
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: open
+- **summary**: Proximo: OAuth Authorization Server (DCR + authorization-code/PKCE) p/ plugar nos conectores hospedados (claude.ai/ChatGPT/Gemini)
+- **parents**: 64d0e17c4d782b67e165104e64f460baec4e68fd3ec5569e0281d60033b43163
+- **id**: 32d96c3d0364ad868c6df14bbfa73203f7472778c4894f3223a307bee4b92cfb
+
+**Body**:
+Unica peca restante do M3. O Resource Server (validacao de JWT + multi-tenant por RLS + protected-resource metadata) esta feito e validado ao vivo (#0047/#0048) e NAO muda. Falta o AS, que os conectores dirigem sozinhos. Rotas avaliadas (decisao adiada pelo dono): (a) AS shim via OAuthAuthorizationServerProvider do SDK, ponte pro Supabase Auth — custo-zero, no repo, mas security-critical e so valida ao vivo contra o conector; (b) provedor com DCR (Auth0/WorkOS/Keycloak) emitindo o JWT que o RS ja valida — menos codigo, possivel custo. Comecar fresco quando for testar contra o claude.ai real.
