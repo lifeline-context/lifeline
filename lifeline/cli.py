@@ -29,6 +29,12 @@ DEFAULT_DB = os.environ.get("LIFELINE_DB", os.path.join(".lifeline", "ledger.db"
 DEFAULT_OUT = "LIFELINE.md"
 LINES_DIR = ".lifeline"
 
+# Store ativo, escolhido por main() via --store (default: SQLite local). Fica aqui para o
+# seam _open() trocar de adapter sem reescrever cada comando. Resetado a cada main().
+_STORE = {"kind": "sqlite", "line": "ledger"}
+# Comandos que só fazem sentido no store local (git, HITL/SQLite, glob de .db):
+_LOCAL_ONLY = {"push", "pull", "clone", "lines", "propose", "review", "approve", "reject"}
+
 PREAMBLE = """# LIFELINE — lifeline
 
 > Cadeia append-only de *porquês*. O projeto guarda *por que* ele é o que é, e qualquer
@@ -80,6 +86,11 @@ def resolve_paths(line, db, out):
 
 
 async def _open(db):
+    if _STORE["kind"] == "supabase":
+        from lifeline.cloud import SupabaseEventStore  # lazy: só puxa httpx no modo nuvem
+        s = SupabaseEventStore(line=_STORE["line"])     # lê SUPABASE_URL/KEY do ambiente
+        await s.initialize()
+        return s
     os.makedirs(os.path.dirname(db) or ".", exist_ok=True)
     s = SQLiteEventStore(db)
     await s.initialize()
@@ -260,6 +271,8 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="lifeline", description="Lifeline — runtime de contexto")
     p.add_argument("--db", default=DEFAULT_DB)
     p.add_argument("--line", default=None, help="nome da line (sugar: .lifeline/<line>.db + LIFELINE.<line>.md)")
+    p.add_argument("--store", choices=["sqlite", "supabase"], default="sqlite",
+                   help="backend do ledger (M3 Tier 1: supabase lê SUPABASE_URL/KEY do ambiente)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def _entry_args(sp, with_out=False):
@@ -303,6 +316,13 @@ def main(argv=None) -> int:
 
     args = p.parse_args(argv)
     db, out = resolve_paths(args.line, args.db, getattr(args, "out", DEFAULT_OUT))
+
+    _STORE["kind"] = args.store                  # reset explícito a cada chamada (sem vazar entre runs)
+    _STORE["line"] = args.line or "ledger"
+    if args.store == "supabase" and args.cmd in _LOCAL_ONLY:
+        print(f"'{args.cmd}' é específico do store local (git/HITL/SQLite). "
+              f"Com --store supabase use: log, context, verify, rebuild, migrate.")
+        return 1
 
     if args.cmd == "log":
         e, inserted, n = asyncio.run(cmd_log(
