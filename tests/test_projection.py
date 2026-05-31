@@ -55,6 +55,16 @@ class TestProjectionRoundtrip(unittest.IsolatedAsyncioTestCase):
         md2 = await render_ledger_markdown(s2)
         self.assertEqual(md, md2)
 
+    async def test_ingest_is_idempotent(self):
+        # re-ingerir a MESMA view não duplica (content-addressed) — base do re-seed seguro
+        s = await self._store("idem.db")
+        await s.append(Entry(kind="bootstrap", author="a", provider="p", model="m", summary="Funda"))
+        md = await render_ledger_markdown(s)
+        s2 = await self._store("idem2.db")
+        self.assertEqual(await ingest_text(md, s2), 1)   # 1ª vez: 1 entrada nova
+        self.assertEqual(await ingest_text(md, s2), 0)   # 2ª vez: 0 — dedup por id
+        self.assertEqual(len([e async for e in s2.stream()]), 1)
+
     async def test_content_is_faithful(self):
         s = await self._store("c.db")
         await s.append(Entry(kind="decision", author="a", provider="anthropic",

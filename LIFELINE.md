@@ -978,3 +978,17 @@ Unica peca restante do M3. O Resource Server (validacao de JWT + multi-tenant po
 
 **Body**:
 Resposta acionavel a auditoria de producao. (1) README: corrigido o install quebrado (pip install -e . na raiz, nao 'v2/' que nao existe mais), badges (68 testes) e deps (httpx + extra [cloud]) — destrava onboarding. (2) cloud.py: _ensure_ok() loga+levanta em 4xx/5xx em TODOS os metodos; append passou a usar return=representation e distingue inserido(True)/duplicata(False) igual ao SQLite — falha real NUNCA mais mascarada como dedup (era o bloqueador #2/#3 do audit). Provado ao vivo: token expirado deu 401->log ERROR+HTTPStatusError, antes daria 'duplicada (idempotente)'. (3) CI: .github/workflows/ci.yml roda pytest+verify no push/PR (py3.10/3.12) — pega o drift que o audit achou (README stale, #0043 foi manual). (4) cli.py: dispatch extraido p/ _dispatch(); main() envolve em try/except -> erro de rede vira mensagem amigavel + exit 1, nao traceback (SystemExit do argparse passa intacto). (5) logging em cloud.py/mcp_server.py (o except silencioso de auth virou debug log) + teste live skip-gated de isolamento (anon nao le linhas do usuario via RLS). Suite 70/70 (+4 live skip). Pendente p/ re-validacao live funcional: refresh do SUPABASE_TOKEN (expira ~1h).
+
+### #0051 — 2026-05-31T04:11:35.450315+00:00 — feature
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: feature
+- **summary**: Local rumo a 10 + gancho local->nuvem com qualidade: locks de primeira-execucao/re-seed, .env.example, e a graduacao documentada/testada
+- **parents**: 58281bfb9866fdfabc4d7ae720af7181ad9480292b9362a17dac7f5dbdc6b0a6
+- **id**: 0859890d6f0a2e66abcd8a887f87f312b6eb4094637be543c7266401400b9725
+
+**Body**:
+Corretude-nucleo do local ja estava travada por teste (determinismo, anti-tamper, supersessao, round-trip ponto-fixo) — nao dupliquei. Fechei os gaps reais que faltavam pro '10 polido': (1) teste de ledger VAZIO (primeira execucao e graciosa, placeholder, sem crash); (2) teste de IDEMPOTENCIA do ingest (re-seed nao duplica — content-addressed); (3) .env.example (template do modo nuvem, sem segredo); (4) README: 'Status & roadmap' corrigido (estava stale: dizia 8 suites, M3 planejado/Redis, 'nuvem nao existe' — agora reflete M3 validado ao vivo + limites honestos) e nova secao 'Do local pra nuvem (graduacao)'; (5) gancho local->nuvem como fluxo de primeira-classe: 'lifeline --store supabase migrate --from LIFELINE.md' e LOSSLESS+IDEMPOTENTE (mesmos ids), com teste live skip-gated (test_seed_cloud_from_local_markdown). Suite 72/72 (+5 live skip). Veredito honesto: local agora ~9/10 (o '10 teorico' fica no O(n) por chamada — deliberadamente nao otimizado, trivial na escala real — e na ausencia de assinatura, fora do threat-model local).

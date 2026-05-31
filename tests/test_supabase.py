@@ -268,6 +268,26 @@ class TestSupabaseLive(unittest.IsolatedAsyncioTestCase):
         anon = SupabaseEventStore(line=self.LINE, token=os.environ["SUPABASE_KEY"])  # anon, sem JWT
         self.assertIsNone(await anon.get(e.id))                           # anon NÃO vê (RLS isola)
 
+    async def test_seed_cloud_from_local_markdown(self):
+        """Gancho local→nuvem: ingerir uma view local num store da nuvem é LOSSLESS e IDEMPOTENTE
+        (content-addressed → mesmos ids, re-seed deduplica)."""
+        import tempfile
+        from lifeline.ingest import ingest_text
+        from lifeline.projection import render_ledger_markdown
+        from lifeline.store import SQLiteEventStore
+
+        local = SQLiteEventStore(os.path.join(tempfile.mkdtemp(), "seed.db"))
+        await local.initialize()
+        await local.append(Entry(kind="bootstrap", author="selftest", provider="p", model="m",
+                                 summary="seed bridge", body="graduação local→nuvem"))
+        md = await render_ledger_markdown(local)
+
+        cloud = SupabaseEventStore(line="lifeline_seed_test")
+        self.assertGreaterEqual(await ingest_text(md, cloud), 1)   # 1ª vez: semeia
+        self.assertEqual(await ingest_text(md, cloud), 0)          # 2ª vez: 0 — idempotente
+        for i in [e.id async for e in local.stream()]:
+            self.assertIsNotNone(await cloud.get(i))               # mesmos ids na nuvem
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

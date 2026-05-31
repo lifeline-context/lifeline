@@ -197,21 +197,41 @@ engine, substituto do git, executor/curador (self-healing) nem treinador (fine-t
 
 ---
 
+## Do local pra nuvem (graduação)
+
+Tudo é content-addressed (`id = sha256(conteúdo + pais)`) — então **subir uma line local
+pra nuvem é lossless e idempotente**: os ids são os mesmos e o re-seed deduplica sozinho.
+
+```bash
+lifeline --store supabase migrate --from LIFELINE.md   # seed (pode repetir — não duplica)
+lifeline --store supabase context                       # passa a operar na nuvem
+lifeline --store supabase log --kind decision --summary "…" --body "…"
+```
+
+Só compartilhar o *texto* (sem nuvem)? `lifeline push` (Tier 0 — git).
+Setup + auth da nuvem: [`docs/M3_TIER1_SUPABASE.md`](docs/M3_TIER1_SUPABASE.md) · `.env.example`.
+
+---
+
 ## Status & roadmap
 
-**Alpha — núcleo single-user local funcional e provado.** 8 suítes de teste verdes; teste
-de aceitação e prova de fogo adversarial passados; MCP testado ao vivo; pip-installable.
+**Alpha.** Núcleo **local single-user** sólido e provado — corretude travada por testes
+(determinismo, anti-tamper, supersessão, round-trip ponto-fixo). **Nuvem (M3) funcional e
+validada ao vivo.** 70 testes verdes; CI no GitHub Actions; pip-installable.
 
 | Fase | Estado |
 |---|---|
-| **M1** — o laço (ledger → estado → montagem → MCP) | ✅ feito |
-| **M1.5** — autoria, threads abertas, relevância (Camada 3), CLI, cutover store-é-fonte | ✅ feito |
-| **M2** — embedder semântico denso (o default é lexical) | aberto (`LIFELINE.md` #0029) |
-| **M3** — seam de nuvem (Supabase/pgvector/Redis sync) | planejado |
-| **M4** — multi-usuário (merge de DAG concorrente) | planejado |
+| **M1 / M1.5** — laço (ledger→estado→montagem→MCP), autoria, recall, CLI, store-é-fonte | ✅ feito |
+| **M3 Tier 0** — sync via git | ✅ feito |
+| **M3 Tier 1** — store Supabase + RLS append-only + HITL na nuvem | ✅ validado ao vivo |
+| **M3** — MCP remoto (HTTP/SSE) + OAuth **Resource Server** (multi-tenant) | ✅ feito |
+| **M2** — embedder semântico denso (o default é lexical) | aberto (#0029) |
+| **OAuth Authorization Server** (DCR/auth-code p/ conectores hospedados) | aberto (#0049) |
+| **M4** — multi-usuário (merge de DAG concorrente) / hub | planejado |
 
-**Limites honestos hoje:** o recall é lexical (casa palavras, não significado); a nuvem
-(M3) ainda não existe (só a costura via `EventStore`); docs em PT (EN pendente p/ alcance).
+**Limites honestos hoje:** recall lexical (palavra, não significado — #0029); um cloud PAGO
+hospedado exige o AS + billing (#0049) — hoje é **OSS local + *bring-your-own-Supabase***;
+sem retry/backoff no adapter de nuvem (só log+raise); docs em PT (EN pendente).
 
 ---
 

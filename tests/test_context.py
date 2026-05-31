@@ -76,6 +76,14 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         self.assertLessEqual(len(text), 120)
         self.assertIn("truncado", text)
 
+    async def test_empty_ledger_is_graceful(self):
+        # primeira execução (ledger vazio) → payload válido com placeholder, sem crash
+        empty = SQLiteEventStore(os.path.join(self.dir, "empty.db"))
+        await empty.initialize()
+        text = await ContextAssembler(StateEngine(empty)).assemble()
+        self.assertIn("sem entrada bootstrap", text)
+        self.assertIn("0 entradas", text)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
