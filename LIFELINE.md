@@ -844,3 +844,25 @@ Reestruturacao (opcao b do dono). Antes: o HEAD commitado ainda era o SDK rev0; 
 
 **Body**:
 Opcao 1 da outra sessao, com a disciplina do #0039 (sem overclaim). (1) Adapter movido de cloud/supabase_store.py para lifeline/cloud.py — importavel apos install, com transporte httpx injetavel (httpx.MockTransport) p/ teste. (2) CLI ganhou --store {sqlite,supabase}: _open() faz o branch; log/context/verify/rebuild/migrate funcionam na nuvem pelo mesmo port EventStore; push/pull/clone/lines e o HITL ficam barrados no modo supabase (sao do store local) com mensagem clara. (3) tests/test_supabase.py: 8 testes de WIRE mockados (montagem de POST/GET, headers apikey+Bearer+Prefer, filtros eq/cs, parse de payload->Entry, idempotencia por status, erro claro sem env, guarda da CLI) que rodam sempre + 2 testes LIVE skip-gated (round-trip real e prova de que a RLS e append-only: UPDATE/DELETE negados) que so rodam com SUPABASE_URL/KEY. Suite: 53 passam, 2 skip. (4) httpx virou dep explicita do core (ja vinha via mcp) + extra [cloud]. (5) DECISAO de auth ancorada: SUPABASE_KEY deve ser access token de USUARIO (JWT) p/ auth.uid() resolver na RLS; service_role bypassa a RLS e deixa owner nulo, nao serve p/ escrita multi-tenant. Falta: a outra sessao (com o MCP/creds) rodar o schema.sql e o teste live p/ provar o contrato real; depois HITL-na-nuvem e MCP remoto SSE.
+
+### #0042 — 2026-05-31T02:33:43.480922+00:00 — milestone
+
+- **author**: jessianjmb@gmail.com
+- **agent**: claude-code
+- **provider**: anthropic
+- **model**: claude-opus-4-8
+- **kind**: milestone
+- **summary**: M3 Tier 1 VALIDADO ao vivo: schema Supabase aplicado + RLS append-only provada; bug apikey vs Bearer achado e corrigido (suite 55/55 com live)
+- **parents**: 7dc96461ca8604296d799bc21389a20a4d274f769e58a7b40cac4c347ddde725
+- **id**: 45bfc3f95984780ca4093abc26cb34155e496113efd05bdda778194538bdaf57
+
+**Body**:
+Fecha o caveat do #0039/#0041 (o kit estava "nao validado ao vivo"). Com o PAT do dono no .env, apliquei cloud/schema.sql via Management API (role postgres): tabela lifeline_entries criada, RLS habilitada, policies so SELECT/INSERT (append-only imposto pelo banco).
+
+Provas AO VIVO pelo PostgREST contra o projeto real (ref rzphncyjrilhwpuemrcl):
+- INSERT anon NEGADO -> 42501 "new row violates row-level security policy": append-only/anti-tenant garantido pelo Postgres (Leis #1 e #2), nao so por convencao.
+- Round-trip autenticado OK: INSERT com apikey=anon + Authorization=Bearer <JWT de usuario> seta owner=auth.uid() e passa a RLS; get/stream leem de volta.
+
+BUG achado por DOGFOODING (nao pelos mocks): o SupabaseEventStore mandava self.key tanto no header apikey quanto no Authorization. O gateway do Supabase REJEITA o JWT de usuario como apikey -> 401 "Invalid API key". Os mocks nao pegaram porque nao exercitam a validacao de apikey do gateway. Fix em lifeline/cloud.py: separar apikey (chave do projeto) do token (Bearer = JWT), lido de SUPABASE_TOKEN; e construcao com key explicita NAO herda token do ambiente (isolamento de teste). Mocks seguem verdes e os 2 testes live agora passam -> suite 55/55 (com creds; 8+2skip sem creds, CI-safe).
+
+Caveat honesto: o JWT de usuario e curto (~1h) -> auth duravel do CLI (login/refresh) e o proximo passo do Tier 1. O .mcp.json ganhou o servidor supabase oficial (npx), mas a Management API direta com o PAT ja bastou pra criar+validar; o MCP fica como opcao p/ sessoes futuras.
