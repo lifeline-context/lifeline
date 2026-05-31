@@ -936,3 +936,17 @@ Expoe a superficie MCP por HTTP (nao so stdio), pra IA conectar de fora. (1) mcp
 
 **Body**:
 A ultima milha do M3, na parte que da pra fechar+testar aqui. (1) SupabaseTokenVerifier (TokenVerifier do SDK): valida o Bearer contra /auth/v1/user; 200->AccessToken carregando o proprio JWT + user id; 401->None. Transporte httpx injetavel p/ teste. (2) Binding por-requisicao: _request_token() le o token validado (get_access_token), e _open_request/_staging_request constroem o store/staging com o JWT DAQUELE usuario -> RLS escopa por owner=auth.uid() = multi-tenant real (sem isso era single-tenant via env). (3) _register() passou a registrar a superficie em qualquer instancia FastMCP; _build_remote() liga o Resource Server quando LIFELINE_OAUTH=1 (+supabase+creds): FastMCP(token_verifier, AuthSettings(issuer,resource_server_url)) -> exige Bearer e publica GET /.well-known/oauth-protected-resource (RFC 9728). (4) Testes: verifier valido/invalido/sem-config, build com OAuth serve metadata, build sem OAuth = servidor base. Suite 68/68 (+3 live skip). HONESTO: o lado Authorization Server (DCR + authorization-code) que claude.ai/ChatGPT/Gemini dirigem NAO esta feito — o Supabase Auth nao e AS OAuth2 generico com DCR; rotas (AS shim / provedor com DCR / aguardar Supabase) documentadas em docs/MCP_REMOTE.md. Em todas, o nosso RS nao muda. Da p/ conectar JA com um JWT em mao (claude mcp add --header).
+
+### #0048 — 2026-05-31T03:25:43.343560+00:00 — milestone
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: milestone
+- **summary**: OAuth Resource Server validado ao vivo: verifier aceita JWT real (200, escopa por usuario) e rejeita invalido (403) contra o Supabase auth real
+- **parents**: f22de1252177e82439f182098dca8524ff77ffc15c24e4b528e1cddc652b0e79
+- **id**: 64d0e17c4d782b67e165104e64f460baec4e68fd3ec5569e0281d60033b43163
+
+**Body**:
+Mesmo padrao dos #0042/#0045 (validar ao vivo, nao so mock). Com as creds do .env rodei o SupabaseTokenVerifier contra https://<proj>.supabase.co/auth/v1/user: token real -> 200 -> AccessToken com user id (escopo multi-tenant ok); 'jwt.invalido' -> 403 -> None (rejeitado). Confirma o RS de ponta a ponta. Falta so o Authorization Server (DCR/auth-code) dos conectores hospedados — decisao de arquitetura/integracao, nao codigo do nosso lado.
