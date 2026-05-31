@@ -38,7 +38,7 @@ class TestSupabaseWire(unittest.IsolatedAsyncioTestCase):
 
         def handler(req):
             seen.append(req)
-            return httpx.Response(201)  # inserido
+            return httpx.Response(201, json=[{"id": "x"}])  # representation: linha inserida
 
         e = Entry(kind="decision", author="a", summary="usar gRPC", body="porque escala")
         self.assertTrue(await _store(handler).append(e))
@@ -59,7 +59,7 @@ class TestSupabaseWire(unittest.IsolatedAsyncioTestCase):
 
         def handler(req):
             seen.append(req)
-            return httpx.Response(201)
+            return httpx.Response(201, json=[{"id": "x"}])
 
         store = SupabaseEventStore(line="ledger", url="https://proj.supabase.co",
                                    key="proj-anon", token="user-jwt",
@@ -79,11 +79,23 @@ class TestSupabaseWire(unittest.IsolatedAsyncioTestCase):
             s = SupabaseEventStore(line="ledger")
         self.assertEqual((s.key, s.token), ("anon", "jwt"))  # dois valores separados via env
 
-    async def test_append_idempotent_status_codes(self):
+    async def test_append_inserted_vs_duplicate(self):
         e = Entry(kind="note", author="a", summary="dup")
-        for code in (200, 201, 204):  # duplicado ignorado (200/204) também é sucesso
-            self.assertTrue(await _store(lambda req, c=code: httpx.Response(c)).append(e))
-        self.assertFalse(await _store(lambda req: httpx.Response(409)).append(e))  # erro real → False
+        # representation: linha retornada → inserida (True)
+        self.assertTrue(await _store(lambda req: httpx.Response(201, json=[{"id": "x"}])).append(e))
+        # corpo vazio → duplicata ignorada (False), MESMA semântica do SQLite
+        self.assertFalse(await _store(lambda req: httpx.Response(200, json=[])).append(e))
+
+    async def test_append_raises_on_server_error(self):
+        e = Entry(kind="note", author="a", summary="x")
+        # 5xx NÃO pode virar dedup silencioso (bloqueador do audit) → levanta
+        with self.assertRaises(httpx.HTTPStatusError):
+            await _store(lambda req: httpx.Response(500, json={"message": "boom"})).append(e)
+
+    async def test_get_raises_on_server_error(self):
+        # resposta de erro NÃO pode crashar com KeyError — vira HTTPStatusError clara
+        with self.assertRaises(httpx.HTTPStatusError):
+            await _store(lambda req: httpx.Response(503, text="upstream down")).get("id")
 
     async def test_get_parses_payload_and_filters(self):
         e = Entry(kind="decision", author="a", summary="x", body="why")
@@ -244,6 +256,17 @@ class TestSupabaseLive(unittest.IsolatedAsyncioTestCase):
         self.assertIn(pid, [p["pid"] for p in await staging.pending()])
         await staging.set_status(pid, "rejected")
         self.assertNotIn(pid, [p["pid"] for p in await staging.pending()])
+
+    async def test_anon_cannot_read_tenant_rows(self):
+        """Isolamento multi-tenant: um store ANON (Bearer = apikey, sem JWT → auth.uid() nulo)
+        NÃO enxerga as entradas do usuário (RLS owner=auth.uid). Se SUPABASE_KEY for service_role
+        (bypassa RLS), este teste FALHA — e isso é uma descoberta de segurança real."""
+        owner = SupabaseEventStore(line=self.LINE)
+        e = Entry(kind="note", author="selftest", summary="privado", body="isolamento de tenant")
+        await owner.append(e)
+        self.assertIsNotNone(await owner.get(e.id))                       # o dono vê
+        anon = SupabaseEventStore(line=self.LINE, token=os.environ["SUPABASE_KEY"])  # anon, sem JWT
+        self.assertIsNone(await anon.get(e.id))                           # anon NÃO vê (RLS isola)
 
 
 if __name__ == "__main__":

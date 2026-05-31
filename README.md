@@ -3,7 +3,7 @@
 > **Runtime de contexto para desenvolvimento com IA.** O projeto guarda *por que* ele
 > é o que é — e qualquer IA conecta e **já sabe**, sem humano reexplicando.
 
-![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-8%20suites%20passing-brightgreen) ![license](https://img.shields.io/badge/license-MIT-green)
+![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-68%20passing-brightgreen) ![license](https://img.shields.io/badge/license-MIT-green)
 
 É, em uma frase, **o "git do raciocínio"**: assim como o git versiona *o quê* mudou no
 código, o Lifeline versiona *por quê* — decisões, reversões, incidentes, o estado atual —
@@ -35,11 +35,11 @@ O Lifeline guarda a "linha de vida" do projeto (a `LIFELINE.md`) e a torna
 ## Instalação
 
 ```bash
-pip install -e .          # a partir de v2/  → instala os comandos `lifeline` e `lifeline-mcp`
-# ou, da raiz do repo:    pip install -e v2
+pip install -e .            # na raiz do repo → instala `lifeline`, `lifeline-mcp`, `lifeline-mcp-remote`
+pip install -e ".[cloud]"   # opcional: modo nuvem (Supabase) — puxa httpx explicitamente
 ```
 
-Dependências: `pydantic`, `aiosqlite`, `mcp`. Python ≥ 3.10.
+Dependências: `pydantic`, `aiosqlite`, `mcp`, `httpx`. Python ≥ 3.10.
 
 ## Quickstart (CLI)
 

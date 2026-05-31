@@ -17,6 +17,7 @@ completo (DCR + authorization-code) que os conectores claude.ai/ChatGPT/Gemini e
 depende de um AS compatível — o Supabase Auth não é um AS OAuth genérico com DCR. Ver
 docs/MCP_REMOTE.md.
 """
+import logging
 import os
 from typing import Optional
 
@@ -45,6 +46,7 @@ def _request_token() -> Optional[str]:
         at = get_access_token()
         return at.token if at else None
     except Exception:
+        logging.getLogger("lifeline.mcp").debug("sem contexto de auth na requisição", exc_info=True)
         return None
 
 

@@ -1,0 +1,26 @@
+name: CI
+
+# Roda a suíte a cada push/PR — pega drift (docs/testes/código) automaticamente.
+# Os testes live (TestSupabaseLive) ficam em skip aqui: sem SUPABASE_* no ambiente.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install (com extra cloud p/ httpx)
+        run: pip install -e ".[cloud]"
+      - name: Testes
+        run: python -m pytest -q
+      - name: Integridade da line (a cadeia deve verificar)
+        run: python -m lifeline verify

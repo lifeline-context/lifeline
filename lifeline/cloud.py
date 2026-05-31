@@ -5,17 +5,18 @@ então o resto do Lifeline funciona igual, só trocando o backend.
 Disciplina (#0039): os testes de transporte MOCKADOS provam o *wire*; o CONTRATO real
 (schema/RLS/PostgREST) é provado pelo teste live skip-gated em tests/test_supabase.py.
 
-Auth (VALIDADO ao vivo, #0042): o gateway do Supabase exige DOIS valores distintos —
-a CHAVE DO PROJETO no header `apikey` (anon/publishable) e o token no `Authorization:
-Bearer`. Usar o JWT de usuário como `apikey` dá 401 "Invalid API key". Logo:
-  - SUPABASE_KEY   = apikey do projeto (anon p/ leitura; a RLS isola por tenant);
-  - SUPABASE_TOKEN = access token de usuário (JWT) p/ ESCRITA — só aí `auth.uid()` resolve,
-    `owner` é setado e o INSERT passa a RLS. Se ausente, cai no próprio apikey (serve p/
-    service_role ou leitura anon). NUNCA comite chave nem token.
+Resiliência (#0050): toda resposta passa por `_ensure_ok` → 4xx/5xx é LOGADO e LEVANTA
+(httpx.HTTPStatusError). NUNCA mascaramos falha como sucesso/dedup — o `append` distingue
+inserção (linha retornada → True) de duplicata ignorada ([] → False), igual ao SQLite.
 
-Pré-requisito: rodar cloud/schema.sql no projeto (SQL Editor ou via MCP).
+Auth (VALIDADO ao vivo, #0042): o gateway exige DOIS valores — CHAVE DO PROJETO no header
+`apikey` (anon/publishable) e o token no `Authorization: Bearer`. Logo:
+  - SUPABASE_KEY   = apikey do projeto (anon p/ leitura; a RLS isola por tenant);
+  - SUPABASE_TOKEN = access token de usuário (JWT) p/ ESCRITA — só aí `auth.uid()` resolve.
+NUNCA comite chave nem token. Pré-requisito: rodar cloud/schema.sql no projeto.
 """
 import json
+import logging
 import os
 from typing import Any, AsyncIterator, Dict, List, Optional
 
@@ -27,6 +28,17 @@ from lifeline.store import EventStore
 
 TABLE = "lifeline_entries"
 PROPOSALS = "lifeline_proposals"
+_log = logging.getLogger("lifeline.cloud")
+
+
+def _ensure_ok(r: httpx.Response) -> httpx.Response:
+    """4xx/5xx → loga (status + trecho do corpo) e levanta. Falha de rede nunca vira
+    sucesso silencioso. Não loga headers/token."""
+    if r.is_error:
+        _log.error("Supabase %s %s -> %s: %s", r.request.method, r.request.url,
+                   r.status_code, (r.text or "")[:200])
+        r.raise_for_status()
+    return r
 
 
 class _SupabaseBase:
@@ -38,9 +50,6 @@ class _SupabaseBase:
         explicit_key = key is not None      # construção explícita (ex.: testes) não herda env
         url = url or os.environ.get("SUPABASE_URL")
         key = key or os.environ.get("SUPABASE_KEY")
-        # Token de autorização (Bearer): JWT de usuário p/ a RLS resolver auth.uid() na ESCRITA.
-        # Só consulta o ambiente quando a key NÃO veio explícita (senão herdaria token alheio nos
-        # testes). Fallback final = o próprio apikey (serve p/ service_role ou leitura anon).
         if token is None and not explicit_key:
             token = os.environ.get("SUPABASE_TOKEN")
         token = token or key
@@ -92,15 +101,16 @@ class SupabaseEventStore(_SupabaseBase, EventStore):
         }
         async with self._client() as c:
             r = await c.post(self.base, json=row, headers=self._headers(
-                {"Prefer": "resolution=ignore-duplicates,return=minimal"}))
-        # 201 inserido; 200/204 quando duplicado foi ignorado → idempotência (content-addressed).
-        return r.status_code in (200, 201, 204)
+                {"Prefer": "resolution=ignore-duplicates,return=representation"}))
+        _ensure_ok(r)  # 4xx/5xx → log + raise (não mascara falha como dedup)
+        # representation: linha retornada = inserida; [] = duplicata ignorada (igual ao SQLite).
+        return bool(r.json())
 
     async def get(self, entry_id: str) -> Optional[Entry]:
         async with self._client() as c:
             r = await c.get(self.base, headers=self._headers(), params={
                 "line": f"eq.{self.line}", "id": f"eq.{entry_id}", "select": "payload"})
-        rows = r.json()
+        rows = _ensure_ok(r).json()
         return self._to_entry(rows[0]["payload"]) if rows else None
 
     def stream(self) -> AsyncIterator[Entry]:
@@ -108,7 +118,7 @@ class SupabaseEventStore(_SupabaseBase, EventStore):
             async with self._client() as c:
                 r = await c.get(self.base, headers=self._headers(), params={
                     "line": f"eq.{self.line}", "select": "payload", "order": "seq.asc"})
-            for row in r.json():
+            for row in _ensure_ok(r).json():
                 yield self._to_entry(row["payload"])
         return _gen()
 
@@ -126,7 +136,7 @@ class SupabaseEventStore(_SupabaseBase, EventStore):
             r = await c.get(self.base, headers=self._headers(), params={
                 "line": f"eq.{self.line}", "parents": f'cs.["{entry_id}"]',
                 "select": "payload", "order": "seq.asc"})
-        return [self._to_entry(row["payload"]) for row in r.json()]
+        return [self._to_entry(row["payload"]) for row in _ensure_ok(r).json()]
 
 
 class SupabaseStagingStore(_SupabaseBase, StagingStore):
@@ -152,22 +162,23 @@ class SupabaseStagingStore(_SupabaseBase, StagingStore):
                "parents": parents or []}
         async with self._client() as c:
             r = await c.post(self.base, json=row, headers=self._headers({"Prefer": "return=representation"}))
-        return r.json()[0]["pid"]
+        return _ensure_ok(r).json()[0]["pid"]
 
     async def pending(self) -> List[Dict]:
         async with self._client() as c:
             r = await c.get(self.base, headers=self._headers(), params={
                 "line": f"eq.{self.line}", "status": "eq.pending", "order": "pid.asc", "select": "*"})
-        return [self._norm(row) for row in r.json()]
+        return [self._norm(row) for row in _ensure_ok(r).json()]
 
     async def get(self, pid: int) -> Optional[Dict]:
         async with self._client() as c:
             r = await c.get(self.base, headers=self._headers(), params={
                 "pid": f"eq.{pid}", "select": "*"})
-        rows = r.json()
+        rows = _ensure_ok(r).json()
         return self._norm(rows[0]) if rows else None
 
     async def set_status(self, pid: int, status: str) -> None:
         async with self._client() as c:
-            await c.patch(self.base, params={"pid": f"eq.{pid}"},
-                          json={"status": status}, headers=self._headers())
+            r = await c.patch(self.base, params={"pid": f"eq.{pid}"},
+                              json={"status": status}, headers=self._headers())
+        _ensure_ok(r)

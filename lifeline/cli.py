@@ -333,6 +333,17 @@ def main(argv=None) -> int:
               f"Com --store supabase use: log, context, verify, rebuild, migrate.")
         return 1
 
+    try:
+        return _dispatch(args, db, out)
+    except ValueError as ex:                          # validação/uso → mensagem direta
+        print(f"erro: {ex}")
+        return 1
+    except Exception as ex:                           # rede/HTTP/inesperado → sem traceback cru
+        print(f"erro inesperado ({type(ex).__name__}): {ex}")
+        return 1
+
+
+def _dispatch(args, db, out) -> int:
     if args.cmd == "log":
         e, inserted, n = asyncio.run(cmd_log(
             db, out, args.kind, args.summary, args.body, args.author, args.agent,
