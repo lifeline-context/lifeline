@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Concepts & laws — Lifeline docs</title>
+<meta name="description" content="The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/concepts.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Concepts & laws — Lifeline docs">
+<meta property="og:description" content="The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/concepts.html">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Concepts & laws","description":"The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.","url":"https://jessianmart.github.io/lifeline/docs/concepts.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html" class="current">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html">MCP & remote</a></aside>
+  <main class="docs-main">
+    <h1>Concepts & laws</h1>
+    <p class="docs-lead">The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.</p>
+<p>Lifeline is an <strong>event-sourced reasoning ledger</strong>. The "current truth" an AI reads is a <em>derived
+projection</em> of an immutable, content-addressed event log — never the source itself.</p>
+<h2>Entry — the atomic unit</h2>
+<p>Everything is an <code>Entry</code>, content-addressed:</p>
+<pre><code>id = sha256(kind, author, agent, provider, model, summary, body, sorted-parents)
+</code></pre>
+<p><code>ts</code> (timestamp) and <code>dedup_key</code> stay <strong>outside</strong> the hash. Consequence: the <strong>same content +
+parents produce the same id on any machine, at any time</strong> — the basis for dedup and sync (more
+content-pure than git, whose commit sha includes the timestamp). <code>parents</code> is <strong>sorted</strong> in the
+hash, so a merge of A+B equals B+A.</p>
+<h2>The 3 memory layers</h2>
+<p>All anchored to the same immutable ledger:</p>
+<ul>
+<li><strong>Ledger (Layer 1)</strong> — a hashed, append-only DAG. The source of truth. <code>append()</code> is idempotent:
+  re-inserting the same id is silently ignored, which solves split-brain trivially.</li>
+<li><strong>State (Layer 2)</strong> — pure reducers fold the stream into the current truth: identity, decisions
+  in effect, open threads, recent, contributors. <strong>Status is a projection, not a state machine.</strong></li>
+<li><strong>Recall (Layer 3)</strong> — relevance search where every hit is <strong>anchored</strong> to its source event.
+  Lexical (zero-dependency) by default; a dense semantic embedder is opt-in via the <code>[embeddings]</code>
+  extra (<code>LIFELINE_EMBEDDER=dense</code>).</li>
+</ul>
+<h2>Supersession</h2>
+<p>A <code>correction</code> entry referencing another entry's id removes it from the current truth — a reverted
+decision, a closed thread. <strong>Append-only:</strong> the past is never edited; closing or reverting is always
+a <em>new</em> entry.</p>
+<h2>The anti-hallucination anchor</h2>
+<p>Every item the AI reads carries its source event's hash. <strong>No anchor, no entry.</strong> Getting a recall
+match wrong cannot turn into a hallucination, because the vector is only an index — the truth is the
+anchored event.</p>
+<h2>The 7 laws (the constitution)</h2>
+<ol>
+<li><strong>No memory without an immutable anchor.</strong> Every context item carries the hash of its source
+   event. The anti-hallucination spine.</li>
+<li><strong>Append-only.</strong> Corrections are new entries referencing the prior id.</li>
+<li><strong>Deterministic content-addressing.</strong> Same content + parents → same id, on any node.</li>
+<li><strong>Provider-agnostic storage; deliver in the provider's format.</strong></li>
+<li><strong>The <em>why</em> outweighs the <em>what</em>.</strong></li>
+<li><strong>Budget is first-class.</strong> Context fits the window; truncation is always explicit, never silent.</li>
+<li><strong>MCP-native.</strong> The AI's interface is the product surface.</li>
+</ol>
+<h2>Non-goals (what Lifeline is <em>not</em>)</h2>
+<p>Lifeline is <strong>not</strong> a cognitive OS, an MMU, an agent orchestrator/sandbox, a workflow engine, a git
+replacement, an executor/curator (self-healing), or a trainer (fine-tuning). <strong>It records
+reasoning, not execution.</strong> If an idea arrives dressed as a "hypervisor/microkernel/opcode," take
+the costume off before evaluating it.</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/site/content/concepts.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

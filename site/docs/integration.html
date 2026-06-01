@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Integration — Lifeline docs</title>
+<meta name="description" content="Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/integration.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Integration — Lifeline docs">
+<meta property="og:description" content="Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/integration.html">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Integration","description":"Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.","url":"https://jessianmart.github.io/lifeline/docs/integration.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html" class="current">Integration</a>
+      <a href="mcp.html">MCP & remote</a></aside>
+  <main class="docs-main">
+    <h1>Integration</h1>
+    <p class="docs-lead">Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.</p>
+<p>Lifeline has two sides, and the AI drives both:</p>
+<ul>
+<li><strong>Read on connect</strong> → MCP resource <code>lifeline://project/context</code> (or <code>python -m lifeline context</code>).</li>
+<li><strong>Write while working</strong> → MCP tools <code>lifeline_append</code> / <code>lifeline_recontextualize</code> (or <code>python -m lifeline log</code>).</li>
+</ul>
+<h2>MCP client (any of them)</h2>
+<p>Point the client at the stdio server:</p>
+<pre><code>LIFELINE_DB=.lifeline/ledger.db python -m lifeline.mcp_server
+</code></pre>
+<ul>
+<li><strong>Resource:</strong> <code>lifeline://project/context</code> — read it when opening the session.</li>
+<li><strong>Tools:</strong> <code>lifeline_append(kind, summary, body, …)</code>, <code>lifeline_recontextualize(parent_id, summary, body, …)</code>.</li>
+<li><strong>Server command:</strong> <code>lifeline-mcp</code> (after <code>pip install -e .</code>) or <code>python -m lifeline.mcp_server</code> (from the repo root).</li>
+</ul>
+<h2>Per-client snippets (copy-and-paste)</h2>
+<p><strong>Claude Code</strong> — already reads the project's <code>.mcp.json</code> <strong>automatically</strong>. Without it: <code>claude mcp add lifeline -- lifeline-mcp</code>.</p>
+<p><strong>Cursor</strong> — <code>.cursor/mcp.json</code> (at the project root):</p>
+<pre><code class="language-json">{ &quot;mcpServers&quot;: { &quot;lifeline&quot;: { &quot;command&quot;: &quot;lifeline-mcp&quot;, &quot;env&quot;: { &quot;LIFELINE_DB&quot;: &quot;.lifeline/ledger.db&quot; } } } }
+</code></pre>
+<p><strong>Claude Desktop</strong> — <code>claude_desktop_config.json</code> (use an ABSOLUTE path — the cwd differs):</p>
+<pre><code class="language-json">{ &quot;mcpServers&quot;: { &quot;lifeline&quot;: { &quot;command&quot;: &quot;lifeline-mcp&quot;, &quot;env&quot;: { &quot;LIFELINE_DB&quot;: &quot;C:/path/to/project/.lifeline/ledger.db&quot; } } } }
+</code></pre>
+<p><strong>Gemini CLI</strong> — <code>~/.gemini/settings.json</code>:</p>
+<pre><code class="language-json">{ &quot;mcpServers&quot;: { &quot;lifeline&quot;: { &quot;command&quot;: &quot;lifeline-mcp&quot;, &quot;env&quot;: { &quot;LIFELINE_DB&quot;: &quot;.lifeline/ledger.db&quot; } } } }
+</code></pre>
+<blockquote>
+<p>WEB chat apps (claude.ai, ChatGPT) do <strong>not</strong> belong here — they require a remote server + OAuth
+(see <code>docs/MCP_REMOTE.md</code>). These snippets are for dev/CLI/IDE clients (stdio, local).</p>
+</blockquote>
+<h2>Auto-connect in Claude Code (SessionStart hook)</h2>
+<p>Inject the context at the start of each session via the project's <code>.claude/settings.json</code>
+(the hook's stdout enters the context). Example — adjust to your version's hook schema:</p>
+<pre><code class="language-json">{
+  &quot;hooks&quot;: {
+    &quot;SessionStart&quot;: [
+      { &quot;hooks&quot;: [ { &quot;type&quot;: &quot;command&quot;, &quot;command&quot;: &quot;python -m lifeline context&quot; } ] }
+    ]
+  }
+}
+</code></pre>
+<p>Without a hook, the minimal convention (in CLAUDE.md) is: <strong>on opening, run <code>python -m lifeline context</code>
+and read it before acting.</strong> When making any decision/feature/fix, append — that way the next AI
+(or you tomorrow) connects and already knows.</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/docs/INTEGRATION.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

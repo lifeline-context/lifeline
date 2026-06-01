@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Architecture — Lifeline docs</title>
+<meta name="description" content="Lifeline's architecture: the deterministic event model, reducers, recall, projection, and the store-is-source cutover.">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/architecture.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Architecture — Lifeline docs">
+<meta property="og:description" content="Lifeline's architecture: the deterministic event model, reducers, recall, projection, and the store-is-source cutover.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/architecture.html">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Architecture","description":"Lifeline's architecture: the deterministic event model, reducers, recall, projection, and the store-is-source cutover.","url":"https://jessianmart.github.io/lifeline/docs/architecture.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html" class="current">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html">MCP & remote</a></aside>
+  <main class="docs-main">
+    <h1>Architecture</h1>
+    <p class="docs-lead">Lifeline's architecture: the deterministic event model, reducers, recall, projection, and the store-is-source cutover.</p>
+<p>Technical document. For <em>the why</em> behind each decision, the source is <code>LIFELINE.md</code> (the <code>decision</code> entries cited in brackets, e.g.: <code>#0002</code>).</p>
+<h2>10,000-foot view</h2>
+<p>Lifeline is an <strong>event-sourced reasoning ledger</strong>. Everything is an immutable, content-addressed <code>Entry</code>, chained in a DAG. The "current truth" and the context an AI reads are <strong>derived projections</strong> of that ledger — never the source. Three layers of memory, all anchored in the same ledger:</p>
+<pre><code>                      Layer 3 · Recall (semantic)
+                      anchored embeddings → &quot;what is relevant to the task&quot;
+                                  ▲
+   Entry (append) ──▶ Layer 1 · Ledger ──reduce──▶ Layer 2 · State ──assemble──▶ payload
+                      (hashed DAG,                   (current truth,                (markdown,
+                       source of truth)               via reducers)                  by budget)
+                                  │
+                                  └── projection ──▶ LIFELINE.md (diffable view)
+</code></pre>
+<p>Module map (<code>lifeline/</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Layer / role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>entry.py</code></td>
+<td>the content-addressed <code>Entry</code> (identity)</td>
+</tr>
+<tr>
+<td><code>store.py</code></td>
+<td><code>EventStore</code> (port) + <code>SQLiteEventStore</code> (Layer 1)</td>
+</tr>
+<tr>
+<td><code>state.py</code></td>
+<td><code>StateEngine</code> + reducers (Layer 2)</td>
+</tr>
+<tr>
+<td><code>recall.py</code></td>
+<td><code>Embedder</code> + <code>LexicalEmbedder</code> + <code>SemanticRecall</code> (Layer 3)</td>
+</tr>
+<tr>
+<td><code>context.py</code></td>
+<td><code>ContextAssembler</code> — assembles the payload</td>
+</tr>
+<tr>
+<td><code>projection.py</code></td>
+<td>store → markdown (the generated view)</td>
+</tr>
+<tr>
+<td><code>ingest.py</code></td>
+<td>markdown → store (migration)</td>
+</tr>
+<tr>
+<td><code>staging.py</code></td>
+<td><code>StagingStore</code> (port) + <code>SQLiteStagingStore</code> — the HITL proposal queue</td>
+</tr>
+<tr>
+<td><code>cli.py</code> / <code>__main__.py</code></td>
+<td>the <code>lifeline</code> CLI</td>
+</tr>
+<tr>
+<td><code>mcp_server.py</code></td>
+<td>the MCP server (<code>lifeline-mcp</code> / <code>lifeline-mcp-remote</code>)</td>
+</tr>
+<tr>
+<td><code>cloud.py</code></td>
+<td>Supabase adapters (<code>SupabaseEventStore</code>, <code>SupabaseStagingStore</code>) — the cloud seam</td>
+</tr>
+</tbody>
+</table>
+<h2>1. The event model — deterministic content-addressing  [#0002, #0003]</h2>
+<pre><code>id = sha256( kind \n author \n agent \n provider \n model \n summary \n body.strip()
+             \n &quot;|&quot;.join(sorted(parents)) )
+</code></pre>
+<ul>
+<li><code>ts</code> (timestamp) and <code>dedup_key</code> stay <strong>out</strong> of the hash. Consequence: the same content +
+  the same parents produce the <strong>same <code>id</code> on any machine, at any time</strong>. This is what
+  makes dedup and merge across nodes/users possible (we are <em>more</em> content-pure than git,
+  whose commit-sha includes the timestamp).</li>
+<li><code>parents</code> is <strong>sorted</strong> in the hash → identity is invariant to the order in which the parents
+  were listed (a merge of A+B = of B+A).</li>
+<li><code>pydantic strict=True</code>. The <code>id</code> is sealed in a <code>model_validator</code>; <code>verify()</code> recomputes and
+  compares (per-entry tamper-evidence).</li>
+</ul>
+<h2>2. Layer 1 — the Ledger (<code>SQLiteEventStore</code>)</h2>
+<p>Append-only. <code>entries</code> table (unique id, JSON payload, kind, ts, dedup_key, parents) +
+<code>edges</code> table (DAG) + unique index on <code>dedup_key</code>. WAL on. <code>append()</code> is <strong>idempotent</strong>:
+violating the PK (<code>id</code>) or <code>dedup_key</code> → silently ignored (it solves the "split-brain" problem
+trivially). <code>stream()</code> returns in causal insertion order (single-writer). It is the
+<strong>runtime source of truth</strong>.</p>
+<p><code>EventStore</code> is an <strong>abstract port</strong> — the <code>SQLiteEventStore</code> is the local adapter; the
+<code>SupabaseEventStore</code> (M3) implements the same interface without touching the core. It is the cloud seam.</p>
+<h2>3. Layer 2 — the State (<code>StateEngine</code> + reducers)</h2>
+<p>Folds the stream into "current truth" via pure reducers <code>(state, entry) -&gt; state</code>. The default
+reducer <code>ledger_projection</code> produces: identity (<code>project</code>), <code>decisions</code> in effect, <code>open_items</code>,
+<code>latest</code>, <code>contributors</code> (authorship aggregated by provider/model), <code>kinds</code>, and <code>superseded</code>.</p>
+<p><strong>Status is a projection, not an FSM</strong> [#0002]: no execution state machine; the "state" is
+what the reducers compute. Custom reducers can be registered.</p>
+<p><strong>Supersession</strong> [#0018]: when a <code>correction</code> is encountered, its <code>parents</code> enter the <code>superseded</code>
+set; decisions and open threads with that id leave the current truth. Append-only:
+closing/reverting is a <em>new</em> entry, never an edit.</p>
+<h2>4. Layer 3 — Recall (<code>SemanticRecall</code> + <code>Embedder</code>)</h2>
+<p><code>Embedder</code> is pluggable [#0015]: one model per index. Default <code>LexicalEmbedder</code> —
+sparse term-frequency, <strong>exact</strong> cosine, deterministic, no dependency. (We tried hashing
+first; the test caught a bucket collision producing false relevance → sparse TF gives an exact 0
+without a shared token.) <code>SemanticRecall.search(query, k)</code> returns top-k <strong>anchored</strong> to the
+event (Law #1) — the vector is only an index; getting the match wrong does not turn into a
+hallucination. A dense semantic embedder (<code>SentenceTransformerEmbedder</code>, #0029) plugs in behind
+the same interface — <strong>opt-in</strong> via the <code>[embeddings]</code> extra; select it with <code>LIFELINE_EMBEDDER=dense</code>
+(or <code>make_embedder(...)</code>). The default stays lexical (zero-dependency).</p>
+<h2>5. Assembly (<code>ContextAssembler</code>)</h2>
+<p>Renders <strong>markdown</strong> [#0010] (more token-efficient than JSON/YAML for LLMs) within a
+budget. <strong>Budget priority:</strong> header + "Relevant" (if there is a <code>query</code>) + "Open" +
+"Recent" are always included; the decisions fill the rest, keeping the <strong>most recent</strong> ones and
+omitting the old ones with an <strong>explicit marker</strong> (Law #6 — truncation is never silent). Superseded
+items appear marked <code>[closed/reverted]</code> under "Recent".</p>
+<h2>6. Projection and the store-is-source cutover  [#0014, #0020, #0022]</h2>
+<p><code>render_ledger_markdown(store)</code> generates <code>LIFELINE.md</code> from the ledger. <code>ingest_markdown</code>
+does the reverse path. The two form a <strong>fixed point</strong> (proven): store → markdown → store
+reproduces the same <code>id</code>s, and the 2nd render is byte-identical.</p>
+<p>This unified the two hashing schemes that coexisted (markdown chain vs <code>Entry</code> id) into the
+content-addressed <code>id</code>. <strong>Git artifact decision</strong> [#0022]: what gets committed is the <strong>text</strong>
+(<code>LIFELINE.md</code>, diffable/mergeable in PRs); the <code>.lifeline/*.db</code> is a <strong>local cache</strong> (gitignored),
+rebuildable with <code>lifeline migrate</code>. Since text↔store are losslessly interconvertible, the
+source of truth is <em>the set of content-addressed entries</em>, materialized as both.</p>
+<h2>7. MCP surface (<code>mcp_server.py</code>)  [Law #7]</h2>
+<p>Closes the loop without a human. <strong>Resource</strong> <code>lifeline://project/context</code> (read) + <strong>tools</strong>
+<code>lifeline_append</code>, <code>lifeline_recontextualize</code>, <code>lifeline_recall</code> (write/recall). DB via the env
+<code>LIFELINE_DB</code> (default <code>.lifeline/ledger.db</code>, relative to the cwd → each project its own line).
+The same surface runs locally (stdio) and remotely (HTTP/SSE, <code>lifeline-mcp-remote</code>, with an
+optional OAuth Resource Server) — see <code>docs/MCP_REMOTE.md</code>.</p>
+<h2>Invariants (summary)</h2>
+<ol>
+<li>No memory without an immutable anchor.  2. Append-only.  3. Deterministic content-addressing.</li>
+<li>Provider-agnostic storage; per-provider delivery.  5. Why &gt; what.  6. Budget
+first-class (explicit truncation).  7. MCP-native.</li>
+</ol>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/docs/ARCHITECTURE.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

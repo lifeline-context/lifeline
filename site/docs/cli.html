@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CLI reference — Lifeline docs</title>
+<meta name="description" content="Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/cli.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="CLI reference — Lifeline docs">
+<meta property="og:description" content="Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/cli.html">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"CLI reference","description":"Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.","url":"https://jessianmart.github.io/lifeline/docs/cli.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html" class="current">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html">MCP & remote</a></aside>
+  <main class="docs-main">
+    <h1>CLI reference</h1>
+    <p class="docs-lead">Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.</p>
+<p>Globals: <code>--db</code> (default <code>.lifeline/ledger.db</code>) · <code>--line &lt;name&gt;</code> maps a named line (ledger <strong>and</strong>
+view together: <code>.lifeline/&lt;name&gt;.db</code> + <code>LIFELINE.&lt;name&gt;.md</code>) · <code>--store {sqlite,supabase}</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lifeline init</code></td>
+<td><strong>adopting mid-project (brownfield):</strong> initialize the line + print the bootstrap protocol (a HITL context checkpoint)</td>
+</tr>
+<tr>
+<td><code>lifeline log --kind … --summary … [--body … --parents id,…]</code></td>
+<td><strong>human:</strong> append directly to the line (you're the approver) + regenerate the view</td>
+</tr>
+<tr>
+<td><code>lifeline propose --kind … --summary … --body …</code></td>
+<td>propose an entry (<strong>HITL</strong>) — stays pending, not in the line</td>
+</tr>
+<tr>
+<td><code>lifeline review</code> · <code>approve &lt;pid\|all&gt;</code> · <code>reject &lt;pid\|all&gt;</code></td>
+<td>HITL curation: list / seal / discard</td>
+</tr>
+<tr>
+<td><code>lifeline context [--query "…"] [--budget N]</code></td>
+<td>print the assembled current truth (relevance if <code>--query</code>)</td>
+</tr>
+<tr>
+<td><code>lifeline verify</code></td>
+<td>check that every id matches its content</td>
+</tr>
+<tr>
+<td><code>lifeline rebuild</code> · <code>migrate --from LIFELINE.md</code></td>
+<td>regenerate the view / rebuild the <code>.db</code> from markdown</td>
+</tr>
+<tr>
+<td><code>lifeline schema</code></td>
+<td>print the bundled Supabase schema (cloud)</td>
+</tr>
+<tr>
+<td><code>lifeline lines</code></td>
+<td>list the project's lines (<code>.lifeline/*.db</code>)</td>
+</tr>
+<tr>
+<td><code>lifeline push</code> · <code>pull</code> · <code>clone &lt;url&gt; &lt;dir&gt;</code></td>
+<td><strong>git sync</strong> (Tier 0, zero cost): the text view syncs; the <code>.db</code> rebuilds</td>
+</tr>
+</tbody>
+</table>
+<h2>Write tiering (like approving a shell command)</h2>
+<p>The human's <code>log</code> commits directly — they're the approver. The <strong>AI via MCP <code>propose</code></strong> enters as a
+<strong>pending</strong> proposal (HITL); a human <strong>approves</strong> before it becomes truth. Write-time anti-junk
+requires the <em>why</em> (the <code>--body</code>), so junk never enters the line.</p>
+<h2>Kinds</h2>
+<p><code>bootstrap</code> (project identity) · <code>decision</code> · <code>feature</code> · <code>fix</code> · <code>incident</code> · <code>milestone</code> ·
+<code>release</code> · <code>note</code> · <code>open</code> (an open thread) · <code>correction</code> (supersedes its parents).</p>
+<h2>A line</h2>
+<p>One reasoning ledger (code <em>or</em> conversation). A project has 1 by default and supports N via
+<code>--line &lt;name&gt;</code> — no collisions between them.</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/site/content/cli.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

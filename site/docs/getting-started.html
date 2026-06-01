@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Getting started — Lifeline docs</title>
+<meta name="description" content="Install Lifeline, run the loop, and bootstrap an existing project. Git for reasoning, in minutes.">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/getting-started.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Getting started — Lifeline docs">
+<meta property="og:description" content="Install Lifeline, run the loop, and bootstrap an existing project. Git for reasoning, in minutes.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/getting-started.html">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Getting started","description":"Install Lifeline, run the loop, and bootstrap an existing project. Git for reasoning, in minutes.","url":"https://jessianmart.github.io/lifeline/docs/getting-started.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html" class="current">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html">MCP & remote</a></aside>
+  <main class="docs-main">
+    <h1>Getting started</h1>
+    <p class="docs-lead">Install Lifeline, run the loop, and bootstrap an existing project. Git for reasoning, in minutes.</p>
+<p>Lifeline is a <strong>context runtime for AI-assisted development</strong> — <em>git for reasoning</em>. It keeps an
+append-only, content-addressed, anchored ledger of your project's <strong>why</strong> and delivers it to any AI
+over MCP, so a fresh model connects and <strong>already knows</strong>.</p>
+<h2>Install</h2>
+<pre><code class="language-bash">pip install lifeline-context        # the lifeline CLI + lifeline-mcp server
+pip install -e .                    # from the repo root (dev)
+pip install -e &quot;.[cloud]&quot;           # optional: cloud mode (Supabase)
+pip install -e &quot;.[embeddings]&quot;      # optional: dense semantic recall
+</code></pre>
+<p>Dependencies: <code>pydantic</code>, <code>aiosqlite</code>, <code>mcp</code>, <code>httpx</code>. <strong>Python ≥ 3.10.</strong> The core is local,
+single-user, and zero-dependency for recall by default.</p>
+<h2>Quickstart (CLI)</h2>
+<p>Each project gets its own <code>.lifeline/ledger.db</code>:</p>
+<pre><code class="language-bash">lifeline log --kind bootstrap --summary &quot;Bootstrap project X&quot; --body &quot;Multi-tenant billing API.&quot;
+lifeline log --kind decision  --summary &quot;DB: PostgreSQL&quot;      --body &quot;ACID required by audit.&quot;
+
+lifeline context                    # the assembled current truth (what an AI reads)
+lifeline context --query &quot;database&quot; # prioritizes what's relevant to the task (Layer 3)
+lifeline verify                     # checks the chain's integrity → OK
+</code></pre>
+<p><code>LIFELINE.md</code> regenerates on every <code>log</code> — <strong>don't hand-edit it</strong>. On a fresh clone without
+<code>.lifeline/</code>, rebuild the cache with <code>lifeline migrate --from LIFELINE.md</code>.</p>
+<h2>The loop (do both sides)</h2>
+<ul>
+<li><strong>On connect:</strong> load the context (<code>lifeline context</code> or the MCP resource) <em>before</em> acting.</li>
+<li><strong>While working:</strong> on each meaningful decision / fix / incident, <strong>append</strong> (<code>lifeline log</code> or
+  <code>lifeline_append</code>). Reversed something? <code>lifeline_recontextualize</code> supersedes it by id.</li>
+</ul>
+<h2>Connect it to your AI</h2>
+<p>Lifeline ships a local MCP server (<code>lifeline-mcp</code>, stdio). On connect, the AI gets the
+<code>lifeline://project/context</code> resource plus tools — and the write tools are <strong>human-in-the-loop</strong>:
+they <em>propose</em>, a human <em>approves</em>. <strong>Claude Code reads <code>.mcp.json</code> automatically:</strong></p>
+<pre><code class="language-json">{ &quot;mcpServers&quot;: { &quot;lifeline&quot;: {
+    &quot;command&quot;: &quot;lifeline-mcp&quot;, &quot;args&quot;: [],
+    &quot;env&quot;: { &quot;LIFELINE_DB&quot;: &quot;.lifeline/ledger.db&quot; } } } }
+</code></pre>
+<p>Cursor, Claude Desktop, and Gemini CLI use copy-paste snippets — see <a href="integration.html">Integration</a>.
+Web chat apps (claude.ai, ChatGPT) need a remote server + OAuth — see <a href="mcp.html">MCP &amp; remote</a>.</p>
+<h2>Adopting mid-project (brownfield)</h2>
+<p>Lifeline records the <em>why</em> <strong>going forward</strong> — it never reconstructs it from your code or git
+history. So a fresh install on a live project starts <strong>empty</strong>. Run <code>lifeline init</code> (or just connect
+your AI — the empty context prints the same call-to-action). It walks you through a one-time
+<strong>bootstrap checkpoint</strong>, human-in-the-loop:</p>
+<ol>
+<li><strong>Read</strong> the reasoning artifacts you already wrote (README, ADRs, PR descriptions). The <em>why</em> is
+   never inferred from code or diffs (Laws 1 &amp; 5).</li>
+<li><strong>Ask</strong> 3–7 short why-questions — only the tacit reasoning that isn't written down.</li>
+<li><strong>Propose</strong> the checkpoint as <em>granular</em> entries: 1 <code>bootstrap</code> + N <code>decision</code> + M <code>open</code>. You
+   approve the batch. Nothing enters unapproved.</li>
+</ol>
+<p>After that, the loop runs forward.</p>
+<h2>Local → cloud (graduation)</h2>
+<p>Everything is content-addressed, so pushing a local line to the cloud is <strong>lossless and
+idempotent</strong> — same ids, re-seed dedupes itself.</p>
+<pre><code class="language-bash">lifeline --store supabase migrate --from LIFELINE.md   # seed (repeatable — no dupes)
+lifeline --store supabase context                       # operate against the cloud
+</code></pre>
+<p>Just want to share the <em>text</em> (no cloud)? <code>lifeline push</code> (Tier 0 — git sync).</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/site/content/getting-started.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

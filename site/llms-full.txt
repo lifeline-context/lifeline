@@ -1,0 +1,484 @@
+# Lifeline — full documentation for LLMs
+
+Source: https://jessianmart.github.io/lifeline/ — MIT licensed. https://github.com/jessianmart/lifeline
+
+
+
+==============================================================================
+# Getting started
+==============================================================================
+
+# Getting started
+
+Lifeline is a **context runtime for AI-assisted development** — *git for reasoning*. It keeps an
+append-only, content-addressed, anchored ledger of your project's **why** and delivers it to any AI
+over MCP, so a fresh model connects and **already knows**.
+
+## Install
+
+```bash
+pip install lifeline-context        # the lifeline CLI + lifeline-mcp server
+pip install -e .                    # from the repo root (dev)
+pip install -e ".[cloud]"           # optional: cloud mode (Supabase)
+pip install -e ".[embeddings]"      # optional: dense semantic recall
+```
+
+Dependencies: `pydantic`, `aiosqlite`, `mcp`, `httpx`. **Python ≥ 3.10.** The core is local,
+single-user, and zero-dependency for recall by default.
+
+## Quickstart (CLI)
+
+Each project gets its own `.lifeline/ledger.db`:
+
+```bash
+lifeline log --kind bootstrap --summary "Bootstrap project X" --body "Multi-tenant billing API."
+lifeline log --kind decision  --summary "DB: PostgreSQL"      --body "ACID required by audit."
+
+lifeline context                    # the assembled current truth (what an AI reads)
+lifeline context --query "database" # prioritizes what's relevant to the task (Layer 3)
+lifeline verify                     # checks the chain's integrity → OK
+```
+
+`LIFELINE.md` regenerates on every `log` — **don't hand-edit it**. On a fresh clone without
+`.lifeline/`, rebuild the cache with `lifeline migrate --from LIFELINE.md`.
+
+## The loop (do both sides)
+
+- **On connect:** load the context (`lifeline context` or the MCP resource) *before* acting.
+- **While working:** on each meaningful decision / fix / incident, **append** (`lifeline log` or
+  `lifeline_append`). Reversed something? `lifeline_recontextualize` supersedes it by id.
+
+## Connect it to your AI
+
+Lifeline ships a local MCP server (`lifeline-mcp`, stdio). On connect, the AI gets the
+`lifeline://project/context` resource plus tools — and the write tools are **human-in-the-loop**:
+they *propose*, a human *approves*. **Claude Code reads `.mcp.json` automatically:**
+
+```json
+{ "mcpServers": { "lifeline": {
+    "command": "lifeline-mcp", "args": [],
+    "env": { "LIFELINE_DB": ".lifeline/ledger.db" } } } }
+```
+
+Cursor, Claude Desktop, and Gemini CLI use copy-paste snippets — see [Integration](integration.html).
+Web chat apps (claude.ai, ChatGPT) need a remote server + OAuth — see [MCP & remote](mcp.html).
+
+## Adopting mid-project (brownfield)
+
+Lifeline records the *why* **going forward** — it never reconstructs it from your code or git
+history. So a fresh install on a live project starts **empty**. Run `lifeline init` (or just connect
+your AI — the empty context prints the same call-to-action). It walks you through a one-time
+**bootstrap checkpoint**, human-in-the-loop:
+
+1. **Read** the reasoning artifacts you already wrote (README, ADRs, PR descriptions). The *why* is
+   never inferred from code or diffs (Laws 1 & 5).
+2. **Ask** 3–7 short why-questions — only the tacit reasoning that isn't written down.
+3. **Propose** the checkpoint as *granular* entries: 1 `bootstrap` + N `decision` + M `open`. You
+   approve the batch. Nothing enters unapproved.
+
+After that, the loop runs forward.
+
+## Local → cloud (graduation)
+
+Everything is content-addressed, so pushing a local line to the cloud is **lossless and
+idempotent** — same ids, re-seed dedupes itself.
+
+```bash
+lifeline --store supabase migrate --from LIFELINE.md   # seed (repeatable — no dupes)
+lifeline --store supabase context                       # operate against the cloud
+```
+
+Just want to share the *text* (no cloud)? `lifeline push` (Tier 0 — git sync).
+
+
+==============================================================================
+# Concepts & laws
+==============================================================================
+
+# Concepts & laws
+
+Lifeline is an **event-sourced reasoning ledger**. The "current truth" an AI reads is a *derived
+projection* of an immutable, content-addressed event log — never the source itself.
+
+## Entry — the atomic unit
+
+Everything is an `Entry`, content-addressed:
+
+```
+id = sha256(kind, author, agent, provider, model, summary, body, sorted-parents)
+```
+
+`ts` (timestamp) and `dedup_key` stay **outside** the hash. Consequence: the **same content +
+parents produce the same id on any machine, at any time** — the basis for dedup and sync (more
+content-pure than git, whose commit sha includes the timestamp). `parents` is **sorted** in the
+hash, so a merge of A+B equals B+A.
+
+## The 3 memory layers
+
+All anchored to the same immutable ledger:
+
+- **Ledger (Layer 1)** — a hashed, append-only DAG. The source of truth. `append()` is idempotent:
+  re-inserting the same id is silently ignored, which solves split-brain trivially.
+- **State (Layer 2)** — pure reducers fold the stream into the current truth: identity, decisions
+  in effect, open threads, recent, contributors. **Status is a projection, not a state machine.**
+- **Recall (Layer 3)** — relevance search where every hit is **anchored** to its source event.
+  Lexical (zero-dependency) by default; a dense semantic embedder is opt-in via the `[embeddings]`
+  extra (`LIFELINE_EMBEDDER=dense`).
+
+## Supersession
+
+A `correction` entry referencing another entry's id removes it from the current truth — a reverted
+decision, a closed thread. **Append-only:** the past is never edited; closing or reverting is always
+a *new* entry.
+
+## The anti-hallucination anchor
+
+Every item the AI reads carries its source event's hash. **No anchor, no entry.** Getting a recall
+match wrong cannot turn into a hallucination, because the vector is only an index — the truth is the
+anchored event.
+
+## The 7 laws (the constitution)
+
+1. **No memory without an immutable anchor.** Every context item carries the hash of its source
+   event. The anti-hallucination spine.
+2. **Append-only.** Corrections are new entries referencing the prior id.
+3. **Deterministic content-addressing.** Same content + parents → same id, on any node.
+4. **Provider-agnostic storage; deliver in the provider's format.**
+5. **The *why* outweighs the *what*.**
+6. **Budget is first-class.** Context fits the window; truncation is always explicit, never silent.
+7. **MCP-native.** The AI's interface is the product surface.
+
+## Non-goals (what Lifeline is *not*)
+
+Lifeline is **not** a cognitive OS, an MMU, an agent orchestrator/sandbox, a workflow engine, a git
+replacement, an executor/curator (self-healing), or a trainer (fine-tuning). **It records
+reasoning, not execution.** If an idea arrives dressed as a "hypervisor/microkernel/opcode," take
+the costume off before evaluating it.
+
+
+==============================================================================
+# Architecture
+==============================================================================
+
+# Lifeline Architecture
+
+Technical document. For *the why* behind each decision, the source is `LIFELINE.md` (the `decision` entries cited in brackets, e.g.: `#0002`).
+
+## 10,000-foot view
+
+Lifeline is an **event-sourced reasoning ledger**. Everything is an immutable, content-addressed `Entry`, chained in a DAG. The "current truth" and the context an AI reads are **derived projections** of that ledger — never the source. Three layers of memory, all anchored in the same ledger:
+
+```
+                      Layer 3 · Recall (semantic)
+                      anchored embeddings → "what is relevant to the task"
+                                  ▲
+   Entry (append) ──▶ Layer 1 · Ledger ──reduce──▶ Layer 2 · State ──assemble──▶ payload
+                      (hashed DAG,                   (current truth,                (markdown,
+                       source of truth)               via reducers)                  by budget)
+                                  │
+                                  └── projection ──▶ LIFELINE.md (diffable view)
+```
+
+Module map (`lifeline/`):
+
+| Module | Layer / role |
+|---|---|
+| `entry.py` | the content-addressed `Entry` (identity) |
+| `store.py` | `EventStore` (port) + `SQLiteEventStore` (Layer 1) |
+| `state.py` | `StateEngine` + reducers (Layer 2) |
+| `recall.py` | `Embedder` + `LexicalEmbedder` + `SemanticRecall` (Layer 3) |
+| `context.py` | `ContextAssembler` — assembles the payload |
+| `projection.py` | store → markdown (the generated view) |
+| `ingest.py` | markdown → store (migration) |
+| `staging.py` | `StagingStore` (port) + `SQLiteStagingStore` — the HITL proposal queue |
+| `cli.py` / `__main__.py` | the `lifeline` CLI |
+| `mcp_server.py` | the MCP server (`lifeline-mcp` / `lifeline-mcp-remote`) |
+| `cloud.py` | Supabase adapters (`SupabaseEventStore`, `SupabaseStagingStore`) — the cloud seam |
+
+## 1. The event model — deterministic content-addressing  [#0002, #0003]
+
+```
+id = sha256( kind \n author \n agent \n provider \n model \n summary \n body.strip()
+             \n "|".join(sorted(parents)) )
+```
+
+- `ts` (timestamp) and `dedup_key` stay **out** of the hash. Consequence: the same content +
+  the same parents produce the **same `id` on any machine, at any time**. This is what
+  makes dedup and merge across nodes/users possible (we are *more* content-pure than git,
+  whose commit-sha includes the timestamp).
+- `parents` is **sorted** in the hash → identity is invariant to the order in which the parents
+  were listed (a merge of A+B = of B+A).
+- `pydantic strict=True`. The `id` is sealed in a `model_validator`; `verify()` recomputes and
+  compares (per-entry tamper-evidence).
+
+## 2. Layer 1 — the Ledger (`SQLiteEventStore`)
+
+Append-only. `entries` table (unique id, JSON payload, kind, ts, dedup_key, parents) +
+`edges` table (DAG) + unique index on `dedup_key`. WAL on. `append()` is **idempotent**:
+violating the PK (`id`) or `dedup_key` → silently ignored (it solves the "split-brain" problem
+trivially). `stream()` returns in causal insertion order (single-writer). It is the
+**runtime source of truth**.
+
+`EventStore` is an **abstract port** — the `SQLiteEventStore` is the local adapter; the
+`SupabaseEventStore` (M3) implements the same interface without touching the core. It is the cloud seam.
+
+## 3. Layer 2 — the State (`StateEngine` + reducers)
+
+Folds the stream into "current truth" via pure reducers `(state, entry) -> state`. The default
+reducer `ledger_projection` produces: identity (`project`), `decisions` in effect, `open_items`,
+`latest`, `contributors` (authorship aggregated by provider/model), `kinds`, and `superseded`.
+
+**Status is a projection, not an FSM** [#0002]: no execution state machine; the "state" is
+what the reducers compute. Custom reducers can be registered.
+
+**Supersession** [#0018]: when a `correction` is encountered, its `parents` enter the `superseded`
+set; decisions and open threads with that id leave the current truth. Append-only:
+closing/reverting is a *new* entry, never an edit.
+
+## 4. Layer 3 — Recall (`SemanticRecall` + `Embedder`)
+
+`Embedder` is pluggable [#0015]: one model per index. Default `LexicalEmbedder` —
+sparse term-frequency, **exact** cosine, deterministic, no dependency. (We tried hashing
+first; the test caught a bucket collision producing false relevance → sparse TF gives an exact 0
+without a shared token.) `SemanticRecall.search(query, k)` returns top-k **anchored** to the
+event (Law #1) — the vector is only an index; getting the match wrong does not turn into a
+hallucination. A dense semantic embedder (`SentenceTransformerEmbedder`, #0029) plugs in behind
+the same interface — **opt-in** via the `[embeddings]` extra; select it with `LIFELINE_EMBEDDER=dense`
+(or `make_embedder(...)`). The default stays lexical (zero-dependency).
+
+## 5. Assembly (`ContextAssembler`)
+
+Renders **markdown** [#0010] (more token-efficient than JSON/YAML for LLMs) within a
+budget. **Budget priority:** header + "Relevant" (if there is a `query`) + "Open" +
+"Recent" are always included; the decisions fill the rest, keeping the **most recent** ones and
+omitting the old ones with an **explicit marker** (Law #6 — truncation is never silent). Superseded
+items appear marked `[closed/reverted]` under "Recent".
+
+## 6. Projection and the store-is-source cutover  [#0014, #0020, #0022]
+
+`render_ledger_markdown(store)` generates `LIFELINE.md` from the ledger. `ingest_markdown`
+does the reverse path. The two form a **fixed point** (proven): store → markdown → store
+reproduces the same `id`s, and the 2nd render is byte-identical.
+
+This unified the two hashing schemes that coexisted (markdown chain vs `Entry` id) into the
+content-addressed `id`. **Git artifact decision** [#0022]: what gets committed is the **text**
+(`LIFELINE.md`, diffable/mergeable in PRs); the `.lifeline/*.db` is a **local cache** (gitignored),
+rebuildable with `lifeline migrate`. Since text↔store are losslessly interconvertible, the
+source of truth is *the set of content-addressed entries*, materialized as both.
+
+## 7. MCP surface (`mcp_server.py`)  [Law #7]
+
+Closes the loop without a human. **Resource** `lifeline://project/context` (read) + **tools**
+`lifeline_append`, `lifeline_recontextualize`, `lifeline_recall` (write/recall). DB via the env
+`LIFELINE_DB` (default `.lifeline/ledger.db`, relative to the cwd → each project its own line).
+The same surface runs locally (stdio) and remotely (HTTP/SSE, `lifeline-mcp-remote`, with an
+optional OAuth Resource Server) — see `docs/MCP_REMOTE.md`.
+
+## Invariants (summary)
+
+1. No memory without an immutable anchor.  2. Append-only.  3. Deterministic content-addressing.
+4. Provider-agnostic storage; per-provider delivery.  5. Why > what.  6. Budget
+first-class (explicit truncation).  7. MCP-native.
+
+
+==============================================================================
+# Integration
+==============================================================================
+
+# Integration — closing the loop without a human
+
+Lifeline has two sides, and the AI drives both:
+
+- **Read on connect** → MCP resource `lifeline://project/context` (or `python -m lifeline context`).
+- **Write while working** → MCP tools `lifeline_append` / `lifeline_recontextualize` (or `python -m lifeline log`).
+
+## MCP client (any of them)
+
+Point the client at the stdio server:
+
+```
+LIFELINE_DB=.lifeline/ledger.db python -m lifeline.mcp_server
+```
+
+- **Resource:** `lifeline://project/context` — read it when opening the session.
+- **Tools:** `lifeline_append(kind, summary, body, …)`, `lifeline_recontextualize(parent_id, summary, body, …)`.
+- **Server command:** `lifeline-mcp` (after `pip install -e .`) or `python -m lifeline.mcp_server` (from the repo root).
+
+## Per-client snippets (copy-and-paste)
+
+**Claude Code** — already reads the project's `.mcp.json` **automatically**. Without it: `claude mcp add lifeline -- lifeline-mcp`.
+
+**Cursor** — `.cursor/mcp.json` (at the project root):
+```json
+{ "mcpServers": { "lifeline": { "command": "lifeline-mcp", "env": { "LIFELINE_DB": ".lifeline/ledger.db" } } } }
+```
+
+**Claude Desktop** — `claude_desktop_config.json` (use an ABSOLUTE path — the cwd differs):
+```json
+{ "mcpServers": { "lifeline": { "command": "lifeline-mcp", "env": { "LIFELINE_DB": "C:/path/to/project/.lifeline/ledger.db" } } } }
+```
+
+**Gemini CLI** — `~/.gemini/settings.json`:
+```json
+{ "mcpServers": { "lifeline": { "command": "lifeline-mcp", "env": { "LIFELINE_DB": ".lifeline/ledger.db" } } } }
+```
+
+> WEB chat apps (claude.ai, ChatGPT) do **not** belong here — they require a remote server + OAuth
+> (see `docs/MCP_REMOTE.md`). These snippets are for dev/CLI/IDE clients (stdio, local).
+
+## Auto-connect in Claude Code (SessionStart hook)
+
+Inject the context at the start of each session via the project's `.claude/settings.json`
+(the hook's stdout enters the context). Example — adjust to your version's hook schema:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "python -m lifeline context" } ] }
+    ]
+  }
+}
+```
+
+Without a hook, the minimal convention (in CLAUDE.md) is: **on opening, run `python -m lifeline context`
+and read it before acting.** When making any decision/feature/fix, append — that way the next AI
+(or you tomorrow) connects and already knows.
+
+
+==============================================================================
+# MCP & remote
+==============================================================================
+
+# Remote MCP (HTTP/SSE) — the cloud surface
+
+The **same** MCP surface as local mode, served over HTTP — so an AI can connect from outside
+(not just via stdio). Identical resources/tools, write **stays HITL**:
+
+- **Read:** resource `lifeline://project/context` + tool `lifeline_recall`.
+- **Propose (HITL):** tools `lifeline_append` / `lifeline_recontextualize` → enter as
+  PENDING; a human approves (`lifeline review`/`approve`) before entering the line.
+
+Backend chosen by env (same factory as the CLI): local SQLite **or** Supabase (cloud).
+
+## Run
+
+```bash
+# cloud (multi-tenant via RLS) — requires the schema applied (run: lifeline schema)
+export LIFELINE_STORE=supabase
+export SUPABASE_URL=https://rzphncyjrilhwpuemrcl.supabase.co
+export SUPABASE_KEY=<project apikey>      # don't commit — use .env
+export SUPABASE_TOKEN=<JWT access token>  # write under RLS
+export LIFELINE_MCP_HOST=0.0.0.0 LIFELINE_MCP_PORT=8000
+lifeline-mcp-remote
+```
+
+- Transport: `LIFELINE_MCP_TRANSPORT=sse` (default) → endpoints `GET /sse` + `POST /messages`;
+  or `streamable-http` → `/mcp`.
+- Local backend (no cloud): omit `LIFELINE_STORE` → SQLite (`LIFELINE_DB`).
+- Line: `LIFELINE_LINE=<name>` (default `ledger`).
+- Behind a tunnel/proxy/deploy, the public Host is allowed by default; pin it with
+  `LIFELINE_MCP_ALLOWED_HOSTS=host1,host2` (#0054).
+
+## Deploy (zero-cost, honest)
+
+It's a **Python** server (FastMCP + uvicorn/starlette). It does **NOT** run on Supabase Edge
+Functions (those are Deno/TypeScript). Zero-/low-cost routes:
+
+- **Render / Railway / Fly.io** (free/cheap tier) — a single `lifeline-mcp-remote` process with the
+  env vars; Supabase remains the store. Step-by-step in `docs/DEPLOY.md`.
+- Your own **container** (`pip install lifeline-context[cloud]` + the env vars; a `Dockerfile` ships).
+- Dev/local exposed via tunnel (cloudflared/ngrok) for quick testing.
+
+Supabase stays free as the **store** (Postgres+RLS); the host only runs the MCP process.
+
+## OAuth / multi-tenant (Resource Server) — `LIFELINE_OAUTH=1`
+
+Turn it on with `LIFELINE_OAUTH=1` (+ `LIFELINE_STORE=supabase` + `SUPABASE_URL`/`KEY`). The server
+becomes an **OAuth 2.1 Resource Server**:
+
+- Requires `Authorization: Bearer <user JWT>` on every request; validates against Supabase
+  (`/auth/v1/user`). Invalid/expired → **401**.
+- Scopes the store by **that user's JWT** → real multi-tenant via RLS (`owner=auth.uid()`):
+  each user only sees/proposes in their own line. (Without `LIFELINE_OAUTH`, it's single-tenant via
+  the environment's `SUPABASE_TOKEN`.)
+- Publishes the **discovery** at `GET /.well-known/oauth-protected-resource` (RFC 9728), pointing
+  to the Authorization Server (`LIFELINE_OAUTH_ISSUER`, default `…/auth/v1`).
+
+```bash
+export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
+export SUPABASE_URL=… SUPABASE_KEY=<apikey>
+export LIFELINE_MCP_PUBLIC_URL=https://your-host   # public url (goes into the metadata)
+lifeline-mcp-remote
+```
+
+**Connect right now via the CLIs (NOT via the web apps):** **Claude Code** and the **Gemini CLI**
+accept a token by header — e.g.: `claude mcp add --transport http lifeline https://your-host/mcp --header "Authorization: Bearer <jwt>"`.
+⚠️ **claude.ai web and ChatGPT do NOT accept a static Bearer** (`static_bearer` not supported);
+on the hosted apps it's **authless** or **OAuth** — see below.
+
+## Connecting on the web apps (claude.ai / ChatGPT) — what the research confirmed (Jun/2026)
+
+- **claude.ai accepts an AUTHLESS connector** (`auth: "none"`) → "connect in one click" with **no
+  AS at all** — but **without per-user identity** (good for single-tenant / a shared line, not
+  multi-tenant). Great for **validating** the value before investing in the AS.
+- **Multi-tenant (each user sees their own) requires an Authorization Server** (authorize+token+PKCE+
+  metadata). **BUT DCR is NOT mandatory:** claude.ai accepts **CIMD** or a **pre-registered
+  client** (creds via `mcp-review@anthropic.com`); ChatGPT accepts CIMD/predefined clients.
+  DCR only removes the manual setup.
+- **A static Bearer doesn't work** on the web apps (only on the CLIs). ChatGPT requires **Developer
+  Mode** (paid plans; the free tier doesn't have it).
+- **Zero-cost AS with DCR (when you build it):** Cloudflare `workers-oauth-provider` (OSS, free
+  Workers), Keycloak (OSS, self-host), Stytch (free ~10K MAU). **Integration gotcha:** the AS must
+  yield an identity compatible with Supabase's RLS (`auth.uid()`) — the cleanest way is for the AS
+  to use Supabase Auth as the login, or to re-plug the RS into the provider's JWKS.
+
+> Summary: the **Resource Server** (validation + metadata + multi-tenant) is ready and tested.
+> For the hosted one-click — **authless validates without an AS**; multi-tenant **needs an AS, not
+> DCR**. In all routes, **our RS doesn't change** — it already validates the JWT and scopes per user.
+> (Research anchored in line #0052; next step for the AS = #0049.)
+
+## Security
+
+Credentials only via the environment (`.env`, gitignored) — never in a commit. Write is always HITL:
+the remote AI **proposes**, the human curates. The server does not expose `approve`/`reject` (curation
+is local/trusted), nor the git commands (`push/pull/clone`).
+
+
+==============================================================================
+# CLI reference
+==============================================================================
+
+# CLI reference
+
+Globals: `--db` (default `.lifeline/ledger.db`) · `--line <name>` maps a named line (ledger **and**
+view together: `.lifeline/<name>.db` + `LIFELINE.<name>.md`) · `--store {sqlite,supabase}`.
+
+| Command | What it does |
+|---|---|
+| `lifeline init` | **adopting mid-project (brownfield):** initialize the line + print the bootstrap protocol (a HITL context checkpoint) |
+| `lifeline log --kind … --summary … [--body … --parents id,…]` | **human:** append directly to the line (you're the approver) + regenerate the view |
+| `lifeline propose --kind … --summary … --body …` | propose an entry (**HITL**) — stays pending, not in the line |
+| `lifeline review` · `approve <pid\|all>` · `reject <pid\|all>` | HITL curation: list / seal / discard |
+| `lifeline context [--query "…"] [--budget N]` | print the assembled current truth (relevance if `--query`) |
+| `lifeline verify` | check that every id matches its content |
+| `lifeline rebuild` · `migrate --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown |
+| `lifeline schema` | print the bundled Supabase schema (cloud) |
+| `lifeline lines` | list the project's lines (`.lifeline/*.db`) |
+| `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
+
+## Write tiering (like approving a shell command)
+
+The human's `log` commits directly — they're the approver. The **AI via MCP `propose`** enters as a
+**pending** proposal (HITL); a human **approves** before it becomes truth. Write-time anti-junk
+requires the *why* (the `--body`), so junk never enters the line.
+
+## Kinds
+
+`bootstrap` (project identity) · `decision` · `feature` · `fix` · `incident` · `milestone` ·
+`release` · `note` · `open` (an open thread) · `correction` (supersedes its parents).
+
+## A line
+
+One reasoning ledger (code *or* conversation). A project has 1 by default and supports N via
+`--line <name>` — no collisions between them.

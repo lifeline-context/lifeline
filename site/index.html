@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lifeline — a context runtime for AI-assisted development</title>
+<meta name="description" content="Lifeline is git for reasoning: an append-only, content-addressed, anchored ledger of a project's WHY. Any AI connects over MCP and already knows what / why / decided / next. Open source, MCP-native, anti-hallucination by design.">
+<meta name="keywords" content="Lifeline, context runtime, AI memory, MCP, Model Context Protocol, reasoning ledger, append-only, content-addressed, anti-hallucination, AI-assisted development, decision log, git for reasoning, LLM context, agent memory">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="jessianmart">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Lifeline — a context runtime for AI-assisted development">
+<meta property="og:description" content="Git for reasoning: an append-only, content-addressed ledger of a project's WHY. Any AI connects over MCP and already knows. Time-to-Context → 0.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Lifeline — git for reasoning">
+<meta name="twitter:description" content="An append-only, content-addressed, anchored ledger of a project's WHY. MCP-native. Time-to-Context → 0.">
+<meta name="twitter:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+
+<!-- GEO: structured data so AI engines (and search) extract the facts cleanly -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Lifeline",
+      "alternateName": "lifeline-context",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Cross-platform (Python 3.10+)",
+      "description": "A context runtime for AI-assisted development — an append-only, content-addressed, anchored ledger of a project's WHY, delivered to any AI over MCP so it connects and already knows what / why / decided / next.",
+      "url": "https://jessianmart.github.io/lifeline/",
+      "downloadUrl": "https://pypi.org/project/lifeline-context/",
+      "softwareVersion": "0.2.0",
+      "license": "https://opensource.org/licenses/MIT",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Person", "name": "jessianmart" },
+      "keywords": "MCP, AI memory, reasoning ledger, append-only, content-addressed, anti-hallucination, context runtime"
+    },
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "Lifeline",
+      "codeRepository": "https://github.com/jessianmart/lifeline",
+      "programmingLanguage": "Python",
+      "runtimePlatform": "Python 3.10+",
+      "license": "https://opensource.org/licenses/MIT"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Lifeline?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Lifeline is a context runtime for AI-assisted development — 'git for reasoning'. It keeps an append-only, content-addressed, anchored ledger of a project's WHY (decisions, reversals, incidents, current state) inside the project, and delivers it to any AI over the Model Context Protocol (MCP) so a fresh model connects and immediately knows what the project is, why it is that way, what's decided, and what's next." }
+        },
+        {
+          "@type": "Question",
+          "name": "How is Lifeline different from RAG, vector memory, or note tools?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Memory tools and RAG store mutable text or vectors with no provenance, which causes hallucinated recall. Lifeline is append-only and content-addressed: every context item carries the cryptographic hash of its source event (Law 1 — no memory without an immutable anchor). Corrections are new entries that supersede old ones; the past is never edited. It records reasoning (the why), not files or general notes." }
+        },
+        {
+          "@type": "Question",
+          "name": "How does an AI use Lifeline?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Lifeline is MCP-native. On connect, the AI reads the resource lifeline://project/context — the assembled current truth. While working, it proposes entries via lifeline_append; writes are human-in-the-loop (the AI proposes, a human approves). In Claude Code it is zero-config via .mcp.json; other clients use copy-paste snippets." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I install Lifeline?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Run 'pip install lifeline-context'. It installs the lifeline CLI plus the lifeline-mcp server. Each project gets its own .lifeline/ledger.db. Python 3.10+ is required. The core is local, single-user, and zero-dependency for recall by default." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I adopt Lifeline in an existing (mid-development) project?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Run 'lifeline init' (or just connect your AI — the empty context prints a call-to-action). Lifeline records the why going forward; it never reconstructs it from code or git history. A one-time bootstrap checkpoint has your AI read existing reasoning docs (README, ADRs, PR descriptions), ask a few why-questions, and propose granular entries you approve (human-in-the-loop)." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="bg-grid"></div>
+<div class="thread" aria-hidden="true"><div class="fill" id="fill"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="./"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="docs/">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+
+<main class="track" id="track">
+
+  <!-- 0 · HERO -->
+  <section class="panel" id="p-intro" aria-label="Introduction">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[#0001]</span> <span class="bar"></span> bootstrap · the context runtime</p>
+      <h1 class="display reveal d1">Git for <span class="grad">reasoning.</span></h1>
+      <p class="lead reveal d2">Your project remembers <strong>why</strong> it is what it is — and any AI connects and <strong>already knows</strong>. An append-only, content-addressed, anchored ledger of decisions, delivered over MCP. No human re-explaining. Ever.</p>
+      <div class="cta reveal d3">
+        <button class="copy" id="copy-install" title="Click to copy"><span class="prompt">$</span> pip install lifeline-context <span class="ic" id="copy-ic">copy</span></button>
+        <a class="btn btn-ghost" href="docs/getting-started.html">Read the docs →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 · PROBLEM -->
+  <section class="panel" id="p-problem" aria-label="The problem">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[problem]</span> <span class="bar"></span> the memory bus is human</p>
+      <h2 class="title reveal d1">AIs are stateless<br>across sessions.</h2>
+      <p class="body reveal d2">Every new session, agent, or provider, <strong>you</strong> become the memory bus — re-explaining decisions that already existed. The naive fix (a living markdown log) works until it blows past the context window. And "memory" tools store text or vectors with <strong>no provenance</strong> → hallucinated recall.</p>
+      <p class="body muted reveal d3">The cost isn't tokens. It's that the <em>why</em> evaporates the moment the window scrolls.</p>
+    </div>
+  </section>
+
+  <!-- 2 · IDEA -->
+  <section class="panel" id="p-idea" aria-label="The idea">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[north-star]</span> <span class="bar"></span> time-to-context → 0</p>
+      <h2 class="title reveal d1">One metric.<br>One acceptance test.</h2>
+      <p class="lead reveal d2">A fresh AI connects, <strong>with no human in the loop</strong>, and correctly answers: <strong>what / why / what's decided / what's next?</strong></p>
+      <p class="body reveal d3">Lifeline keeps the project's lifeline queryable, compressible, and <strong>anchored</strong> — so it never overflows the window and never invents recall. The <em>why</em> outweighs the <em>what</em>.</p>
+    </div>
+  </section>
+
+  <!-- 3 · ARCHITECTURE -->
+  <section class="panel" id="p-arch" aria-label="Architecture">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[architecture]</span> <span class="bar"></span> three layers, one anchor</p>
+      <h2 class="title reveal d1">An event-sourced<br>reasoning ledger.</h2>
+      <div class="grid cols-3">
+        <article class="card reveal d1"><div class="k">LAYER 1</div><h3>Ledger</h3><p>Immutable, content-addressed entries chained in a DAG. The source of truth. <code>id = sha256(content + parents)</code>.</p></article>
+        <article class="card reveal d2"><div class="k">LAYER 2</div><h3>State</h3><p>Pure reducers fold the stream into the current truth. Status is a projection, not a state machine. Corrections supersede.</p></article>
+        <article class="card reveal d3"><div class="k">LAYER 3</div><h3>Recall</h3><p>Relevance search where every hit is anchored to its source event. Lexical by default; dense embeddings opt-in.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · LAWS -->
+  <section class="panel" id="p-laws" aria-label="The seven laws">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[constitution]</span> <span class="bar"></span> seven non-negotiable laws</p>
+      <h2 class="title reveal d1">The invariants.</h2>
+      <div class="laws">
+        <div class="law reveal d1"><span class="n">01</span><span class="t"><b>No memory without an immutable anchor.</b> Every item carries its source event's hash. The anti-hallucination spine.</span></div>
+        <div class="law reveal d1"><span class="n">02</span><span class="t"><b>Append-only.</b> Corrections are new entries referencing the prior id. The past is never edited.</span></div>
+        <div class="law reveal d2"><span class="n">03</span><span class="t"><b>Deterministic content-addressing.</b> Same content + parents → same id, on any machine.</span></div>
+        <div class="law reveal d2"><span class="n">04</span><span class="t"><b>Provider-agnostic storage; deliver in the provider's format.</b></span></div>
+        <div class="law reveal d3"><span class="n">05</span><span class="t"><b>The <em>why</em> outweighs the <em>what</em>.</b></span></div>
+        <div class="law reveal d3"><span class="n">06</span><span class="t"><b>Budget is first-class.</b> Context fits the window; truncation is always explicit.</span></div>
+        <div class="law reveal d3"><span class="n">07</span><span class="t"><b>MCP-native.</b> The AI's interface is the product surface.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · INSTALL / LOOP -->
+  <section class="panel" id="p-loop" aria-label="The loop">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[the-loop]</span> <span class="bar"></span> read on connect · append on work</p>
+      <h2 class="title reveal d1">Do both sides.</h2>
+      <div class="steps">
+        <div class="step reveal d1"><span class="badge">CONNECT</span><h3>Load the context before acting</h3><p>Run <code>lifeline context</code> or read the MCP resource <code>lifeline://project/context</code>. It's the assembled current truth.</p></div>
+        <div class="step reveal d2"><span class="badge">WORK</span><h3>Append on each meaningful decision</h3><p><code>lifeline log</code> or <code>lifeline_append</code>. Reversed something? <code>lifeline_recontextualize</code> supersedes it by id.</p></div>
+      </div>
+      <pre class="code reveal d3"><span class="c"># in any project — each gets its own .lifeline/ledger.db</span>
+<span class="a">lifeline</span> log --kind decision --summary <span class="s">"DB: PostgreSQL"</span> --body <span class="s">"ACID required by audit."</span>
+<span class="a">lifeline</span> context        <span class="c"># what an AI reads</span>
+<span class="a">lifeline</span> verify         <span class="c"># the chain is tamper-evident → OK</span></pre>
+    </div>
+  </section>
+
+  <!-- 6 · BROWNFIELD BOOTSTRAP -->
+  <section class="panel" id="p-bootstrap" aria-label="Bootstrap in an existing project">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[#0070]</span> <span class="bar"></span> adopting mid-project</p>
+      <h2 class="title reveal d1">Already deep in<br>a project? Bootstrap it.</h2>
+      <p class="body reveal d2">Lifeline records the why <strong>going forward</strong> — it never guesses it from your code or git history. So on a live project, run <code>lifeline init</code> (or just connect your AI). It runs a one-time <strong>context checkpoint</strong>, human-in-the-loop:</p>
+      <div class="grid cols-3">
+        <article class="card reveal d1"><div class="k">01 · READ</div><h3>Your reasoning docs</h3><p>The AI reads README, ADRs, PR descriptions — never infers the why from code (Laws 1 &amp; 5).</p></article>
+        <article class="card reveal d2"><div class="k">02 · ASK</div><h3>3–7 why-questions</h3><p>Only the tacit reasoning that isn't written down anywhere. Short. Targeted.</p></article>
+        <article class="card reveal d3"><div class="k">03 · PROPOSE</div><h3>Granular entries</h3><p>1 bootstrap + N decisions + M open threads, as proposals. You approve the batch. Nothing enters unapproved.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · CONNECT / MCP -->
+  <section class="panel" id="p-mcp" aria-label="Connect it to your AI">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[mcp-native]</span> <span class="bar"></span> the interface is the product</p>
+      <h2 class="title reveal d1">Connect it to<br>your AI.</h2>
+      <p class="body reveal d2">Lifeline ships a local MCP server (<code>lifeline-mcp</code>). On connect, the AI gets the context resource + tools — and write tools are <strong>HITL</strong>: they propose, a human approves. <strong>Claude Code reads <code>.mcp.json</code> automatically.</strong></p>
+      <pre class="code reveal d3">{ <span class="s">"mcpServers"</span>: { <span class="s">"lifeline"</span>: {
+    <span class="s">"command"</span>: <span class="s">"lifeline-mcp"</span>,
+    <span class="s">"env"</span>: { <span class="s">"LIFELINE_DB"</span>: <span class="s">".lifeline/ledger.db"</span> } } } }</pre>
+    </div>
+  </section>
+
+  <!-- 8 · DOCS HUB + FOOTER -->
+  <section class="panel" id="p-docs" aria-label="Documentation">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[docs]</span> <span class="bar"></span> the whole manual</p>
+      <h2 class="title reveal d1">Read everything.</h2>
+      <div class="doclist">
+        <a class="doclink reveal d1" href="docs/getting-started.html"><span class="t">Getting started <span class="arrow">→</span></span><span class="d">Install, the loop, brownfield bootstrap.</span></a>
+        <a class="doclink reveal d1" href="docs/concepts.html"><span class="t">Concepts &amp; laws <span class="arrow">→</span></span><span class="d">Entries, the 3 layers, supersession.</span></a>
+        <a class="doclink reveal d2" href="docs/architecture.html"><span class="t">Architecture <span class="arrow">→</span></span><span class="d">Event model, reducers, projection.</span></a>
+        <a class="doclink reveal d2" href="docs/integration.html"><span class="t">Integration <span class="arrow">→</span></span><span class="d">Wire it into Claude, Cursor, Gemini.</span></a>
+        <a class="doclink reveal d3" href="docs/mcp.html"><span class="t">MCP &amp; remote <span class="arrow">→</span></span><span class="d">stdio, HTTP/SSE, OAuth resource server.</span></a>
+        <a class="doclink reveal d3" href="docs/cli.html"><span class="t">CLI reference <span class="arrow">→</span></span><span class="d">Every command, end to end.</span></a>
+      </div>
+      <footer class="foot reveal d3">
+        <div>MIT licensed · open-source core · cloud is open-core. Built by dogfooding from entry #0001.</div>
+        <div><a href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub</a> · <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a> · <a href="llms.txt">llms.txt</a></div>
+      </footer>
+    </div>
+  </section>
+
+</main>
+
+<nav class="dots" id="dots" aria-label="Section navigation"></nav>
+<div class="scroll-hint" id="hint"><span class="key">scroll</span> ↓ to travel the lifeline →</div>
+
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

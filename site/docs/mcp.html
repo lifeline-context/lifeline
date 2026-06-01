@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MCP & remote — Lifeline docs</title>
+<meta name="description" content="The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.">
+<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/mcp.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="MCP & remote — Lifeline docs">
+<meta property="og:description" content="The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.">
+<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/mcp.html">
+<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"MCP & remote","description":"The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.","url":"https://jessianmart.github.io/lifeline/docs/mcp.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html" class="current">MCP & remote</a></aside>
+  <main class="docs-main">
+    <h1>MCP & remote</h1>
+    <p class="docs-lead">The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.</p>
+<p>The <strong>same</strong> MCP surface as local mode, served over HTTP — so an AI can connect from outside
+(not just via stdio). Identical resources/tools, write <strong>stays HITL</strong>:</p>
+<ul>
+<li><strong>Read:</strong> resource <code>lifeline://project/context</code> + tool <code>lifeline_recall</code>.</li>
+<li><strong>Propose (HITL):</strong> tools <code>lifeline_append</code> / <code>lifeline_recontextualize</code> → enter as
+  PENDING; a human approves (<code>lifeline review</code>/<code>approve</code>) before entering the line.</li>
+</ul>
+<p>Backend chosen by env (same factory as the CLI): local SQLite <strong>or</strong> Supabase (cloud).</p>
+<h2>Run</h2>
+<pre><code class="language-bash"># cloud (multi-tenant via RLS) — requires the schema applied (run: lifeline schema)
+export LIFELINE_STORE=supabase
+export SUPABASE_URL=https://rzphncyjrilhwpuemrcl.supabase.co
+export SUPABASE_KEY=&lt;project apikey&gt;      # don't commit — use .env
+export SUPABASE_TOKEN=&lt;JWT access token&gt;  # write under RLS
+export LIFELINE_MCP_HOST=0.0.0.0 LIFELINE_MCP_PORT=8000
+lifeline-mcp-remote
+</code></pre>
+<ul>
+<li>Transport: <code>LIFELINE_MCP_TRANSPORT=sse</code> (default) → endpoints <code>GET /sse</code> + <code>POST /messages</code>;
+  or <code>streamable-http</code> → <code>/mcp</code>.</li>
+<li>Local backend (no cloud): omit <code>LIFELINE_STORE</code> → SQLite (<code>LIFELINE_DB</code>).</li>
+<li>Line: <code>LIFELINE_LINE=&lt;name&gt;</code> (default <code>ledger</code>).</li>
+<li>Behind a tunnel/proxy/deploy, the public Host is allowed by default; pin it with
+  <code>LIFELINE_MCP_ALLOWED_HOSTS=host1,host2</code> (#0054).</li>
+</ul>
+<h2>Deploy (zero-cost, honest)</h2>
+<p>It's a <strong>Python</strong> server (FastMCP + uvicorn/starlette). It does <strong>NOT</strong> run on Supabase Edge
+Functions (those are Deno/TypeScript). Zero-/low-cost routes:</p>
+<ul>
+<li><strong>Render / Railway / Fly.io</strong> (free/cheap tier) — a single <code>lifeline-mcp-remote</code> process with the
+  env vars; Supabase remains the store. Step-by-step in <code>docs/DEPLOY.md</code>.</li>
+<li>Your own <strong>container</strong> (<code>pip install lifeline-context[cloud]</code> + the env vars; a <code>Dockerfile</code> ships).</li>
+<li>Dev/local exposed via tunnel (cloudflared/ngrok) for quick testing.</li>
+</ul>
+<p>Supabase stays free as the <strong>store</strong> (Postgres+RLS); the host only runs the MCP process.</p>
+<h2>OAuth / multi-tenant (Resource Server) — <code>LIFELINE_OAUTH=1</code></h2>
+<p>Turn it on with <code>LIFELINE_OAUTH=1</code> (+ <code>LIFELINE_STORE=supabase</code> + <code>SUPABASE_URL</code>/<code>KEY</code>). The server
+becomes an <strong>OAuth 2.1 Resource Server</strong>:</p>
+<ul>
+<li>Requires <code>Authorization: Bearer &lt;user JWT&gt;</code> on every request; validates against Supabase
+  (<code>/auth/v1/user</code>). Invalid/expired → <strong>401</strong>.</li>
+<li>Scopes the store by <strong>that user's JWT</strong> → real multi-tenant via RLS (<code>owner=auth.uid()</code>):
+  each user only sees/proposes in their own line. (Without <code>LIFELINE_OAUTH</code>, it's single-tenant via
+  the environment's <code>SUPABASE_TOKEN</code>.)</li>
+<li>Publishes the <strong>discovery</strong> at <code>GET /.well-known/oauth-protected-resource</code> (RFC 9728), pointing
+  to the Authorization Server (<code>LIFELINE_OAUTH_ISSUER</code>, default <code>…/auth/v1</code>).</li>
+</ul>
+<pre><code class="language-bash">export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
+export SUPABASE_URL=… SUPABASE_KEY=&lt;apikey&gt;
+export LIFELINE_MCP_PUBLIC_URL=https://your-host   # public url (goes into the metadata)
+lifeline-mcp-remote
+</code></pre>
+<p><strong>Connect right now via the CLIs (NOT via the web apps):</strong> <strong>Claude Code</strong> and the <strong>Gemini CLI</strong>
+accept a token by header — e.g.: <code>claude mcp add --transport http lifeline https://your-host/mcp --header "Authorization: Bearer &lt;jwt&gt;"</code>.
+⚠️ <strong>claude.ai web and ChatGPT do NOT accept a static Bearer</strong> (<code>static_bearer</code> not supported);
+on the hosted apps it's <strong>authless</strong> or <strong>OAuth</strong> — see below.</p>
+<h2>Connecting on the web apps (claude.ai / ChatGPT) — what the research confirmed (Jun/2026)</h2>
+<ul>
+<li><strong>claude.ai accepts an AUTHLESS connector</strong> (<code>auth: "none"</code>) → "connect in one click" with <strong>no
+  AS at all</strong> — but <strong>without per-user identity</strong> (good for single-tenant / a shared line, not
+  multi-tenant). Great for <strong>validating</strong> the value before investing in the AS.</li>
+<li><strong>Multi-tenant (each user sees their own) requires an Authorization Server</strong> (authorize+token+PKCE+
+  metadata). <strong>BUT DCR is NOT mandatory:</strong> claude.ai accepts <strong>CIMD</strong> or a <strong>pre-registered
+  client</strong> (creds via <code>mcp-review@anthropic.com</code>); ChatGPT accepts CIMD/predefined clients.
+  DCR only removes the manual setup.</li>
+<li><strong>A static Bearer doesn't work</strong> on the web apps (only on the CLIs). ChatGPT requires <strong>Developer
+  Mode</strong> (paid plans; the free tier doesn't have it).</li>
+<li><strong>Zero-cost AS with DCR (when you build it):</strong> Cloudflare <code>workers-oauth-provider</code> (OSS, free
+  Workers), Keycloak (OSS, self-host), Stytch (free ~10K MAU). <strong>Integration gotcha:</strong> the AS must
+  yield an identity compatible with Supabase's RLS (<code>auth.uid()</code>) — the cleanest way is for the AS
+  to use Supabase Auth as the login, or to re-plug the RS into the provider's JWKS.</li>
+</ul>
+<blockquote>
+<p>Summary: the <strong>Resource Server</strong> (validation + metadata + multi-tenant) is ready and tested.
+For the hosted one-click — <strong>authless validates without an AS</strong>; multi-tenant <strong>needs an AS, not
+DCR</strong>. In all routes, <strong>our RS doesn't change</strong> — it already validates the JWT and scopes per user.
+(Research anchored in line #0052; next step for the AS = #0049.)</p>
+</blockquote>
+<h2>Security</h2>
+<p>Credentials only via the environment (<code>.env</code>, gitignored) — never in a commit. Write is always HITL:
+the remote AI <strong>proposes</strong>, the human curates. The server does not expose <code>approve</code>/<code>reject</code> (curation
+is local/trusted), nor the git commands (<code>push/pull/clone</code>).</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/docs/MCP_REMOTE.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

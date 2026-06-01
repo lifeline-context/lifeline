@@ -32,3 +32,6 @@ htmlcov/
 
 # rev0 arquivada — fica no disco e no HISTÓRICO do git, fora da árvore versionada (#0058)
 _legacy/
+
+# config local do Claude Code (helper de preview etc.) — fora do repo
+.claude/
