@@ -5,7 +5,7 @@
 
 🌐 **Português** · [English](README.md)
 
-![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-75%20passing-brightgreen) ![license](https://img.shields.io/badge/license-MIT-green)
+[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-75%20passing-brightgreen) ![license](https://img.shields.io/badge/license-MIT-green)
 
 É, em uma frase, **o "git do raciocínio"**: assim como o git versiona *o quê* mudou no
 código, o Lifeline versiona *por quê* — decisões, reversões, incidentes, o estado atual —

@@ -1174,3 +1174,17 @@ Fecha o EN do repo pro lancamento global. 7 deep docs traduzidos PT->EN (paralel
 
 **Body**:
 Diagnostico: o ci.yml fazia 'pip install -e .[cloud]' (so deps de runtime: pydantic/aiosqlite/mcp/httpx) e depois 'python -m pytest' — mas pytest NAO e dependencia do pacote, entao o step Testes falhava em todo push (vermelho desde que o CI foi adicionado, #0050). Reproduzido em venv limpa: pkg+pytest (sem pytest-asyncio) -> 75 passam (mcp 1.27.2 do PyPI tem todas as APIs usadas). Fix: (1) pyproject ganha optional-dependency dev=['pytest>=8']; (2) CI instala .[cloud,dev]; (3) step de integridade melhorado: 'lifeline migrate --from LIFELINE.md' + 'lifeline verify' (antes verificava um .db vazio -> 0 entradas trivial; agora reconstroi as 63 entradas da view versionada e verifica a cadeia REAL). Pacote em si nunca esteve quebrado (install/import/scripts provados); era so o CI sem pytest.
+
+### #0065 — 2026-06-01T16:42:51.725619+00:00 — release
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: release
+- **summary**: lifeline-context 0.1.0 PUBLICADO no PyPI via OIDC (Trusted Publishing) — pip install funciona pro mundo
+- **parents**: 20c1fe2892ccc34fc3b7901cb5bf072d34377b2ee598199d04835a7cc504497c
+- **id**: c0a3d288f31298c19901a02d8f067dab14af17d1b496e4fda985411fdec5ebbf
+
+**Body**:
+Primeiro release publico. Disparado por tag v0.1.0 -> workflow publish.yml (que ganhou gatilho de tag) -> build + pypa/gh-action-pypi-publish via OIDC, SEM token (o dono submeteu o Trusted Publisher no PyPI; eu fiz todo o resto). Run: SUCCESS. Verificado ao vivo: venv limpa, 'pip install lifeline-context' (do PyPI) -> importa v0.1.0, comando 'lifeline' OK, 3 console scripts (lifeline/lifeline-mcp/lifeline-mcp-remote). Tambem: CI ficou verde (#0064, faltava pytest). Badge do PyPI adicionado aos READMEs. Impacto: o maior atrito de instalacao morreu — os snippets de conexao (Claude Code/Cursor/Gemini) agora funcionam em qualquer maquina com lifeline-mcp no PATH. Releases futuros: bump de versao + tag vX.Y.Z (ou Release) -> publica sozinho. Falta do hibrido: AS (#0049) pros conectores web.
