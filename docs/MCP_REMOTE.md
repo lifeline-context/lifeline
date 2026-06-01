@@ -58,20 +58,30 @@ export LIFELINE_MCP_PUBLIC_URL=https://seu-host   # url pública (vai no metadat
 lifeline-mcp-remote
 ```
 
-**Conectar JÁ (com um JWT em mãos):** clientes que aceitam header — ex.:
-`claude mcp add --transport sse lifeline https://seu-host/sse --header "Authorization: Bearer <jwt>"`.
+**Conectar agora pelos CLIs (NÃO pelos apps web):** o **Claude Code** e o **Gemini CLI** aceitam
+token por header — ex.: `claude mcp add --transport sse lifeline https://seu-host/sse --header "Authorization: Bearer <jwt>"`.
+⚠️ **O claude.ai web e o ChatGPT NÃO aceitam Bearer estático** (`static_bearer` não suportado);
+nos apps hospedados é **authless** ou **OAuth** — ver abaixo.
 
-## O que ainda é validação-ao-vivo (sem overclaim)
+## Conectar nos apps web (claude.ai / ChatGPT) — o que a pesquisa confirmou (jun/2026)
 
-O **Resource Server** acima (validação de token + metadata + multi-tenant) está pronto e
-**testado**. Falta o lado **Authorization Server** que os conectores hospedados
-(claude.ai/ChatGPT/Gemini) dirigem sozinhos: **Dynamic Client Registration + authorization-code
-(PKCE)**. O **Supabase Auth não é um AS OAuth2 genérico com DCR** — então o "clicar conectar"
-no claude.ai precisa de uma das rotas, a validar ao vivo:
+- **claude.ai aceita conector AUTHLESS** (`auth: "none"`) → dá pra ter "conectar em um clique"
+  **sem AS nenhum** — mas **sem identidade por usuário** (serve p/ single-tenant / line
+  compartilhada, não p/ multi-tenant). Ótimo pra **validar** o valor antes de investir no AS.
+- **Multi-tenant (cada um vê o seu) exige um Authorization Server** (authorize+token+PKCE+
+  metadata). **MAS DCR NÃO é obrigatório:** o claude.ai aceita **CIMD** ou **client
+  pré-registrado** (creds via `mcp-review@anthropic.com`); o ChatGPT aceita CIMD/clients
+  predefinidos. DCR só elimina o setup manual.
+- **Bearer estático não serve** nos apps web (só nos CLIs). ChatGPT exige **Developer Mode**
+  (planos pagos; o free não tem).
+- **AS zero-custo com DCR (quando for construir):** Cloudflare `workers-oauth-provider` (OSS,
+  free Workers), Keycloak (OSS, self-host), Stytch (free ~10K MAU). **Pegadinha de integração:**
+  o AS precisa render identidade compatível com a RLS do Supabase (`auth.uid()`) — o mais limpo é
+  o AS usar o Supabase Auth como login, ou re-plugar o RS no JWKS do provedor.
 
-- um **AS shim** (endpoints `/authorize`,`/token`,`/register`) na frente do Supabase Auth, ou
-- um provedor com DCR (Auth0/WorkOS/Keycloak) emitindo o JWT que o nosso RS valida, ou
-- aguardar suporte a DCR no Supabase.
+> Resumo: o **Resource Server** (validação + metadata + multi-tenant) está pronto e testado.
+> Pro one-click hospedado — **authless valida sem AS**; multi-tenant **precisa de AS, não de DCR**.
+> (Pesquisa ancorada na line #0052; próximo passo do AS = #0049.)
 
 Em todos, **o nosso RS não muda** — ele já valida o JWT e escopa por usuário.
 
