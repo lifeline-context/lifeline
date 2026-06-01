@@ -10,6 +10,23 @@ from typing import Optional
 
 from lifeline.state import StateEngine
 
+# Estado-vazio (brownfield): quando a line não tem identidade nem decisões, o contexto montado
+# entrega um CALL-TO-ACTION de bootstrap — o gatilho que a IA lê no connect para fazer um
+# checkpoint inicial via HITL. O *porquê* NUNCA é inferido do código (Leis #1/#5); vem dos
+# artefatos de raciocínio do humano + uma entrevista curta, e entra como PROPOSTA (o humano aprova).
+BOOTSTRAP_HEADER = "## Bootstrap necessário — line vazia (checkpoint de contexto)"
+BOOTSTRAP_PROTOCOL = [
+    "Este projeto ainda não registrou contexto. Para cumprir o Time-to-Context → 0, faça AGORA "
+    "um checkpoint inicial — via HITL (você PROPÕE, o humano aprova):",
+    "1. LEIA os artefatos de raciocínio já escritos pelo humano (README, ADRs, descrições de PR, "
+    "design docs). NÃO infira o *porquê* a partir do código/diff (Leis #1 e #5).",
+    "2. PERGUNTE ao humano de 3 a 7 perguntas curtas, só sobre o *porquê* tácito que não está "
+    "escrito (por que esta stack? qual decisão está em vigor? qual thread está aberta?).",
+    "3. PROPONHA o checkpoint como entradas GRANULARES (não um bloco único): 1 `bootstrap` "
+    "(identidade do projeto) + N `decision` (cada uma superseível depois) + M `open` (threads). "
+    "O humano aprova o lote — nada entra sem aprovação.",
+]
+
 
 class ContextAssembler:
     def __init__(self, state_engine: StateEngine, budget_chars: int = 8000, why_chars: int = 320):
@@ -35,6 +52,11 @@ class ContextAssembler:
         if contributors:
             header.append("_Contribuíram: "
                           + ", ".join(f"{k} ({v})" for k, v in sorted(contributors.items())) + "_")
+
+        # --- bootstrap (line vazia: nem identidade nem decisões) — CTA do checkpoint inicial ---
+        bootstrap_block = []
+        if not st.get("project") and not st.get("decisions"):
+            bootstrap_block = [BOOTSTRAP_HEADER] + BOOTSTRAP_PROTOCOL
 
         # --- relevante para a tarefa (se query + recall — Camada 3) ---
         relevant_block = []
@@ -75,6 +97,8 @@ class ContextAssembler:
             return "\n".join(parts)
 
         fixed = list(header) + [""]
+        if bootstrap_block:
+            fixed += bootstrap_block + [""]
         if relevant_block:
             fixed += relevant_block + [""]
         if open_block:
@@ -95,6 +119,8 @@ class ContextAssembler:
         dec_lines += list(reversed(kept_rev))
 
         out = list(header) + [""]
+        if bootstrap_block:
+            out += bootstrap_block + [""]
         if relevant_block:
             out += relevant_block + [""]
         if open_block:

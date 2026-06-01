@@ -1,5 +1,6 @@
 """CLI do Lifeline — o store é a fonte de verdade; a LIFELINE.md é uma view gerada.
 
+    lifeline init                                           # projeto em andamento: mostra o protocolo de bootstrap (checkpoint HITL)
     lifeline log --kind decision --summary "…" --body "…"   # humano: anexa direto (você é o aprovador)
     lifeline propose --kind … --summary … --body …          # propõe (HITL) — entra pendente, não na line
     lifeline review                                         # lista pendências (curadoria)
@@ -23,7 +24,7 @@ from lifeline.staging import SQLiteStagingStore
 from lifeline.ingest import ingest_markdown, _parse_ts
 from lifeline.projection import render_ledger_markdown
 from lifeline.state import StateEngine
-from lifeline.context import ContextAssembler
+from lifeline.context import ContextAssembler, BOOTSTRAP_HEADER, BOOTSTRAP_PROTOCOL
 
 DEFAULT_DB = os.environ.get("LIFELINE_DB", os.path.join(".lifeline", "ledger.db"))
 DEFAULT_OUT = "LIFELINE.md"
@@ -219,6 +220,16 @@ def cmd_schema() -> str:
     return files("lifeline").joinpath("schema.sql").read_text(encoding="utf-8")
 
 
+async def cmd_init(db, out):
+    """Inicializa a line (idempotente) e diz se já há contexto registrado. NÃO cria entradas:
+    o bootstrap é HITL — a IA/humano PROPÕE e o humano aprova (anti-sujeira + nunca inferir)."""
+    store = await _open(db)
+    st = await StateEngine(store).reduce()
+    bootstrapped = bool(st.get("project")) or bool(st.get("decisions"))
+    await _write_view(store, out)                    # garante .lifeline/ + a view existindo
+    return bootstrapped, st.get("entry_count", 0)
+
+
 async def cmd_context(db, budget, query=None):
     store = await _open(db)
     recall = None
@@ -302,6 +313,8 @@ def main(argv=None) -> int:
         if with_out:
             sp.add_argument("--out", default=DEFAULT_OUT)
 
+    pini = sub.add_parser("init", help="inicializa a line e mostra o protocolo de bootstrap (checkpoint HITL)")
+    pini.add_argument("--out", default=DEFAULT_OUT)
     _entry_args(sub.add_parser("log", help="humano: anexa direto na line (você é o aprovador)"), with_out=True)
     _entry_args(sub.add_parser("propose", help="propõe uma entrada (HITL) — fica pendente até aprovar"))
 
@@ -351,6 +364,18 @@ def main(argv=None) -> int:
 
 
 def _dispatch(args, db, out) -> int:
+    if args.cmd == "init":
+        bootstrapped, n = asyncio.run(cmd_init(db, out))
+        if bootstrapped:
+            print(f"Esta line já tem contexto ({n} entradas) — nada a fazer. Veja: lifeline context")
+        else:
+            print(BOOTSTRAP_HEADER.replace("## ", "").strip())
+            for line in BOOTSTRAP_PROTOCOL:
+                print(line)
+            print("\nPropor:  lifeline propose --kind bootstrap --summary \"…\" --body \"o porquê\"")
+            print("Aprovar: lifeline review   →   lifeline approve all")
+        return 0
+
     if args.cmd == "log":
         e, inserted, n = asyncio.run(cmd_log(
             db, out, args.kind, args.summary, args.body, args.author, args.agent,

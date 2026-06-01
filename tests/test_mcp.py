@@ -32,6 +32,13 @@ class TestMCPContract(unittest.IsolatedAsyncioTestCase):
         paths = {getattr(r, "path", "") for r in mcp.streamable_http_app().routes}
         self.assertIn("/healthz", paths)
 
+    def test_instructions_cover_bootstrap(self):
+        # AI-first: a IA que conecta a uma line vazia precisa saber fazer o checkpoint HITL
+        text = srv._INSTRUCTIONS
+        self.assertIn("BOOTSTRAP", text.upper())
+        self.assertIn("granulares", text.lower())          # entradas granulares (não bloco único)
+        self.assertIn("nunca infira", text.lower())        # guardrail: não inferir do código
+
 
 class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
     def setUp(self):

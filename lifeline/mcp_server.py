@@ -36,7 +36,12 @@ _AUTHOR = os.environ.get("LIFELINE_AUTHOR", "mcp")
 _INSTRUCTIONS = (
     "Lifeline é o ledger de RACIOCÍNIO deste projeto (o *porquê*), append-only e "
     "content-addressed. AO CONECTAR: leia PRIMEIRO o resource `lifeline://project/context` — "
-    "é a verdade montada (o quê / por quê / decidido / próximo); aja a partir dela. Use "
+    "é a verdade montada (o quê / por quê / decidido / próximo); aja a partir dela. SE o "
+    "contexto vier VAZIO (line nova / projeto em andamento sem histórico): ofereça-se para "
+    "fazer o BOOTSTRAP — leia os artefatos de raciocínio do repo (README, ADRs, descrições de "
+    "PR, design docs), faça 3 a 7 perguntas do *porquê* ao humano, e PROPONHA o checkpoint como "
+    "entradas GRANULARES (1 `bootstrap` + N `decision` + M `open`) via `lifeline_append` (HITL). "
+    "NUNCA infira o *porquê* a partir do código/diff. Use "
     "`lifeline_recall(query)` para 'já decidimos algo sobre X?'. AO TRABALHAR: a cada "
     "decisão/feature/fix/incidente com significado, PROPONHA via `lifeline_append(kind, summary, "
     "body)` — o body é o *porquê* (obrigatório). Reverteu/atualizou algo: "

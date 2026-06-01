@@ -59,6 +59,13 @@ lifeline verify                        # confere a integridade da cadeia
 A `LIFELINE.md` se regenera a cada `log` — **não edite à mão**. Num clone novo sem
 `.lifeline/`, reconstrua o cache com `lifeline migrate --from LIFELINE.md`.
 
+**Adotando no meio do projeto (brownfield)?** O Lifeline registra o *porquê* **para frente** — não
+o reconstrói a partir do código ou do histórico do git. Então instalar num projeto em andamento começa
+**vazio**. Rode `lifeline init` (ou só conecte sua IA — o contexto vazio imprime o mesmo call-to-action):
+ele conduz um **checkpoint de bootstrap** único — a IA lê seus docs de raciocínio (README, ADRs,
+descrições de PR), faz algumas perguntas do *porquê*, e **propõe** entradas granulares (HITL) que você
+aprova. Depois disso, o loop corre para frente. O *porquê* nunca é inferido do código (Leis #1/#5).
+
 ## O loop (faça os dois lados)
 
 - **Ao conectar:** carregue o contexto (`lifeline context` ou o resource MCP) antes de agir.

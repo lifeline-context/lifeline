@@ -1244,3 +1244,17 @@ Fecha o thread aberto #0029 ('plugar embedder semantico denso'). Implementado Se
 
 **Body**:
 Terceiro release. Tag v0.2.0 -> publish.yml (OIDC) -> SUCCESS. Verificado: pip install lifeline-context==0.2.0 do PyPI OK, versao 0.2.0, e a API do #0029 embarca (from lifeline import make_embedder, SentenceTransformerEmbedder; make_embedder() default = LexicalEmbedder). #0029 fechado na line (#0068). Estado: OSS ~9.5-10 (core 100%, integracao 84%, PyPI, docs bilingues, higiene completa, AI-first, recall semantico opt-in). Unico item aberto: #0049 (Authorization Server) — peca do cloud pago/conector web, nao qualidade do OSS.
+
+### #0070 — 2026-06-01T21:24:06.692912+00:00 — feature
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: feature
+- **summary**: Bootstrap de brownfield: checkpoint de contexto HITL no connect a uma line vazia
+- **parents**: afd2abde1058679f8882ca0401fdd70dc928f30133c1075edb2859176e775581
+- **id**: 75198d49c3431b07ce671717513409d7ebdf8fa73c5bda6ce72129ea1200ff2c
+
+**Body**:
+PORQUE: o cold-start e o gargalo de ativacao nº1 — quase ninguem adota o Lifeline desde o #0001; o caso dominante e instalar no MEIO do projeto, e ai a line comeca VAZIA. O Lifeline registra o porque PARA FRENTE; nao reconstroi o passado do codigo/git (non-goal). Sem onboarding, o primeiro connect mostra contexto vazio e a pessoa churna antes do valor (o pitch e TTC->0, entao um connect vazio e um problema existencial de ativacao). O QUE: (1) context.py — quando a line nao tem identidade nem decisoes, o contexto montado lidera com um CTA de bootstrap (o gatilho que a IA le no connect); (2) _INSTRUCTIONS do MCP — a IA que conecta a uma line vazia sabe se oferecer pra fazer o checkpoint; (3) novo comando 'lifeline init' (ativacao CLI-first) que inicializa a line e imprime o protocolo. DESIGN (validado com o humano): nao e input unico — e rascunho a partir dos artefatos de raciocinio JA escritos (README/ADR/PR) + entrevista curta (3-7 perguntas do porque tacito) -> entradas GRANULARES (1 bootstrap + N decision + M open, cada uma superseivel depois) -> aprovacao em lote. GUARDRAILS (respeitam a constituicao): tudo entra como PROPOSTA HITL (anti-sujeira); o porque NUNCA e inferido do codigo/diff (so de artefatos de raciocinio humanos) senao fura as Leis #1 (ancora) e #5 (porque>quê). A fundacao HITL (propose/review/approve) ja existia — o delta foi so gatilho+orquestracao. 6 testes novos (context vazio mostra CTA / populado nao mostra / nota solta ainda conta como vazia; init nos dois estados; _INSTRUCTIONS cobre bootstrap). Suite 90 passed/6 skipped. Decisao de sequencia: anuncio da 0.2.0 fica DEPOIS deste fix — sem ativacao, o anuncio so gera instalacoes que esfriam.

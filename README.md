@@ -59,6 +59,13 @@ lifeline verify                        # checks the chain's integrity
 `LIFELINE.md` regenerates on every `log` — **don't hand-edit it**. On a fresh clone without
 `.lifeline/`, rebuild the cache with `lifeline migrate --from LIFELINE.md`.
 
+**Adopting mid-project (brownfield)?** Lifeline records the *why* **going forward** — it does not
+reconstruct it from your code or git history. So a fresh install on a live project starts **empty**.
+Run `lifeline init` (or just connect your AI — the empty context prints the same call-to-action): it
+walks you through a one-time **bootstrap checkpoint** — your AI reads your existing reasoning docs
+(README, ADRs, PR descriptions), asks a few *why* questions, and **proposes** granular entries (HITL)
+that you approve. After that, the loop runs forward. The *why* is never inferred from code (Laws #1/#5).
+
 ## Connect it to your AI (zero config in Claude Code)
 
 Lifeline ships a local **MCP server** (`lifeline-mcp`, stdio). On connect, the AI gets the
@@ -133,6 +140,7 @@ Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 | Command | What it does |
 |---|---|
+| `lifeline init` | **adopting mid-project (brownfield):** initialize the line + print the bootstrap protocol (a HITL context checkpoint) |
 | `lifeline log --kind … --summary … [--body … --parents id,…]` | **human:** append directly to the line (you're the approver) + regenerate the view |
 | `lifeline propose --kind … --summary … --body …` | propose an entry (**HITL**) — stays pending, not in the line |
 | `lifeline review` · `approve <pid\|all>` · `reject <pid\|all>` | HITL curation: list / seal / discard |

@@ -1,4 +1,6 @@
 """Prova a CLI (o caminho de append do novo fluxo): log encadeia, regenera, e verifica."""
+import contextlib
+import io
 import os
 import shutil
 import sys
@@ -112,6 +114,30 @@ class TestCLIMain(unittest.TestCase):
         self.assertTrue(os.path.exists(self.out))
         self.assertEqual(cli.main(["--db", self.db, "verify"]), 0)   # cadeia integra
         self.assertEqual(cli.main(["schema"]), 0)                     # imprime o schema empacotado
+
+    def _run(self, argv):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = cli.main(argv)
+        return rc, buf.getvalue()
+
+    def test_main_init_empty_prints_protocol(self):
+        # projeto em andamento sem histórico → init inicializa a line e imprime o protocolo HITL
+        rc, out = self._run(["--db", self.db, "init", "--out", self.out])
+        self.assertEqual(rc, 0)
+        self.assertTrue(os.path.exists(self.out))          # a view foi criada
+        self.assertIn("checkpoint", out.lower())           # protocolo de bootstrap impresso
+        self.assertIn("GRANULARES", out)
+        self.assertIn("propose", out)                       # aponta o próximo comando (HITL)
+
+    def test_main_init_bootstrapped_says_nothing_to_do(self):
+        # line já com contexto → init não repete o protocolo
+        self._run(["--db", self.db, "log", "--out", self.out,
+                   "--kind", "bootstrap", "--summary", "Funda X", "--body", "porquê"])
+        rc, out = self._run(["--db", self.db, "init", "--out", self.out])
+        self.assertEqual(rc, 0)
+        self.assertIn("já tem contexto", out)
+        self.assertNotIn("GRANULARES", out)
 
     def test_main_error_net_returns_1(self):
         # erro inesperado (migrate de arquivo inexistente) → mensagem amigavel + exit 1, sem traceback

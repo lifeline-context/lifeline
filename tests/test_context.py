@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lifeline.entry import Entry            # noqa: E402
 from lifeline.store import SQLiteEventStore  # noqa: E402
 from lifeline.state import StateEngine       # noqa: E402
-from lifeline.context import ContextAssembler  # noqa: E402
+from lifeline.context import ContextAssembler, BOOTSTRAP_HEADER  # noqa: E402
 
 
 class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
@@ -83,6 +83,30 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         text = await ContextAssembler(StateEngine(empty)).assemble()
         self.assertIn("sem entrada bootstrap", text)
         self.assertIn("0 entradas", text)
+
+    async def test_empty_ledger_shows_bootstrap_cta(self):
+        # brownfield: line vazia → o contexto entrega o CTA de bootstrap (gatilho do checkpoint)
+        empty = SQLiteEventStore(os.path.join(self.dir, "fresh.db"))
+        await empty.initialize()
+        text = await ContextAssembler(StateEngine(empty)).assemble()
+        self.assertIn(BOOTSTRAP_HEADER, text)            # bloco de bootstrap presente
+        self.assertIn("GRANULARES", text)                # protocolo: entradas granulares (não bloco único)
+        self.assertIn("NÃO infira", text)                # guardrail: nunca inferir do código (Leis #1/#5)
+        self.assertIn("HITL", text)                      # entra como proposta; humano aprova
+
+    async def test_bootstrap_cta_absent_when_populated(self):
+        # já há identidade + decisões → o CTA NÃO aparece (não polui quem já tem contexto)
+        text = await ContextAssembler(self.engine).assemble()
+        self.assertNotIn(BOOTSTRAP_HEADER, text)
+
+    async def test_bootstrap_cta_persists_with_only_a_stray_note(self):
+        # nota solta, sem bootstrap nem decisão → ainda conta como "vazia" p/ fins de contexto
+        only_note = SQLiteEventStore(os.path.join(self.dir, "note.db"))
+        await only_note.initialize()
+        await only_note.append(Entry(author="a", agent="x", provider="p", model="m",
+                                     kind="note", summary="conversa solta"))
+        text = await ContextAssembler(StateEngine(only_note)).assemble()
+        self.assertIn(BOOTSTRAP_HEADER, text)
 
 
 if __name__ == "__main__":
