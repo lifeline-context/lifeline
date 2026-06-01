@@ -1062,3 +1062,17 @@ Decisao do dono: Render free agora (validar, /usr/bin/bash), Railway depois (qua
 
 **Body**:
 Deploy do dono no Render free (lifeline-cnah.onrender.com) via Blueprint. Verificado por mim daqui (URL HTTPS publica, sem o problema de porta 7844 do tunel): /healthz -> 200 'ok'; /mcp -> initialize 200 + handshake completo expondo TOOLS [lifeline_append, lifeline_recontextualize, lifeline_recall] e RESOURCE [lifeline://project/context]. Authless (validacao, single-tenant) servindo a propria LIFELINE.md. Cold-start ~1 min (free dorme apos 15 min). Falta o dono registrar a URL .../mcp como Custom Connector no claude.ai (Authentication: None) e sentir o valor. Proximo da viabilidade: multi-tenant via AS (#0049) + Railway/Render-paid sempre-on quando aprovar.
+
+### #0057 — 2026-06-01T14:42:16.841419+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: CORRECAO #0052: claude.ai WEB exige OAuth — authless NAO conecta no app web (so nos CLIs)
+- **parents**: a8258171fffb61bf513abc5492079e7d61d6e86b3a4409359e241a38b8f2856d
+- **id**: 029ac2e20bb9cbf0ca297118f304a93bb46b934213c50719d393dffb8f565859
+
+**Body**:
+Teste ao vivo do dono: adicionar o conector authless (https://lifeline-cnah.onrender.com/mcp) no claude.ai web falhou com 'Couldn't register with sign-in service' (ofid_75cff0ea31cc4203). Diagnostico verificado daqui: o servidor authless retorna 200 no /mcp e NAO tem /.well-known/oauth-* (todos 404); mesmo assim o claude.ai WEB tenta registrar um client OAuth e, sem AS, nao consegue. A pesquisa #0052 concluiu 'authless valida no claude.ai' — CORRIGE-SE: isso vale pros CLIs (Claude Code/Gemini CLI aceitam URL/authless direto), NAO pro app web, cujo fluxo de Custom Connector forca OAuth (DCR/CIMD/client pre-registrado). Consequencia pratica: (a) validar o valor JA via Claude Code 'claude mcp add --transport http lifeline <url>/mcp' (authless ok); (b) pro claude.ai WEB, o AS (#0049) deixa de ser opcional — e o pre-requisito. Deploy em si esta 100% (healthz/mcp/tools/resource verificados).
