@@ -1048,3 +1048,17 @@ Achado testando o conector authless por tunel cloudflare: o FastMCP, por padrao,
 
 **Body**:
 Decisao do dono: Render free agora (validar, /usr/bin/bash), Railway depois (quando aprovar conexao+viabilidade). Render free usa o Dockerfile como esta, dorme apos 15 min (cold start ~1 min) e nao exige cartao. Adicionado: (1) rota GET /healthz -> 200 'ok' (registrada via _register em qualquer instancia; health check de Render/Railway + checagem no navegador; smoke local confirmou 200); (2) render.yaml (Blueprint: web/docker/free/healthCheckPath=/healthz/autoDeploy; comentario p/ promover a starter  e p/ envs OAuth multi-tenant futuras); (3) DEPLOY.md Render-first com Blueprint+manual, nota de cold-start, e a licao do tunel (rede bloqueia porta 7844 do cloudflared — deploy resolve). Suite 76/76 (+1 teste: rota /healthz registrada; +5 live skip). Conta/cliques sao do dono (nao crio conta). Ancorado #0055.
+
+### #0056 — 2026-06-01T14:37:23.209485+00:00 — milestone
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: milestone
+- **summary**: Conector MCP no ar e verificado no Render (free): claude.ai pode conectar (authless) — primeira nuvem viva
+- **parents**: f72b1e1ac0c6b029bc827cedb2cf74ab11aa68a929659d15c06ba835a9f6fdec
+- **id**: a8258171fffb61bf513abc5492079e7d61d6e86b3a4409359e241a38b8f2856d
+
+**Body**:
+Deploy do dono no Render free (lifeline-cnah.onrender.com) via Blueprint. Verificado por mim daqui (URL HTTPS publica, sem o problema de porta 7844 do tunel): /healthz -> 200 'ok'; /mcp -> initialize 200 + handshake completo expondo TOOLS [lifeline_append, lifeline_recontextualize, lifeline_recall] e RESOURCE [lifeline://project/context]. Authless (validacao, single-tenant) servindo a propria LIFELINE.md. Cold-start ~1 min (free dorme apos 15 min). Falta o dono registrar a URL .../mcp como Custom Connector no claude.ai (Authentication: None) e sentir o valor. Proximo da viabilidade: multi-tenant via AS (#0049) + Railway/Render-paid sempre-on quando aprovar.
