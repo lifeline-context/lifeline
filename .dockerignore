@@ -1,0 +1,15 @@
+# NUNCA empacotar segredos nem lixo na imagem
+.env
+*.env
+.git
+_legacy/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.lifeline/
+LIFELINE.*.md
+CONTEXT_SNAPSHOT.md
+FIRETEST_SNAPSHOT.md
+EXAM_*.md
+*.bak
