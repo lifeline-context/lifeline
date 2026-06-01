@@ -127,12 +127,20 @@ async def lifeline_recall(query: str, k: int = 5) -> str:
     )
 
 
+async def _healthz(_request):
+    """Liveness simples (GET 200) — health check de plataformas (Render/Railway) e checagem
+    no navegador de que o servidor está no ar. Não expõe dado."""
+    from starlette.responses import PlainTextResponse
+    return PlainTextResponse("ok")
+
+
 def _register(server: FastMCP) -> FastMCP:
     """Registra a MESMA superfície em qualquer instância (com ou sem auth)."""
     server.resource("lifeline://project/context")(project_context)
     server.tool()(lifeline_append)
     server.tool()(lifeline_recontextualize)
     server.tool()(lifeline_recall)
+    server.custom_route("/healthz", methods=["GET"])(_healthz)
     return server
 
 

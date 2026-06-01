@@ -27,6 +27,11 @@ class TestMCPContract(unittest.IsolatedAsyncioTestCase):
         uris += [t.uriTemplate for t in await mcp.list_resource_templates()]
         self.assertTrue(any("lifeline://project/context" in u for u in uris))
 
+    def test_healthz_route_registered(self):
+        # health check (Render/Railway) + checagem no navegador → GET /healthz deve existir
+        paths = {getattr(r, "path", "") for r in mcp.streamable_http_app().routes}
+        self.assertIn("/healthz", paths)
+
 
 class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
     def setUp(self):

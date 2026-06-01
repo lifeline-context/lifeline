@@ -13,24 +13,28 @@ propostas**. Mitigações reais:
   GitHub de qualquer forma) e uma URL difícil de adivinhar.
 - **NÃO use authless com dado privado/real.** Pra isso é multi-tenant + AS (#0049).
 
-## Smoke local (30s, antes de deployar)
-```bash
-pip install -e ".[cloud]"
-LIFELINE_MCP_TRANSPORT=streamable-http lifeline-mcp-remote     # serve em http://0.0.0.0:8000/mcp
-# noutro terminal, conecte pelo Claude Code (CLI aceita URL direta):
-claude mcp add --transport http lifeline http://127.0.0.1:8000/mcp
-```
-Se o `lifeline context` aparece como resource no cliente, está funcionando.
+## Deploy no Render (recomendado — $0, usa o `Dockerfile`)
+A imagem reconstrói o `.db` da `LIFELINE.md` no boot e serve authless. Duas formas:
 
-## Deploy (free tier — escolha um)
-A imagem (`Dockerfile`) reconstrói o `.db` da `LIFELINE.md` no boot e serve authless.
+**A) Blueprint (lê o `render.yaml`, menos cliques):**
+1. [render.com](https://render.com) → sign up (login GitHub).
+2. **New → Blueprint** → conecte o repo `jessianmart/lifeline` → ele lê o `render.yaml` → **Apply**.
 
-- **Railway:** New Project → Deploy from Repo → detecta o `Dockerfile` → deploy → copie a URL pública.
-- **Render:** New → Web Service → Docker → aponte o repo → Create → copie a URL.
-- **Fly.io:** `fly launch` (usa o `Dockerfile`, não adicione DB) → `fly deploy` → `fly open`.
+**B) Manual:**
+1. **New → Web Service** → conecte o repo → **Runtime: Docker** → **Instance Type: Free** → **Create**.
 
-O endpoint fica em `https://<seu-host>/mcp` (streamable-http). Pra SSE, suba com
-`LIFELINE_MCP_TRANSPORT=sse` → `https://<seu-host>/sse`.
+Em ambos, espere o build terminar. A URL fica `https://<seu-serviço>.onrender.com`.
+
+**Confirme que subiu:** abra `https://<seu-serviço>.onrender.com/healthz` no navegador → deve mostrar **`ok`**.
+
+⚠️ **Free tier dorme após 15 min ocioso.** O 1º acesso do claude.ai acorda o serviço (~1 min) —
+se a 1ª tentativa der timeout, tente de novo. Pra sempre-on (sem cold start): troque pra
+**Starter ($7/mês)** no `render.yaml` (`plan: starter`) ou no dashboard. (Railway $5/mês é a
+alternativa quando aprovarmos a viabilidade.)
+
+> Teste local antes (opcional, se sua rede deixar): `lifeline-mcp-remote` + um túnel
+> (`npx cloudflared tunnel --url http://127.0.0.1:8000`). ⚠️ Cuidado: muitas redes **bloqueiam
+> a porta 7844** do cloudflared (a nossa bloqueava) — se o túnel cair, é a rede; o Render resolve.
 
 ## Registrar no claude.ai (o clique é seu)
 1. claude.ai → **Settings → Connectors → Add custom connector**.
