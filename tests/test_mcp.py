@@ -99,12 +99,24 @@ class TestOAuthResourceServer(unittest.IsolatedAsyncioTestCase):
         paths = {getattr(r, "path", "") for r in server.sse_app().routes}
         self.assertTrue(any("oauth-protected-resource" in p for p in paths), paths)  # discovery
 
-    def test_build_remote_without_oauth_is_plain(self):
+    def test_build_remote_without_oauth_is_authless(self):
         self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
         with mock.patch.dict(os.environ, {}, clear=True):
             srv._configure()
             server = srv._build_remote()
-        self.assertIs(server, srv.mcp)                # sem OAuth → servidor base (single-tenant via env)
+        self.assertIsNone(server.settings.auth)       # sem OAuth → authless
+
+    def test_transport_security_allows_configured_host(self):
+        with mock.patch.dict(os.environ, {"LIFELINE_MCP_ALLOWED_HOSTS": "x.trycloudflare.com,meu.app"}):
+            ts = srv._transport_security()
+        self.assertTrue(ts.enable_dns_rebinding_protection)   # proteção ON com lista
+        self.assertIn("x.trycloudflare.com", ts.allowed_hosts)
+        self.assertIn("meu.app:*", ts.allowed_hosts)
+
+    def test_transport_security_default_disables_protection(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            ts = srv._transport_security()
+        self.assertFalse(ts.enable_dns_rebinding_protection)  # túnel/proxy: host variável → libera
 
 
 if __name__ == "__main__":

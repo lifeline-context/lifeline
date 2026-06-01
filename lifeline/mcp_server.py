@@ -24,6 +24,7 @@ from typing import Optional
 import httpx
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from lifeline.cli import _STORE, _open, _staging, _validate
 
@@ -163,9 +164,25 @@ class SupabaseTokenVerifier(TokenVerifier):
         return AccessToken(token=token, client_id=uid, scopes=["lifeline"], expires_at=None)
 
 
+def _transport_security() -> TransportSecuritySettings:
+    """Atrás de túnel/proxy/deploy o Host header é o domínio público — o default localhost-only
+    do FastMCP bloqueia com 421 'Invalid Host header'. `LIFELINE_MCP_ALLOWED_HOSTS=host1,host2`
+    libera esses (proteção anti-DNS-rebinding ON); sem ele, desliga a proteção (o servidor remoto
+    já é público de qualquer forma)."""
+    hosts = os.environ.get("LIFELINE_MCP_ALLOWED_HOSTS", "").strip()
+    if hosts:
+        allow = []
+        for h in (x.strip() for x in hosts.split(",") if x.strip()):
+            allow += [h, f"{h}:*"]
+        return TransportSecuritySettings(allowed_hosts=allow)
+    return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+
 def _build_remote() -> FastMCP:
     """Servidor remoto. Com LIFELINE_OAUTH=1 (+ supabase + creds) vira Resource Server OAuth:
-    exige Bearer válido e escopa por usuário. Senão, serve sem auth (single-tenant via env)."""
+    exige Bearer válido e escopa por usuário. Senão, serve sem auth (single-tenant via env).
+    Sempre com transport_security que aceita o host público (túnel/proxy/deploy)."""
+    ts = _transport_security()
     oauth = os.environ.get("LIFELINE_OAUTH") == "1"
     if oauth and _STORE["kind"] == "supabase" and os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY"):
         from mcp.server.auth.settings import AuthSettings
@@ -177,8 +194,9 @@ def _build_remote() -> FastMCP:
             "Lifeline",
             token_verifier=SupabaseTokenVerifier(),
             auth=AuthSettings(issuer_url=issuer, resource_server_url=resource, required_scopes=[]),
+            transport_security=ts,
         ))
-    return mcp
+    return _register(FastMCP("Lifeline", transport_security=ts))
 
 
 def main():
