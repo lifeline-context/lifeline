@@ -1118,3 +1118,17 @@ Objetivo do dono: qualquer IA que conecta (ou abre o repo) entende o uso, sabe i
 
 **Body**:
 Prep do item 1 (publicar no PyPI) executada ate onde da sem a conta do dono. Nome lifeline-context LIVRE no PyPI. pyproject completado: license MIT, authors, keywords, classifiers (Alpha/Python 3.10-3.13/AI), project.urls (github). Versao alinhada (__init__ 0.0.1 -> 0.1.0 = pyproject). build/ e dist/ no gitignore. python -m build gerou wheel + sdist; twine check PASSED nos dois. Teste de install em venv limpa: importa, versao 0.1.0, exports ok, 3 console scripts criados (lifeline/lifeline-mcp/lifeline-mcp-remote), lifeline --help exit 0, mcp_server+cloud importam. UNICO passo restante (do dono): criar conta no pypi.org + API token + 'twine upload dist/*'. Apos publicado, install vira 'pip install lifeline-context' e os snippets de conexao funcionam em qualquer maquina.
+
+### #0061 — 2026-06-01T15:53:47.610770+00:00 — feature
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: feature
+- **summary**: Publicacao no PyPI via Trusted Publishing (OIDC) — workflow publish.yml, sem token
+- **parents**: 297a3f1b5005885b3458dbd1b3d6ac989097d73ea36e1e61550b7a4c0c1829f1
+- **id**: 36ab5767f43e28534b523281cfb18966ec5f1b147f6eede481560ae19721ea91
+
+**Body**:
+Dono optou pelo Trusted Publisher (OIDC) em vez de API token — mais seguro, nada de segredo pra gerenciar. Criado .github/workflows/publish.yml: dispara em release published (ou workflow_dispatch manual); permissions id-token: write (OIDC); environment pypi (casa com o formulario do PyPI); builda sdist+wheel e publica via pypa/gh-action-pypi-publish@release/v1. Formulario PyPI Trusted Publisher: projeto=lifeline-context, owner=jessianmart, repo=lifeline, workflow=publish.yml, environment=pypi. Falta do dono: (1) submeter o formulario (pending publisher cria o projeto no 1o publish), (2) criar o environment 'pypi' em Settings->Environments do repo, (3) criar um GitHub Release v0.1.0 (ou rodar o workflow manual) -> publica sozinho via OIDC. Ancorado #0061.
