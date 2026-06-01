@@ -26,6 +26,9 @@ __pycache__/
 .pytest_cache/
 build/
 dist/
+.coverage
+.coverage.*
+htmlcov/
 
 # rev0 arquivada — fica no disco e no HISTÓRICO do git, fora da árvore versionada (#0058)
 _legacy/
