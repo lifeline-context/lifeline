@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How one AI inherits another's context: solving the handoff problem</title>
+<meta name="description" content="Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.">
+<meta name="keywords" content="AI context handoff, agent memory, multi-agent, cross-session AI, MCP, Model Context Protocol, shared AI memory, content-addressing, provider-agnostic, model lock-in">
+<link rel="canonical" href="https://lifelinecontext.com/blog/ai-context-handoff.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="jessianmart">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="How one AI inherits another's context: solving the handoff problem">
+<meta property="og:description" content="Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.">
+<meta property="og:url" content="https://lifelinecontext.com/blog/ai-context-handoff.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
+<meta property="article:published_time" content="2026-06-10">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How one AI inherits another's context: solving the handoff problem">
+<meta name="twitter:description" content="Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/logo/lifeline-tile-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "BlogPosting", "headline": "How one AI inherits another's context: solving the handoff problem", "description": "Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.", "url": "https://lifelinecontext.com/blog/ai-context-handoff.html", "mainEntityOfPage": "https://lifelinecontext.com/blog/ai-context-handoff.html", "datePublished": "2026-06-10", "author": {"@type": "Person", "name": "jessianmart"}, "publisher": {"@type": "Organization", "name": "Lifeline", "url": "https://lifelinecontext.com/"}, "keywords": "AI context handoff, agent memory, multi-agent, cross-session AI, MCP, Model Context Protocol, shared AI memory, content-addressing, provider-agnostic, model lock-in", "inLanguage": "en", "license": "https://opensource.org/licenses/MIT"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the AI context handoff problem?", "acceptedAnswer": {"@type": "Answer", "text": "The context handoff problem is that when one AI's session ends — or when work passes to a different model, tool, or teammate's agent — the reasoning it built up is lost. The next AI starts from zero because context lives inside a transcript, not in a shared, portable record."}}, {"@type": "Question", "name": "What makes context portable between AI models?", "acceptedAnswer": {"@type": "Answer", "text": "Four properties: the record is external to any session, provider-agnostic, content-addressed and anchored (so claims can be verified), and append-only with supersession (so corrections reference what they replace). With those, any model inherits any other's context on connect."}}, {"@type": "Question", "name": "How can one AI inherit another AI's context?", "acceptedAnswer": {"@type": "Answer", "text": "By writing reasoning to a shared, provider-agnostic record instead of leaving it in a chat transcript. If each AI appends decisions to an append-only, content-addressed ledger and reads the assembled state over a standard interface like MCP, any other AI — regardless of vendor — inherits the same context on connect."}}, {"@type": "Question", "name": "Where does AI vendor lock-in actually live?", "acceptedAnswer": {"@type": "Answer", "text": "Not in the model's weights — in the context trapped inside that vendor's sessions. Your switching cost to a better model is dominated by re-onboarding it on everything the old one knew. An external, provider-agnostic, anchored ledger inverts that: you keep the memory and swap the mind."}}]}]}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="../docs/">Docs</a>
+    <a href="index.html">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Articles</div>
+      <a href="ai-context-handoff.html" class="current">How one AI inherits another's context: solving the handoff problem</a>
+      <a href="context-engineering.html">Context engineering: the discipline beyond prompt engineering</a>
+      <a href="time-to-context.html">Time-to-context: the hidden tax on AI-assisted development</a></aside>
+  <main class="docs-main">
+    <h1>How one AI inherits another's context: solving the handoff problem</h1>
+    <p class="docs-lead">Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.</p>
+<p><strong>The context handoff problem is that reasoning built up by one AI is lost the moment work passes to another</strong> — a new session, a different model, another tool, or a teammate's agent. Each one starts from zero, because the context lived inside a transcript instead of a shared, portable record.</p>
+<p>As teams run more than one assistant — different vendors, different tools, agents working alongside agents — this becomes the defining interoperability problem of AI-assisted development.</p>
+<h2>Three places handoff breaks</h2>
+<ul>
+<li><strong>Across sessions (the same model, later).</strong> Today's reasoning is in a chat you'll never reopen. Tomorrow's session inherits none of it, and re-derives or contradicts yesterday's conclusions.</li>
+<li><strong>Across models (different vendors).</strong> Switch assistants and the new one has no access to the old one's history. The hard-won <em>why</em> doesn't travel. It dies with the transcript.</li>
+<li><strong>Across agents (working in parallel).</strong> One agent decides to drop a dependency; a teammate's agent, an hour later on the same repo, re-adds it — because neither can see the other's reasoning. Two AIs, one project, zero shared memory, and often two conflicting directions.</li>
+</ul>
+<p>In each case the same thing is missing: a place to put reasoning that is <strong>outside</strong> any single session and readable by <strong>any</strong> mind that connects.</p>
+<h2>Why a shared context window isn't the answer</h2>
+<p>The tempting answer is "let them share a window" or "pass the transcript along." Neither makes context portable.</p>
+<ul>
+<li><strong>Context windows are per-session and per-model.</strong> They are working memory, not a durable store. They vanish when the session ends and aren't designed to transfer across vendors.</li>
+<li><strong>Transcripts are the wrong unit, and the wrong size.</strong> A raw conversation is mostly noise around a few decisions. Handing the next agent a 50,000-token chat log to "catch up" buries the three things it needed under everything it didn't — where reading an assembled current state might be a few hundred tokens of exactly the decisions still in force. Bigger is not the goal; <em>distilled and current</em> is.</li>
+<li><strong>There's no trust signal.</strong> Even if you pass the text along, the receiving agent can't tell a current decision from an abandoned one. Without anchoring, inherited context is just a richer source of confident mistakes.</li>
+</ul>
+<p>Handoff isn't a memory-size problem. It's a <strong>shared-record-and-trust</strong> problem.</p>
+<h2>What makes context portable between minds</h2>
+<p>For one AI to reliably inherit another's context, the record has to satisfy four properties:</p>
+<ol>
+<li><strong>External to any session.</strong> Reasoning is written to a durable store, not left in a transcript. The store outlives every chat.</li>
+<li><strong>Provider-agnostic.</strong> The store doesn't care which vendor wrote an entry or which reads it. Storage is neutral; delivery happens in whatever format the connecting model expects.</li>
+<li><strong>Content-addressed and anchored.</strong> Each entry's identity is derived from its content, so the same reasoning yields the same identifier anywhere, and every claim is tied to the immutable event that produced it. The inheriting agent can verify, not guess.</li>
+<li><strong>Append-only with supersession.</strong> New conclusions don't overwrite old ones; corrections reference what they replace. The receiving agent sees both the current decision and the fact that an earlier one was reverted — the exact signal that prevents it from re-walking a dead end.</li>
+</ol>
+<p>Put differently: stop handing the next AI a <em>conversation</em>, and start handing it a <em>curated, verifiable state</em>.</p>
+<h2>The handoff in practice</h2>
+<p>One assistant, mid-project, decides to drop a half-built custom authorization server in favor of a managed OAuth provider, and records it:</p>
+<pre><code>decision  7a1f4d…  &quot;Adopt the managed OAuth provider&quot;
+  why: the self-hosted auth server was more attack surface and upkeep than it earned.
+  supersedes  2c9e08…  &quot;Build a custom authorization server&quot;
+</code></pre>
+<p>A week later a <em>different</em> model — different vendor, different session, maybe a teammate's agent — connects to the same project over MCP. It reads the assembled current truth, sees that a custom auth server was started <em>and deliberately abandoned and why</em>, and does not re-propose building one. The handoff happened with no human re-explaining anything. That is context inherited, not re-derived.</p>
+<h2>Your real lock-in is the context, not the model</h2>
+<p>Here's the strategic turn most teams miss. Your lock-in to an AI vendor doesn't live in the model's weights — it lives in the <strong>context trapped inside that vendor's sessions.</strong> The moment a better model ships, your switching cost is dominated by re-onboarding it on everything the old one knew: the decisions, the dead ends, the constraints. That's the real exit tax.</p>
+<p>An external, provider-agnostic, anchored ledger inverts it. Because any model can inherit the same context on connect, switching models becomes cheap — you keep the memory and swap the mind. Vendor-neutral context isn't just an interoperability nicety; it's the only durable defense against model lock-in. In a market where the best model changes every few months, owning your context — not renting it inside one vendor's chat history — is the position you want.</p>
+<p>This is what a context runtime like Lifeline is for. Each AI <strong>proposes</strong> reasoning entries (a human approves them), which are appended to a content-addressed, anchored ledger; any other AI reads the assembled current truth over <a href="/docs/mcp.html">MCP</a>. See <a href="/docs/architecture.html">the architecture</a> and <a href="/docs/concepts.html">the underlying concepts</a>. Because the ledger is provider-agnostic and content-addressed, a decision written by one model is inherited identically by the next.</p>
+<h2>Key takeaways</h2>
+<ul>
+<li>The <strong>context handoff problem</strong> is that reasoning is lost whenever work passes to another session, model, or agent — because it lived in a transcript, not a shared record.</li>
+<li>Shared context windows don't solve it: they're per-session, per-model, noisy, and carry no trust signal.</li>
+<li>Portable context requires a record that is external to any session, provider-agnostic, content-addressed and anchored, and append-only with supersession.</li>
+<li>Your real AI lock-in is the context trapped in a vendor's sessions — an external, anchored, vendor-neutral ledger is what makes models swappable.</li>
+</ul>
+<blockquote>
+<p><strong>Make context portable in two commands</strong> — open source, no signup, vendor-neutral:</p>
+<p><code>pip install lifeline-context
+python -m lifeline context</code></p>
+</blockquote>
+<h2>Frequently asked questions</h2>
+<p><strong>What is the AI context handoff problem?</strong>
+The context handoff problem is that when one AI's session ends — or when work passes to a different model, tool, or teammate's agent — the reasoning it built up is lost. The next AI starts from zero because context lives inside a transcript, not in a shared, portable record.</p>
+<p><strong>What makes context portable between AI models?</strong>
+Four properties: the record is external to any session, provider-agnostic, content-addressed and anchored (so claims can be verified), and append-only with supersession (so corrections reference what they replace). With those, any model inherits any other's context on connect.</p>
+<p><strong>How can one AI inherit another AI's context?</strong>
+By writing reasoning to a shared, provider-agnostic record instead of leaving it in a chat transcript. If each AI appends decisions to an append-only, content-addressed ledger and reads the assembled state over a standard interface like MCP, any other AI — regardless of vendor — inherits the same context on connect.</p>
+<p><strong>Where does AI vendor lock-in actually live?</strong>
+Not in the model's weights — in the context trapped inside that vendor's sessions. Your switching cost to a better model is dominated by re-onboarding it on everything the old one knew. An external, provider-agnostic, anchored ledger inverts that: you keep the memory and swap the mind.</p>
+<hr />
+<p><em>Related reading: <a href="/blog/context-engineering.html">What context engineering is</a> · <a href="/blog/time-to-context.html">Why time-to-context is the real bottleneck</a>. Lifeline is an open-source context runtime — git for reasoning, MCP-native and provider-agnostic.</em></p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/blog/ai-context-handoff.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

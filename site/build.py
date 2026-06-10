@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Static doc generator for the Lifeline site.
+"""Static doc + blog generator for the Lifeline site.
 
-Converts the curated markdown (site/content/*.md) and the repo's deep docs (docs/*.md) into
-crawlable HTML pages that share the site's Linear-grade shell, then emits the GEO surface:
-sitemap.xml, robots.txt, llms.txt, and llms-full.txt. Output is committed (no deploy-time deps).
+Converts the curated markdown (site/content/*.md), the repo's deep docs (docs/*.md), and the blog
+(site/content/blog/*.md) into crawlable HTML that shares the site's Linear-grade shell, then emits
+the GEO surface: sitemap.xml, robots.txt, llms.txt, and llms-full.txt. Output is committed (no
+deploy-time deps).
 
 Run from the repo root or from site/:  python site/build.py
 """
 import datetime
+import json
 import os
 import re
 import sys
@@ -20,6 +22,8 @@ except ImportError:
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DOCS_OUT = os.path.join(HERE, "docs")
+BLOG_OUT = os.path.join(HERE, "blog")
+BLOG_SRC = os.path.join(HERE, "content", "blog")
 BASE = "https://lifelinecontext.com/"
 
 # slug, nav-title, <title>/meta description, source markdown (relative to repo root)
@@ -82,6 +86,7 @@ SHELL = """<!doctype html>
   <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
   <nav class="topnav">
     <a href="index.html">Docs</a>
+    <a href="../blog/">Blog</a>
     <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
     <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
   </nav>
@@ -101,6 +106,70 @@ __BODY__
 </body>
 </html>
 """
+
+# Blog shell: same Linear-grade chrome, article schema (BlogPosting + FAQPage) injected per post.
+BLOG_SHELL = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>__TITLE__</title>
+<meta name="description" content="__DESC__">
+<meta name="keywords" content="__KEYWORDS__">
+<link rel="canonical" href="__CANON__">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="__AUTHOR__">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="__TITLE__">
+<meta property="og:description" content="__DESC__">
+<meta property="og:url" content="__CANON__">
+<meta property="og:image" content="__BASE__assets/og.svg">
+<meta property="article:published_time" content="__DATE__">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="__TITLE__">
+<meta name="twitter:description" content="__DESC__">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/logo/lifeline-tile-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+__JSONLD__
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="../docs/">Docs</a>
+    <a href="index.html">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side">__SIDENAV__</aside>
+  <main class="docs-main">
+    <h1>__H1__</h1>
+    <p class="docs-lead">__DESC__</p>
+__BODY__
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="__EDIT__">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>
+"""
+
+
+def esc(s):
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"))
 
 
 def sidenav(current):
@@ -157,9 +226,113 @@ def docs_index():
     open(os.path.join(DOCS_OUT, "index.html"), "w", encoding="utf-8").write(html)
 
 
-def geo_files(full_text):
+# ---- blog ---------------------------------------------------------------------------------
+def parse_frontmatter(path):
+    """Minimal YAML-frontmatter parser for the controlled blog format (scalars + a faq list)."""
+    raw = open(path, encoding="utf-8").read()
+    meta = {"faq": []}
+    body = raw
+    if raw.startswith("---"):
+        _, fm, body = raw.split("---", 2)
+        cur, in_faq = None, False
+        for line in fm.splitlines():
+            if not line.strip():
+                continue
+            if line.startswith("faq:"):
+                in_faq = True
+                continue
+            stripped = line.lstrip()
+            if in_faq and stripped.startswith("- q:"):
+                cur = {"q": stripped.split(":", 1)[1].strip().strip('"'), "a": ""}
+                meta["faq"].append(cur)
+            elif in_faq and stripped.startswith("a:") and cur is not None:
+                cur["a"] = stripped.split(":", 1)[1].strip().strip('"')
+            elif not line.startswith(" ") and ":" in line:
+                in_faq = False
+                k, v = line.split(":", 1)
+                meta[k.strip()] = v.strip().strip('"')
+    return meta, body.strip()
+
+
+def blog_sidenav(current, posts):
+    out = ['<div class="group">Articles</div>']
+    for m in posts:
+        cls = ' class="current"' if m["slug"] == current else ''
+        out.append('<a href="%s.html"%s>%s</a>' % (m["slug"], cls, esc(m["title"])))
+    return "\n      ".join(out)
+
+
+def blog_jsonld(meta, canon):
+    article = {"@type": "BlogPosting", "headline": meta["title"], "description": meta["description"],
+               "url": canon, "mainEntityOfPage": canon, "datePublished": meta.get("date", ""),
+               "author": {"@type": "Person", "name": meta.get("author", "jessianmart")},
+               "publisher": {"@type": "Organization", "name": "Lifeline", "url": BASE},
+               "keywords": meta.get("keywords", ""), "inLanguage": "en",
+               "license": "https://opensource.org/licenses/MIT"}
+    graph = [article]
+    if meta.get("faq"):
+        graph.append({"@type": "FAQPage",
+                      "mainEntity": [{"@type": "Question", "name": f["q"],
+                                      "acceptedAnswer": {"@type": "Answer", "text": f["a"]}}
+                                     for f in meta["faq"]]})
+    return json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False)
+
+
+def render_blog_post(meta, body_md, posts):
+    slug = meta["slug"]
+    canon = BASE + "blog/" + slug + ".html"
+    body_html = md.markdown(rewrite_links(strip_first_h1(body_md)),
+                            extensions=["fenced_code", "tables", "sane_lists"])
+    edit = "https://github.com/lifeline-context/lifeline/blob/main/site/content/blog/" + slug + ".md"
+    html = (BLOG_SHELL
+            .replace("__TITLE__", esc(meta["title"])).replace("__DESC__", esc(meta["description"]))
+            .replace("__KEYWORDS__", esc(meta.get("keywords", ""))).replace("__AUTHOR__", esc(meta.get("author", "jessianmart")))
+            .replace("__DATE__", meta.get("date", "")).replace("__CANON__", canon).replace("__BASE__", BASE)
+            .replace("__SIDENAV__", blog_sidenav(slug, posts)).replace("__H1__", esc(meta["title"]))
+            .replace("__JSONLD__", blog_jsonld(meta, canon)).replace("__BODY__", body_html).replace("__EDIT__", edit))
+    open(os.path.join(BLOG_OUT, slug + ".html"), "w", encoding="utf-8").write(html)
+
+
+def blog_index(posts):
+    canon = BASE + "blog/"
+    cards = []
+    for m in posts:
+        cards.append('<a class="doclink" href="%s.html"><span class="t">%s →</span><span class="d">%s</span></a>'
+                     % (m["slug"], esc(m["title"]), esc(m["description"])))
+    body = '<div class="doclist" style="grid-template-columns:1fr">%s</div>' % "".join(cards)
+    graph = {"@context": "https://schema.org", "@type": "Blog", "url": canon, "name": "Lifeline blog",
+             "description": "Essays on time-to-context, context engineering, and AI context handoff.",
+             "blogPost": [{"@type": "BlogPosting", "headline": m["title"], "url": canon + m["slug"] + ".html",
+                           "description": m["description"], "datePublished": m.get("date", "")} for m in posts]}
+    html = (BLOG_SHELL
+            .replace("__TITLE__", "Blog — Lifeline")
+            .replace("__DESC__", "Essays on time-to-context, context engineering, and how AIs inherit each other's context.")
+            .replace("__KEYWORDS__", "context engineering, time to context, AI context handoff, AI memory, MCP")
+            .replace("__AUTHOR__", "jessianmart").replace("__DATE__", "").replace("__CANON__", canon).replace("__BASE__", BASE)
+            .replace("__SIDENAV__", blog_sidenav(None, posts)).replace("__H1__", "Blog")
+            .replace("__JSONLD__", json.dumps(graph, ensure_ascii=False)).replace("__BODY__", body)
+            .replace("__EDIT__", "https://github.com/lifeline-context/lifeline/tree/main/site/content/blog"))
+    open(os.path.join(BLOG_OUT, "index.html"), "w", encoding="utf-8").write(html)
+
+
+def load_posts():
+    posts = []
+    if os.path.isdir(BLOG_SRC):
+        for fn in sorted(os.listdir(BLOG_SRC)):
+            if fn.endswith(".md"):
+                m, b = parse_frontmatter(os.path.join(BLOG_SRC, fn))
+                m["_body"] = b
+                posts.append(m)
+    posts.sort(key=lambda m: m.get("date", ""), reverse=True)
+    return posts
+
+
+def geo_files(full_text, posts=()):
     today = datetime.date.today().isoformat()
     urls = [(BASE, "1.0"), (BASE + "docs/", "0.9")] + [(BASE + "docs/" + s + ".html", "0.8") for s, *_ in PAGES]
+    if posts:
+        urls.append((BASE + "blog/", "0.7"))
+        urls += [(BASE + "blog/" + m["slug"] + ".html", "0.7") for m in posts]
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for url, pri in urls:
@@ -199,6 +372,10 @@ def geo_files(full_text):
     ]
     for slug, title, desc, _ in PAGES:
         llms.append("- [%s](%sdocs/%s.html): %s" % (title, BASE, slug, desc))
+    if posts:
+        llms += ["", "## Articles"]
+        for m in posts:
+            llms.append("- [%s](%sblog/%s.html): %s" % (m["title"], BASE, m["slug"], m["description"]))
     llms += [
         "",
         "## Source",
@@ -212,14 +389,25 @@ def geo_files(full_text):
 
 def main():
     os.makedirs(DOCS_OUT, exist_ok=True)
+    os.makedirs(BLOG_OUT, exist_ok=True)
     full = ["# Lifeline — full documentation for LLMs\n",
             "Source: %s — MIT licensed. https://github.com/lifeline-context/lifeline\n" % BASE]
     for slug, title, desc, src in PAGES:
         raw = render(slug, title, desc, src)
         full.append("\n\n" + "=" * 78 + "\n# " + title + "\n" + "=" * 78 + "\n\n" + raw.strip())
     docs_index()
-    geo_files("\n".join(full) + "\n")
-    print("built %d doc pages + index + sitemap.xml + robots.txt + llms.txt + llms-full.txt" % len(PAGES))
+
+    posts = load_posts()
+    for m in posts:
+        render_blog_post(m, m["_body"], posts)
+    if posts:
+        blog_index(posts)
+        for m in posts:
+            full.append("\n\n" + "=" * 78 + "\n# " + m["title"] + "\n" + "=" * 78 + "\n\n" + m["_body"].strip())
+
+    geo_files("\n".join(full) + "\n", posts)
+    print("built %d doc pages + %d blog posts + indexes + sitemap.xml + robots.txt + llms.txt + llms-full.txt"
+          % (len(PAGES), len(posts)))
 
 
 if __name__ == "__main__":

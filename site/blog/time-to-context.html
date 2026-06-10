@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Time-to-context: the hidden tax on AI-assisted development</title>
+<meta name="description" content="Time-to-context is how long an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and how to drive it to zero.">
+<meta name="keywords" content="time to context, context debt, context engineering, AI memory, RAG limitations, MCP">
+<link rel="canonical" href="https://lifelinecontext.com/blog/time-to-context.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="jessianmart">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Time-to-context: the hidden tax on AI-assisted development">
+<meta property="og:description" content="Time-to-context is how long an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and how to drive it to zero.">
+<meta property="og:url" content="https://lifelinecontext.com/blog/time-to-context.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
+<meta property="article:published_time" content="2026-06-10">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Time-to-context: the hidden tax on AI-assisted development">
+<meta name="twitter:description" content="Time-to-context is how long an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and how to drive it to zero.">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/logo/lifeline-tile-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "BlogPosting", "headline": "Time-to-context: the hidden tax on AI-assisted development", "description": "Time-to-context is how long an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and how to drive it to zero.", "url": "https://lifelinecontext.com/blog/time-to-context.html", "mainEntityOfPage": "https://lifelinecontext.com/blog/time-to-context.html", "datePublished": "2026-06-10", "author": {"@type": "Person", "name": "jessianmart"}, "publisher": {"@type": "Organization", "name": "Lifeline", "url": "https://lifelinecontext.com/"}, "keywords": "time to context, context debt, context engineering, AI memory, RAG limitations, MCP", "inLanguage": "en", "license": "https://opensource.org/licenses/MIT"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is time-to-context?", "acceptedAnswer": {"@type": "Answer", "text": "Time-to-context (TTC) is the elapsed time between an AI connecting to a project and the moment it can act correctly — knowing what the project is, why key decisions were made, what is decided, and what is next. Lower is better; the ideal is near-zero."}}, {"@type": "Question", "name": "What is context debt?", "acceptedAnswer": {"@type": "Answer", "text": "Context debt is the uncaptured why a project accumulates — the reasoning behind decisions that lived only in chats, PRs, and people's heads. It is the liability behind a high time-to-context: like technical debt it compounds, but every new model and teammate pays the interest from scratch."}}, {"@type": "Question", "name": "Why doesn't a bigger context window reduce time-to-context?", "acceptedAnswer": {"@type": "Answer", "text": "A larger window raises the ceiling on how much text fits, but it does not decide what belongs there. Time-to-context is a selection-and-trust problem, not a capacity problem: the model needs the right why, anchored and current, not a larger pile of raw history."}}, {"@type": "Question", "name": "Why does time-to-context get worse as models get better?", "acceptedAnswer": {"@type": "Answer", "text": "A weak model that lacks context stalls and asks; a strong model that lacks context acts — confidently, quickly, at scale — on whatever stale picture it assembled. Capability without context is faster in the wrong direction, so the downside of high time-to-context grows as models improve."}}]}]}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="../docs/">Docs</a>
+    <a href="index.html">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Articles</div>
+      <a href="ai-context-handoff.html">How one AI inherits another's context: solving the handoff problem</a>
+      <a href="context-engineering.html">Context engineering: the discipline beyond prompt engineering</a>
+      <a href="time-to-context.html" class="current">Time-to-context: the hidden tax on AI-assisted development</a></aside>
+  <main class="docs-main">
+    <h1>Time-to-context: the hidden tax on AI-assisted development</h1>
+    <p class="docs-lead">Time-to-context is how long an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and how to drive it to zero.</p>
+<p><strong>Time-to-context (TTC) is the time an AI needs, after connecting to a project, before it can act correctly.</strong> It is the gap between "the model is online" and "the model knows what this project is, why it is built this way, what has been decided, and what comes next." On most teams this gap is paid over and over — every new chat, every new model, every new teammate's agent — and almost no one measures it.</p>
+<p>This article defines the tax, names the liability behind it, puts a number on it, and explains why — counter-intuitively — it gets <em>worse</em> as your models get better.</p>
+<h2>The tax nobody puts on the invoice</h2>
+<p>Every time you open a fresh AI session, you re-explain. You paste the architecture. You remind it that you already tried the "obvious" approach and it failed for a specific reason. You re-state the constraint that isn't written down anywhere. Then you do real work for twenty minutes — and tomorrow, with a new session, you pay it again.</p>
+<p>That re-explaining is time-to-context, and it compounds:</p>
+<ul>
+<li><strong>Across sessions.</strong> Yesterday's reasoning lives in a transcript you'll never reopen. The next session starts from zero.</li>
+<li><strong>Across models.</strong> Switch from one assistant to another and the new one inherits none of the hard-won <em>why</em>. It re-suggests the path you already rejected.</li>
+<li><strong>Across people.</strong> A teammate's agent has no idea what your agent concluded last week. Two AIs, same repo, zero shared memory.</li>
+</ul>
+<p>Think of the underlying liability as <strong>context debt</strong> — the uncaptured <em>why</em> a project accumulates, scattered across closed chats, merged PRs, and people's heads. Like technical debt it compounds; unlike technical debt, every new model and teammate pays the interest from scratch. Time-to-context is just the meter; context debt is the principal.</p>
+<p>The cost is not only minutes. It's <em>wrong</em> minutes: an AI with low context confidently rebuilds something you deliberately removed, or re-litigates a decision that was settled for good reasons. The most expensive errors in AI-assisted development aren't hallucinated APIs — they're hallucinated <em>intentions</em>.</p>
+<h2>Put a number on it</h2>
+<p>The tax feels invisible because it's never on one invoice — it's smeared across every session. Make it visible with a back-of-envelope model (substitute your own numbers):</p>
+<blockquote>
+<p>A 5-engineer team opens ~6 fresh AI sessions per person per day. If each costs ~8 minutes of re-explaining before the AI is useful, that's 5 × 6 × 8 = <strong>240 minutes/day — roughly 20 hours a week</strong> for a five-person team, and it scales from there. And that's <em>before</em> the rework caused by an AI acting on context it never actually had.</p>
+</blockquote>
+<p><strong>Score your own TTC</strong> — open a brand-new session on a real task and count: (1) how many turns until the AI's first correct, non-trivial action; (2) did it re-propose anything you've already decided or reverted; (3) how much of your first three messages was context you've typed before. "Several / yes / most of it" means your context debt is high — and recoverable.</p>
+<h2>Why a bigger context window doesn't fix it</h2>
+<p>The intuitive fix is "just give the model more context." Bigger windows, more retrieval, the whole repo in the prompt. It helps at the margin and misses the point. Time-to-context is a <strong>selection-and-trust</strong> problem, not a <strong>capacity</strong> problem.</p>
+<ul>
+<li>More tokens raise the ceiling on <em>how much</em> fits. They don't decide <em>what belongs</em>. Dumping the full history in front of a model buries the three decisions that matter under three thousand that don't.</li>
+<li>Raw history is the <em>what</em>, not the <em>why</em>. A diff tells you a function changed. It cannot tell you that you chose this design over a cleaner-looking one because the cleaner one broke under a production constraint. That reasoning is the expensive part, and it's the part that never makes it into the window.</li>
+</ul>
+<h3>Retrieval alone makes it worse</h3>
+<p>Teams reach for RAG — retrieve the relevant history, inject it, done. But this is the core of RAG's limitations for project memory: retrieval optimizes for <em>similarity</em>, not <em>currency or truth</em>. It will happily surface a year-old design note, a closed PR's rejected approach, or a since-reverted decision, and hand it to the model as relevant. Without an anchor that says <em>this was superseded</em>, the model can't tell live reasoning from dead reasoning — so it acts on the corpse. More retrieval without anchoring doesn't lower time-to-context; it raises it, by supplying more confident, stale material to be wrong with.</p>
+<h2>The counter-intuitive part: it gets worse as models get better</h2>
+<p>Most teams assume smarter models will need less of this — that capability will paper over missing context. The opposite is true.</p>
+<p>A weak model that lacks context <strong>stalls and asks</strong>. A strong model that lacks context <strong>acts</strong> — confidently, quickly, and at scale — on whatever partial, stale picture it assembled. Capability without context isn't safer; it's faster in the wrong direction. So as models improve, time-to-context doesn't shrink — its <em>downside</em> grows.</p>
+<p>And it compounds non-linearly. Every model or teammate you add multiplies the re-explanation surface, and every low-context action — rebuilt code, re-litigated decisions — becomes <em>more</em> context debt someone has to notice and correct later. The principal rises faster than headcount. Which is exactly why the fix isn't a better model; it's a better substrate of context underneath every model.</p>
+<h2>What "low TTC" looks like</h2>
+<p><strong>High TTC.</strong> Monday, you and an AI decide to tear out a GraphQL gateway and go back to plain REST — the schema churn was costing more than the flexibility earned at your surface area. That reasoning lives in Monday's closed chat. Thursday, a fresh session opens the repo, sees REST endpoints, and three turns in proposes: "this would be cleaner behind a GraphQL layer." You re-explain. Again.</p>
+<p><strong>Low TTC.</strong> The Monday decision was recorded as an anchored ledger entry:</p>
+<pre><code>decision  4f3a9c…  &quot;Drop the GraphQL gateway, return to REST&quot;
+  why: schema churn cost more than the flexibility earned at our surface area.
+  supersedes  9b1c2e…  &quot;Add a GraphQL gateway&quot;
+</code></pre>
+<p>Thursday's AI connects, reads the assembled current truth, sees that GraphQL was tried <em>and reverted and why</em> — and doesn't re-propose it. No human in the loop. That's time-to-context trending to zero.</p>
+<h2>Driving time-to-context toward zero</h2>
+<p>If TTC is a selection-and-trust problem, the solution is a small, durable record of reasoning that is curated, current, and verifiable — delivered to the AI automatically. Three properties matter:</p>
+<ul>
+<li><strong>Capture the <em>why</em>, not just the <em>what</em>.</strong> Code and commits already store the <em>what</em>. The missing layer is the reasoning: the decision, the rejected alternative, the constraint. <a href="/blog/context-engineering.html">Context engineering</a> is the discipline of paying down context debt — where time-to-context is the metric, context engineering is the practice that moves it.</li>
+<li><strong>Anchor every claim.</strong> Each item of context is tied to the immutable record of the event that produced it, and corrections reference what they supersede. The model can trust it — and see what was reverted — instead of guessing.</li>
+<li><strong>Deliver it on connect, not on request.</strong> A fresh model should get the assembled truth the moment it connects — over a standard interface like <a href="/docs/mcp.html">MCP</a> — not when a human remembers to paste it.</li>
+</ul>
+<p>This is what Lifeline does: an append-only, content-addressed, anchored ledger of a project's <em>why</em>, served to any AI over MCP, so a new model connects and already answers what / why / decided / next.</p>
+<blockquote>
+<p><strong>Try it in two commands</strong> — open source, no signup:</p>
+<p><code>pip install lifeline-context
+python -m lifeline context</code></p>
+</blockquote>
+<h2>Key takeaways</h2>
+<ul>
+<li><strong>Time-to-context</strong> is the time an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and most teams never measure it.</li>
+<li>The liability behind it is <strong>context debt</strong>: the uncaptured <em>why</em> that compounds, where every new model and teammate pays the interest from scratch.</li>
+<li>Bigger windows add capacity; retrieval without anchoring adds <em>stale confidence</em>; better models add <em>confident speed in the wrong direction</em>. None of them solve selection or trust.</li>
+<li>Driving TTC toward zero means capturing the <em>why</em>, anchoring every claim (with supersession), and delivering the assembled truth automatically on connect.</li>
+</ul>
+<h2>Frequently asked questions</h2>
+<p><strong>What is time-to-context?</strong>
+Time-to-context (TTC) is the elapsed time between an AI connecting to a project and the moment it can act correctly — knowing what the project is, why key decisions were made, what is decided, and what is next. Lower is better; the ideal is near-zero.</p>
+<p><strong>What is context debt?</strong>
+Context debt is the uncaptured why a project accumulates — the reasoning behind decisions that lived only in chats, PRs, and people's heads. It is the liability behind a high time-to-context: like technical debt it compounds, but every new model and teammate pays the interest from scratch.</p>
+<p><strong>Why doesn't a bigger context window reduce time-to-context?</strong>
+A larger window raises the ceiling on how much text fits, but it does not decide what belongs there. Time-to-context is a selection-and-trust problem, not a capacity problem: the model needs the right why, anchored and current, not a larger pile of raw history.</p>
+<p><strong>Why does time-to-context get worse as models get better?</strong>
+A weak model that lacks context stalls and asks; a strong model that lacks context acts — confidently, quickly, at scale — on whatever stale picture it assembled. Capability without context is faster in the wrong direction, so the downside of high time-to-context grows as models improve.</p>
+<hr />
+<p><em>Related reading: <a href="/blog/context-engineering.html">What context engineering is</a> · <a href="/blog/ai-context-handoff.html">How AIs inherit each other's context</a>. Lifeline is an open-source context runtime — git for reasoning.</em></p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/blog/time-to-context.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

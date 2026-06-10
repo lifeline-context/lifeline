@@ -16,6 +16,11 @@ the cryptographic hash of its source event (anti-hallucination); append-only wit
 - [MCP & remote](https://lifelinecontext.com/docs/mcp.html): The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.
 - [CLI reference](https://lifelinecontext.com/docs/cli.html): Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.
 
+## Articles
+- [How one AI inherits another's context: solving the handoff problem](https://lifelinecontext.com/blog/ai-context-handoff.html): Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.
+- [Context engineering: the discipline beyond prompt engineering](https://lifelinecontext.com/blog/context-engineering.html): Prompt engineering shapes one request. Context engineering shapes what the model knows across every request — the discipline, and why it lasts.
+- [Time-to-context: the hidden tax on AI-assisted development](https://lifelinecontext.com/blog/time-to-context.html): Time-to-context is how long an AI needs before it can act correctly on your project — the real bottleneck in AI-assisted work, and how to drive it to zero.
+
 ## Source
 - [GitHub repository](https://github.com/lifeline-context/lifeline)
 - [PyPI package: lifeline-context](https://pypi.org/project/lifeline-context/)
