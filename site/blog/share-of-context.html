@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Share of context: the metric behind Lifeline</title>
+<meta name="description" content="Share of context is the portion of an AI's reasoning that comes from your curated, anchored record — the AI-era metric Lifeline is built to move.">
+<meta name="keywords" content="share of context, context engineering, generative engine optimization, MCP, AI-assisted development">
+<link rel="canonical" href="https://lifelinecontext.com/blog/share-of-context.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="jessianmart">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Share of context: the metric behind Lifeline">
+<meta property="og:description" content="Share of context is the portion of an AI's reasoning that comes from your curated, anchored record — the AI-era metric Lifeline is built to move.">
+<meta property="og:url" content="https://lifelinecontext.com/blog/share-of-context.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
+<meta property="article:published_time" content="2026-06-10">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Share of context: the metric behind Lifeline">
+<meta name="twitter:description" content="Share of context is the portion of an AI's reasoning that comes from your curated, anchored record — the AI-era metric Lifeline is built to move.">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/logo/lifeline-tile-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "BlogPosting", "headline": "Share of context: the metric behind Lifeline", "description": "Share of context is the portion of an AI's reasoning that comes from your curated, anchored record — the AI-era metric Lifeline is built to move.", "url": "https://lifelinecontext.com/blog/share-of-context.html", "mainEntityOfPage": "https://lifelinecontext.com/blog/share-of-context.html", "datePublished": "2026-06-10", "author": {"@type": "Person", "name": "jessianmart"}, "publisher": {"@type": "Organization", "name": "Lifeline", "url": "https://lifelinecontext.com/"}, "keywords": "share of context, context engineering, generative engine optimization, MCP, AI-assisted development", "inLanguage": "en", "license": "https://opensource.org/licenses/MIT"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is share of context?", "acceptedAnswer": {"@type": "Answer", "text": "Share of context is the portion of an AI's working context — on any task touching your project or domain — that comes from your curated, anchored record, rather than generic model priors, similarity-ranked retrieval, or someone else's framing. It is the AI-era successor to share of voice."}}, {"@type": "Question", "name": "How is share of context different from share of voice or GEO?", "acceptedAnswer": {"@type": "Answer", "text": "Share of voice measures your slice of advertising impressions; GEO (generative engine optimization) is the practice of being cited by AI answer engines. Share of context is the underlying metric both point at: how much of what a model actually reasons from is yours. Unlike share of voice, it is a stock you accrue and own, not a flow you rent."}}, {"@type": "Question", "name": "How do you increase your share of context?", "acceptedAnswer": {"@type": "Answer", "text": "Capture your reasoning (the why, not just the what), anchor every claim to its source so the model gets a trust signal, and deliver it to any AI on connect over a standard interface like MCP. That replaces the model's priors and similarity-ranked guesses with your curated record."}}, {"@type": "Question", "name": "Can you measure share of context?", "acceptedAnswer": {"@type": "Answer", "text": "Roughly: open a fresh AI session on a real task and judge how much of what it knows is your specifics versus generic patterns — does it cite your actual decisions, and does it know what you reverted? The gap between what it reasons from and your real record is your unowned share."}}]}]}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="../docs/">Docs</a>
+    <a href="index.html">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Articles</div>
+      <a href="ai-context-handoff.html">How one AI inherits another's context: solving the handoff problem</a>
+      <a href="context-engineering.html">Context engineering: the discipline beyond prompt engineering</a>
+      <a href="share-of-context.html" class="current">Share of context: the metric behind Lifeline</a>
+      <a href="time-to-context.html">Time-to-context: the hidden tax on AI-assisted development</a></aside>
+  <main class="docs-main">
+    <h1>Share of context: the metric behind Lifeline</h1>
+    <p class="docs-lead">Share of context is the portion of an AI's reasoning that comes from your curated, anchored record — the AI-era metric Lifeline is built to move.</p>
+<p><strong>Share of context is the portion of an AI's working context — on any task touching your project — that comes from your curated, anchored record, rather than generic model priors, similarity-ranked retrieval, or someone else's framing.</strong> It is quietly becoming the metric that shapes what AI actually knows about your work. It is also the single idea Lifeline is built around.</p>
+<h2>From share of voice to share of context</h2>
+<p>Every era of competition has had its share metric. Advertising had <strong>share of voice</strong> — your slice of category impressions. Retail had <strong>share of shelf</strong>; search had <strong>share of search</strong>. The pattern is always the same: identify the scarce channel between you and a decision, and measure how much of it is yours.</p>
+<p>As AI moves from a novelty to the layer that mediates real work, the scarce channel shifts again. It is no longer the user's attention; it is the <strong>model's working context</strong> — the finite set of things a model actually reasons from when it acts. Your slice of that is your share of context.</p>
+<p>The strategic turn is subtle but total: you used to compete to be <em>seen</em> by a person. Now you compete to be <em>in the context</em> a model reasons from. A model working on your problem will draw on something. The only question is how much of that something is yours.</p>
+<h2>Why this share is different</h2>
+<p>Here is the part that makes share of context more than the next entry in the list. Every earlier share metric is a <strong>flow you rent</strong>: share of voice lasts exactly as long as you keep buying impressions — stop paying, and it is gone tomorrow. Share of context is a <strong>stock you accrue and own</strong>.</p>
+<p>Once a decision and its <em>why</em> are captured and anchored, they do not expire when the campaign ends. They persist. They compound — the more of your reasoning a model can draw on, the more it defaults to your framing instead of its priors, which makes the next session start from a higher baseline. And because a good record is provider-agnostic, that stock travels with you across vendors and models instead of being trapped in one tool. You do not rent your way to share of context; you build it, and it keeps compounding.</p>
+<h2>Two arenas, one metric</h2>
+<p>Share of context plays out in two places at once.</p>
+<ul>
+<li><strong>Inside your team — your AI on your codebase.</strong> When an assistant works on your repo, its share of context is how much of the <em>why</em> comes from your record versus re-derivation and guesswork. Low share looks familiar: it re-proposes decisions you already settled and re-walks dead ends you already mapped. This is the world of <a href="/blog/time-to-context.html">time-to-context</a>, <a href="/blog/context-engineering.html">context engineering</a>, and <a href="/blog/ai-context-handoff.html">the handoff problem</a> — those are the <em>mechanics</em>; share of context is the <em>scoreboard</em>.</li>
+<li><strong>Out in the world — any AI answering about your domain.</strong> When someone asks an AI about your product, your company, or your category, how much of its answer is grounded in your authoritative material versus third parties and stale priors? That is what <a href="/docs/concepts.html">generative engine optimization (GEO)</a> is really chasing.</li>
+</ul>
+<p>Same metric, two scopes: the context your <em>own</em> AIs reason from, and the context the <em>world's</em> AIs reason from. Both are winnable, and both are usually left on the table.</p>
+<h2>How you lose it</h2>
+<p>Share of context leaks in four predictable ways:</p>
+<ol>
+<li><strong>Priors fill the gap.</strong> Where your specifics are missing, the model substitutes generic training priors — plausible, confident, and not yours.</li>
+<li><strong>Similarity beats truth.</strong> Retrieval surfaces what looks relevant, including reverted approaches and competitor framing. Without anchoring, the model cannot tell live reasoning from dead reasoning.</li>
+<li><strong>Ephemerality.</strong> Your best reasoning happened in a chat or a PR thread and evaporated. The next model cannot draw on what no longer exists in a durable place.</li>
+<li><strong>No trust signal.</strong> Even when your context is present, if the model cannot tell current from stale, it discounts or misuses it.</li>
+</ol>
+<p>Sum the leaks and most teams operate at a low share — losing ground they never knew was contested, because the metric was invisible.</p>
+<h2>How Lifeline wins it</h2>
+<p>Lifeline is a context runtime: an append-only, content-addressed, <strong>anchored</strong> ledger of a project's <em>why</em>, served to any AI over MCP. Read through this lens, every part of it is a move to raise share of context:</p>
+<ul>
+<li><strong>It captures the why, not just the what</strong> — so your reasoning is present in a durable place instead of evaporating into a transcript. (Plugs leak #3.)</li>
+<li><strong>It anchors every claim</strong> to the immutable event that produced it, with corrections that supersede rather than overwrite — so the model gets a trust signal: this is current, that was reverted. (Plugs #2 and #4.)</li>
+<li><strong>It delivers on connect over <a href="/docs/mcp.html">MCP</a></strong>, provider-agnostic — so every AI, any vendor, any session, reasons from your record instead of its priors. (Plugs #1, and makes the share portable rather than locked to one tool.)</li>
+<li><strong>It keeps a human in the loop.</strong> The AI proposes entries; a person approves them. That keeps your share of context high-<em>quality</em>, not merely high-volume — signal, not noise.</li>
+</ul>
+<p>The compounding result: in every session, a larger and more trustworthy slice of what the model reasons from is yours. You stop renting space in a model's defaults and start owning the context it stands on.</p>
+<p>There is a fitting tell in how this very page reached you. Lifeline's site is engineered for external share of context too — anchored claims, structured data, an <a href="/llms.txt">llms.txt</a> — so that when an AI is asked about context engineering, Lifeline's framing is in the context it answers from. The product and its go-to-market run on the same metric.</p>
+<h2>Measuring your share of context</h2>
+<p>You can audit it in five minutes. Open a fresh AI session on a real task in your project and watch what it reasons from:</p>
+<ol>
+<li>Is it citing <em>your</em> actual decisions, or inventing plausible ones?</li>
+<li>Does it know what you tried and <strong>reverted</strong> — or does it re-propose it?</li>
+<li>How much of its plan is your specifics versus generic best-practice patterns?</li>
+</ol>
+<p>The distance between what the model reasons from and your real record is your unowned share. Much of it is recoverable — and recovering it is the work.</p>
+<h2>Key takeaways</h2>
+<ul>
+<li><strong>Share of context</strong> is the portion of an AI's working context that comes from your curated, anchored record — the AI-era successor to share of voice and share of search.</li>
+<li>Unlike earlier share metrics, it is a stock you accrue and own, not a flow you rent: once captured and anchored, it persists, compounds, and travels across vendors.</li>
+<li>It leaks through priors, similarity-over-truth retrieval, ephemeral reasoning, and missing trust signals — inside your team and out in the world.</li>
+<li>Lifeline is built to win it: capture the <em>why</em>, anchor every claim, deliver to any AI over MCP, and keep a human curating — so a larger, more trustworthy slice of what AI reasons from is yours.</li>
+</ul>
+<h2>Frequently asked questions</h2>
+<p><strong>What is share of context?</strong>
+Share of context is the portion of an AI's working context — on any task touching your project or domain — that comes from your curated, anchored record, rather than generic model priors, similarity-ranked retrieval, or someone else's framing. It is the AI-era successor to share of voice.</p>
+<p><strong>How is share of context different from share of voice or GEO?</strong>
+Share of voice measures your slice of advertising impressions; GEO (generative engine optimization) is the practice of being cited by AI answer engines. Share of context is the underlying metric both point at: how much of what a model actually reasons from is yours. Unlike share of voice, it is a stock you accrue and own, not a flow you rent.</p>
+<p><strong>How do you increase your share of context?</strong>
+Capture your reasoning (the why, not just the what), anchor every claim to its source so the model gets a trust signal, and deliver it to any AI on connect over a standard interface like MCP. That replaces the model's priors and similarity-ranked guesses with your curated record.</p>
+<p><strong>Can you measure share of context?</strong>
+Roughly: open a fresh AI session on a real task and judge how much of what it knows is your specifics versus generic patterns — does it cite your actual decisions, and does it know what you reverted? The gap between what it reasons from and your real record is your unowned share.</p>
+<blockquote>
+<p><strong>Start owning your share of context</strong> — open source, no signup:</p>
+<p><code>pip install lifeline-context
+python -m lifeline context</code></p>
+</blockquote>
+<hr />
+<p><em>Related reading: <a href="/blog/time-to-context.html">Time-to-context</a> · <a href="/blog/context-engineering.html">Context engineering</a> · <a href="/blog/ai-context-handoff.html">How AIs inherit each other's context</a>. <a href="https://github.com/lifeline-context/lifeline">Lifeline</a> is an open-source context runtime — git for reasoning, MCP-native and provider-agnostic.</em></p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/blog/share-of-context.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>
