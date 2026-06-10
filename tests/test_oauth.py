@@ -330,6 +330,51 @@ class TestEndToEndASGI(unittest.IsolatedAsyncioTestCase):
             self.assertIn("invalid_grant", tok.text)
 
 
+class TestRobustness(unittest.IsolatedAsyncioTestCase):
+    """Incidente do deploy: SUPABASE_URL sem https:// → httpx UnsupportedProtocol → 500 cru
+    no login. Conserto: normaliza a URL na entrada + trata/loga toda falha do Supabase."""
+
+    def test_clean_url_adds_scheme_and_trims(self):
+        from lifeline.cloud import clean_url
+        self.assertEqual(clean_url("rzp.supabase.co"), "https://rzp.supabase.co")     # sem esquema
+        self.assertEqual(clean_url("  https://rzp.supabase.co/  "), "https://rzp.supabase.co")  # espaço+barra
+        self.assertEqual(clean_url("http://localhost:8000"), "http://localhost:8000")  # http preservado
+
+    def test_schemeless_url_is_normalized(self):
+        a = SupabaseAuthServer(supabase_url="rzp.supabase.co", supabase_key=" anon ",
+                               public_url="lifeline.example", transport=httpx.MockTransport(_supabase_handler()))
+        self.assertEqual(a.url, "https://rzp.supabase.co")          # https:// garantido
+        self.assertEqual(a.key, "anon")                             # key trimada
+        self.assertEqual(a.public_url, "https://lifeline.example")
+
+    async def test_supabase_network_error_is_graceful_not_500(self):
+        def boom(req):
+            raise httpx.ConnectError("rede caiu")
+        a = SupabaseAuthServer(supabase_url="https://x.supabase.co", supabase_key="k",
+                               public_url="https://mcp.example", transport=httpx.MockTransport(boom))
+        self.assertIsNone(await a._supabase_token("password", {"email": "a", "password": "b"}))  # None, não estoura
+        sess, msg = await a._supabase_signup("a@b.c", "x")
+        self.assertIsNone(sess)
+        self.assertIn("indisponível", msg)                          # mensagem clara
+        self.assertIsNone(await a.load_access_token("tok"))         # introspecção também graciosa
+
+    async def test_login_post_never_raises_bare_500(self):
+        # ticket válido mas o Supabase estoura → login devolve o form com erro, status definido
+        def boom(req):
+            raise httpx.ConnectError("rede caiu")
+        a = SupabaseAuthServer(supabase_url="https://x.supabase.co", supabase_key="k",
+                               public_url="https://mcp.example", transport=httpx.MockTransport(boom))
+        _v, challenge = _pkce()
+        url = await a.authorize(_client(), AuthorizationParams(
+            state="s", scopes=[], code_challenge=challenge,
+            redirect_uri="https://conector.example/callback",
+            redirect_uri_provided_explicitly=True, resource=None))
+        ticket = url.split("ticket=")[1]
+        resp = await a.login_post(_Form({"ticket": ticket, "email": "a@b.c", "password": "x"}))
+        self.assertIn(resp.status_code, (400, 401))                 # erro tratado (credencial inválida), não 500
+        self.assertEqual(a._codes, {})
+
+
 class TestBuildRemoteAS(unittest.TestCase):
     def test_oauth_as_mounts_dcr_and_token_endpoints(self):
         self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))

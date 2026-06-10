@@ -81,9 +81,10 @@ class SupabaseAuthServer(
 
     def __init__(self, *, supabase_url: str, supabase_key: str, public_url: str,
                  transport: Any = None, code_ttl: int = 300):
-        self.url = supabase_url.rstrip("/")
-        self.key = supabase_key
-        self.public_url = public_url.rstrip("/")
+        from lifeline.cloud import clean_url
+        self.url = clean_url(supabase_url)           # garante https:// (erro comum no deploy)
+        self.key = (supabase_key or "").strip()
+        self.public_url = clean_url(public_url)
         self._transport = transport
         self.code_ttl = code_ttl
         self._clients: Dict[str, OAuthClientInformationFull] = {}
@@ -95,29 +96,45 @@ class SupabaseAuthServer(
         return httpx.AsyncClient(timeout=15, transport=self._transport)
 
     async def _supabase_token(self, grant: str, payload: Dict) -> Optional[Dict]:
-        """Bate em /auth/v1/token?grant_type=… (password|refresh_token). 200 → sessão; senão None."""
-        async with self._client() as c:
-            r = await c.post(f"{self.url}/auth/v1/token", params={"grant_type": grant},
-                             json=payload, headers={"apikey": self.key,
-                                                    "Content-Type": "application/json"})
+        """Bate em /auth/v1/token?grant_type=… (password|refresh_token). 200 → sessão; senão None.
+        Qualquer erro de rede/URL é LOGADO e vira None (nunca 500 cru no fluxo de login)."""
+        try:
+            async with self._client() as c:
+                r = await c.post(f"{self.url}/auth/v1/token", params={"grant_type": grant},
+                                 json=payload, headers={"apikey": self.key,
+                                                        "Content-Type": "application/json"})
+        except Exception:
+            _log.exception("Supabase token grant=%s: falha de rede/URL", grant)
+            return None
         if r.status_code != 200:
             _log.info("Supabase token grant=%s -> %s", grant, r.status_code)
             return None
-        return r.json()
+        try:
+            return r.json()
+        except Exception:
+            _log.exception("Supabase token: resposta não-JSON")
+            return None
 
     async def _supabase_signup(self, email: str, password: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Cria a conta no Supabase (/auth/v1/signup). Sem isto, o 1º usuário que conecta pelo
         navegador (claude.ai) não tem conta e fica travado. Retorna (sessão, None) quando o
         projeto auto-confirma (login imediato); (None, mensagem) quando precisa confirmar por
         email (não dá pra completar inline) ou quando a conta já existe / falha."""
-        async with self._client() as c:
-            r = await c.post(f"{self.url}/auth/v1/signup",
-                             json={"email": email, "password": password},
-                             headers={"apikey": self.key, "Content-Type": "application/json"})
+        try:
+            async with self._client() as c:
+                r = await c.post(f"{self.url}/auth/v1/signup",
+                                 json={"email": email, "password": password},
+                                 headers={"apikey": self.key, "Content-Type": "application/json"})
+        except Exception:
+            _log.exception("Supabase signup: falha de rede/URL")
+            return None, "serviço de autenticação indisponível — tente de novo em instantes."
         if r.status_code not in (200, 201):
             _log.info("Supabase signup -> %s", r.status_code)
             return None, "não foi possível criar a conta (talvez já exista — tente entrar)."
-        data = r.json() or {}
+        try:
+            data = r.json() or {}
+        except Exception:
+            return None, "resposta inválida do serviço de autenticação."
         sess = data if data.get("access_token") else (data.get("session") or {})
         if sess.get("access_token"):
             return sess, None
@@ -144,6 +161,14 @@ class SupabaseAuthServer(
         return HTMLResponse(_LOGIN_HTML.format(ticket=ticket, error=""))
 
     async def login_post(self, request: Request):
+        try:
+            return await self._login_post(request)
+        except Exception:   # rede-de-segurança: nunca 500 cru no login (loga o porquê)
+            _log.exception("login_post: erro inesperado")
+            return HTMLResponse(_LOGIN_HTML.format(
+                ticket="", error="erro interno ao autorizar — recomece a conexão"), status_code=500)
+
+    async def _login_post(self, request: Request):
         form = await request.form()
         ticket = str(form.get("ticket", ""))
         entry = self._tickets.get(ticket)
@@ -218,9 +243,13 @@ class SupabaseAuthServer(
     async def load_access_token(self, token: str) -> Optional[AccessToken]:
         if not token:
             return None
-        async with self._client() as c:
-            r = await c.get(f"{self.url}/auth/v1/user",
-                            headers={"apikey": self.key, "Authorization": f"Bearer {token}"})
+        try:
+            async with self._client() as c:
+                r = await c.get(f"{self.url}/auth/v1/user",
+                                headers={"apikey": self.key, "Authorization": f"Bearer {token}"})
+        except Exception:
+            _log.exception("Supabase /user: falha de rede/URL")
+            return None
         if r.status_code != 200:
             return None
         uid = (r.json() or {}).get("id", "unknown")

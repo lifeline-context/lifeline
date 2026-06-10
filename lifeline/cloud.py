@@ -31,6 +31,17 @@ PROPOSALS = "lifeline_proposals"
 _log = logging.getLogger("lifeline.cloud")
 
 
+def clean_url(url: str) -> str:
+    """Normaliza a URL do Supabase na ENTRADA: tira espaços/quebras, garante o esquema
+    https:// e remove a barra final. Colar a URL SEM `https://` no dashboard é o erro mais
+    comum — e sem esquema o httpx levanta UnsupportedProtocol, que virava um 500 cru no
+    fluxo de auth. Consertar aqui mata a classe inteira do problema."""
+    url = (url or "").strip()
+    if url and not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    return url.rstrip("/")
+
+
 def _ensure_ok(r: httpx.Response) -> httpx.Response:
     """4xx/5xx → loga (status + trecho do corpo) e levanta. Falha de rede nunca vira
     sucesso silencioso. Não loga headers/token."""
@@ -61,9 +72,9 @@ class _SupabaseBase:
                 "projeto no header `apikey` e o JWT no `Authorization: Bearer` (dois valores)."
             )
         self.line = line
-        self.url = url.rstrip("/")
-        self.key = key
-        self.token = token
+        self.url = clean_url(url)
+        self.key = key.strip()
+        self.token = (token or "").strip()
         self.base = f"{self.url}/rest/v1/{table}"
         self._transport = transport  # None = real; httpx.MockTransport(...) nos testes
 

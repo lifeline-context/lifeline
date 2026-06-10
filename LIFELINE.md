@@ -1510,3 +1510,19 @@ Preparando o teste hospedado multi-tenant (claude.ai), fechei o gap que travaria
 Incidente no 1o teste com o claude.ai: o conector falhou no registro (DCR). Log do Render mostrou TUDO 404 — inclusive /.well-known/oauth-authorization-server e /register. Causa: o servidor subiu em authless porque as env vars do AS (LIFELINE_OAUTH_AS=1 + LIFELINE_STORE=supabase + SUPABASE_*) nao foram aplicadas, e _build_remote CAÍA em authless SEM AVISAR — a mesma classe de falha calada que a auditoria desta sessao cacou. Consertos: (1) o boot ANUNCIA o modo no log ([lifeline] modo: AUTHORIZATION SERVER / RESOURCE SERVER / AUTHLESS); (2) se LIFELINE_OAUTH(_AS)=1 foi pedido mas falta env, GRITA exatamente o que falta em vez de cair calado; (3) PUBLIC_URL e ALLOWED_HOSTS agora DERIVAM de RENDER_EXTERNAL_URL/HOSTNAME automaticamente — menos config manual, menos chance de mismatch. render.yaml reduzido a 4 env vars. Validado simulando o ambiente Render: AS liga, issuer = a URL do Render, rotas DCR/authorize/login montadas. 33 testes (mcp+oauth) verdes. Limite: o handshake real do claude.ai ainda precisa rodar com o AS de fato no ar.
 
 <!-- lifeline:end -->
+
+### #0078 — 2026-06-10T13:21:57.146860+00:00 — fix
+
+- **author**: claude
+- **agent**: claude-code
+- **provider**: anthropic
+- **model**: claude-fable-5
+- **kind**: fix
+- **summary**: Login do AS dava 500 cru: SUPABASE_URL sem https:// estourava no httpx; normaliza a URL + trata/loga toda falha do Supabase
+- **parents**: 9e34d604ece39775b4dc15ad619cfe77b7d01d119f2b6e4ec4110ecbf816b924
+- **id**: fb0cfb2dbf9465d18087ce6dc3915121e3acdd03b85930bd016c50b8c516db56
+
+**Body**:
+Segundo incidente do teste hospedado: o form de login dava 'Internal Server Error' em qualquer acao, sem log visivel. Reproduzido contra o servidor ao vivo (register -> authorize -> POST /oauth/login = 500). Causa raiz: SUPABASE_URL colada SEM 'https://' no Render -> httpx levanta UnsupportedProtocol na chamada de auth -> 500 (o store nao usa essa URL no login, por isso so apareceu aqui). Mesma classe de falha opaca que a sessao toda combate. Consertos: (1) clean_url() normaliza a URL do Supabase na ENTRADA (prepende https://, tira espacos/barra) — em cloud._SupabaseBase E em oauth.SupabaseAuthServer; mata o cenario inteiro mesmo se a env vier torta; (2) _supabase_token/_supabase_signup/load_access_token agora capturam erro de rede/URL e resposta nao-JSON -> LOGAM e devolvem None/mensagem clara, nunca 500; (3) login_post ganhou rede-de-seguranca try/except que devolve o form com erro legivel e loga o traceback. 4 testes novos (normalizacao + falha graciosa). Validado ao vivo: URL sem esquema agora alcanca o Supabase em vez de estourar. 39 testes oauth+supabase verdes.
+
+<!-- lifeline:end -->
