@@ -11,12 +11,12 @@ services:
     autoDeploy: true               # redeploy a cada push na main
     # Authless (default): deixe SEM envVars → conector de 1 clique, line compartilhada.
     #
-    # Multi-tenant (Authorization Server, #0049 — FEITO): defina no dashboard (NÃO comite segredo).
-    # PUBLIC_URL e ALLOWED_HOSTS = a URL pública do serviço (ex.: lifeline-mcp.onrender.com).
+    # Multi-tenant (Authorization Server, #0049 — FEITO): basta ESTAS quatro. A URL pública e o
+    # host derivam de RENDER_EXTERNAL_URL/HOSTNAME automaticamente (não precisa PUBLIC_URL nem
+    # ALLOWED_HOSTS). Defina os dois SUPABASE_* no dashboard (sync:false = NÃO comita segredo).
+    # O boot ANUNCIA o modo no log; se faltar algo, AVISA em vez de cair calado em authless.
     # envVars:
-    #   - key: LIFELINE_OAUTH_AS           value: "1"
-    #   - key: LIFELINE_STORE              value: supabase
-    #   - key: LIFELINE_MCP_PUBLIC_URL     value: https://lifeline-mcp.onrender.com
-    #   - key: LIFELINE_MCP_ALLOWED_HOSTS  value: lifeline-mcp.onrender.com
-    #   - key: SUPABASE_URL                sync: false
-    #   - key: SUPABASE_KEY                sync: false
+    #   - key: LIFELINE_OAUTH_AS   value: "1"
+    #   - key: LIFELINE_STORE      value: supabase
+    #   - key: SUPABASE_URL        sync: false
+    #   - key: SUPABASE_KEY        sync: false

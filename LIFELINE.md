@@ -1494,3 +1494,19 @@ O open item #32d96c3d (proximo: OAuth Authorization Server p/ plugar nos conecto
 Preparando o teste hospedado multi-tenant (claude.ai), fechei o gap que travaria o 1o usuario: o form /oauth/login so fazia login (password grant), nao CRIAVA conta — quem conectasse sem conta Supabase ficava preso. Adicionado /auth/v1/signup com checkbox 'Criar conta': auto-confirm -> loga inline e cunha o code; confirmacao-por-email -> mensagem clara (nao da pra completar inline); conta existente/erro -> mensagem. E adicionado o teste mais valioso do AS: TestEndToEndASGI dirige o baile INTEIRO pelas rotas HTTP reais (DCR /register -> /authorize 302 -> /oauth/login 302 -> /token 200) com PKCE S256 verificado pelo SDK e o Supabase mockado — o mais perto do handshake do claude.ai sem conector ao vivo; + caso negativo (PKCE errado -> invalid_grant). Discovery validado RFC-compliant (protected-resource aponta authorization_servers ao nosso AS; AS anuncia authorize/token/register + S256). 124 testes verdes. Limite ainda aberto e declarado: o handshake com o claude.ai REAL nunca rodou (so mock); e clients DCR seguem em memoria (ok p/ instancia unica).
 
 <!-- lifeline:end -->
+
+### #0077 — 2026-06-10T12:43:01.297084+00:00 — fix
+
+- **author**: claude
+- **agent**: claude-code
+- **provider**: anthropic
+- **model**: claude-fable-5
+- **kind**: fix
+- **summary**: Deploy hospedado caía em AUTHLESS em silêncio; AS não ligava — boot anuncia o modo + auto-deriva a URL do Render
+- **parents**: be30eeec3a86ae2c5098b639ed8207e28859a5131d204299abcd5d9eb4336e15
+- **id**: 9e34d604ece39775b4dc15ad619cfe77b7d01d119f2b6e4ec4110ecbf816b924
+
+**Body**:
+Incidente no 1o teste com o claude.ai: o conector falhou no registro (DCR). Log do Render mostrou TUDO 404 — inclusive /.well-known/oauth-authorization-server e /register. Causa: o servidor subiu em authless porque as env vars do AS (LIFELINE_OAUTH_AS=1 + LIFELINE_STORE=supabase + SUPABASE_*) nao foram aplicadas, e _build_remote CAÍA em authless SEM AVISAR — a mesma classe de falha calada que a auditoria desta sessao cacou. Consertos: (1) o boot ANUNCIA o modo no log ([lifeline] modo: AUTHORIZATION SERVER / RESOURCE SERVER / AUTHLESS); (2) se LIFELINE_OAUTH(_AS)=1 foi pedido mas falta env, GRITA exatamente o que falta em vez de cair calado; (3) PUBLIC_URL e ALLOWED_HOSTS agora DERIVAM de RENDER_EXTERNAL_URL/HOSTNAME automaticamente — menos config manual, menos chance de mismatch. render.yaml reduzido a 4 env vars. Validado simulando o ambiente Render: AS liga, issuer = a URL do Render, rotas DCR/authorize/login montadas. 33 testes (mcp+oauth) verdes. Limite: o handshake real do claude.ai ainda precisa rodar com o AS de fato no ar.
+
+<!-- lifeline:end -->

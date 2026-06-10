@@ -203,6 +203,8 @@ def _transport_security() -> TransportSecuritySettings:
     libera esses (proteção anti-DNS-rebinding ON); sem ele, desliga a proteção (o servidor remoto
     já é público de qualquer forma)."""
     hosts = os.environ.get("LIFELINE_MCP_ALLOWED_HOSTS", "").strip()
+    if not hosts:
+        hosts = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()  # Render injeta sozinho
     if hosts:
         allow = []
         for h in (x.strip() for x in hosts.split(",") if x.strip()):
@@ -221,14 +223,32 @@ def _build_remote() -> FastMCP:
         quando um AS externo já emite os tokens.
       - (nenhum)            → sem auth (single-tenant via env).
 
-    Sempre com transport_security que aceita o host público (túnel/proxy/deploy)."""
+    No deploy, `public`/host derivam de RENDER_EXTERNAL_URL/HOSTNAME automaticamente (menos
+    config manual). E o MODO escolhido é ANUNCIADO no boot — com aviso ALTO se o AS/RS foi
+    pedido mas não pôde ligar (env faltando), pra nunca mais cair em authless em silêncio."""
     ts = _transport_security()
     have_supa = (_STORE["kind"] == "supabase"
                  and os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY"))
     port = int(os.environ.get("LIFELINE_MCP_PORT", "8000"))
-    public = os.environ.get("LIFELINE_MCP_PUBLIC_URL", f"http://localhost:{port}")
+    public = (os.environ.get("LIFELINE_MCP_PUBLIC_URL")
+              or os.environ.get("RENDER_EXTERNAL_URL")        # Render injeta sozinho
+              or f"http://localhost:{port}")
+    want_as = os.environ.get("LIFELINE_OAUTH_AS") == "1"
+    want_rs = os.environ.get("LIFELINE_OAUTH") == "1"
 
-    if os.environ.get("LIFELINE_OAUTH_AS") == "1" and have_supa:
+    # Anti-falha-calada: pediu auth e não dá pra ligar → DIGA exatamente o que falta (não some).
+    if (want_as or want_rs) and not have_supa:
+        miss = []
+        if _STORE["kind"] != "supabase":
+            miss.append("LIFELINE_STORE=supabase")
+        if not os.environ.get("SUPABASE_URL"):
+            miss.append("SUPABASE_URL")
+        if not os.environ.get("SUPABASE_KEY"):
+            miss.append("SUPABASE_KEY")
+        print(f"[lifeline] AVISO: LIFELINE_OAUTH{'_AS' if want_as else ''}=1 pedido, mas "
+              f"caindo em AUTHLESS — falta definir: {', '.join(miss)}", flush=True)
+
+    if want_as and have_supa:
         from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions
         from lifeline.oauth import SupabaseAuthServer
         provider = SupabaseAuthServer(
@@ -241,18 +261,22 @@ def _build_remote() -> FastMCP:
                               client_registration_options=ClientRegistrationOptions(enabled=True)),
             transport_security=ts))
         provider.register_login_routes(server)        # /oauth/login (delega ao Supabase)
+        print(f"[lifeline] modo: AUTHORIZATION SERVER (DCR + auth-code/PKCE, login via Supabase) "
+              f"· público={public}", flush=True)
         return server
 
-    if os.environ.get("LIFELINE_OAUTH") == "1" and have_supa:
+    if want_rs and have_supa:
         from mcp.server.auth.settings import AuthSettings
         issuer = os.environ.get("LIFELINE_OAUTH_ISSUER",
                                 f"{os.environ['SUPABASE_URL'].rstrip('/')}/auth/v1")
+        print(f"[lifeline] modo: RESOURCE SERVER (Bearer obrigatório) · público={public}", flush=True)
         return _register(FastMCP(
             "Lifeline", instructions=_INSTRUCTIONS,
             token_verifier=SupabaseTokenVerifier(),
             auth=AuthSettings(issuer_url=issuer, resource_server_url=public, required_scopes=[]),
             transport_security=ts,
         ))
+    print(f"[lifeline] modo: AUTHLESS (single-tenant) · público={public}", flush=True)
     return _register(FastMCP("Lifeline", instructions=_INSTRUCTIONS, transport_security=ts))
 
 
