@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Autorizar — Lifeline</title>
+<link rel="icon" href="/lifeline/assets/favicon.svg" type="image/svg+xml">
+<style>
+  /* tokens do site (style.css) — auto-contido p/ não herdar o layout da landing */
+  :root{
+    --bg:#08090a; --bg-elev:#0d0e10; --bg-elev-2:#131417;
+    --ink:#f7f8f8; --ink-dim:#b7bdc6; --ink-mute:#8a8f98; --ink-faint:#5b606b;
+    --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.14);
+    --accent:#7c89ff; --accent-2:#41d6c3; --accent-glow:rgba(124,137,255,.45);
+    --radius:10px;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono","Menlo","Consolas",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:var(--font); background:var(--bg); color:var(--ink); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased; letter-spacing:-.011em;
+    min-height:100vh; display:grid; place-items:center; padding:24px;
+  }
+  .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(1100px 560px at 20% 24%,rgba(124,137,255,.10),transparent 60%),
+               radial-gradient(820px 460px at 84% 80%,rgba(65,214,195,.06),transparent 60%);}
+  .card{
+    position:relative; z-index:1; width:100%; max-width:400px;
+    background:linear-gradient(180deg,var(--bg-elev),rgba(13,14,16,.55));
+    border:1px solid var(--line); border-radius:14px; padding:30px 28px;
+    box-shadow:0 24px 70px rgba(0,0,0,.55);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:560;letter-spacing:-.02em;margin-bottom:6px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px 1px var(--accent-glow)}
+  .brand .ver{color:var(--ink-faint);font:500 11px/1 var(--mono);margin-left:2px}
+  h1{font-size:20px;font-weight:580;letter-spacing:-.025em;line-height:1.15;margin-top:14px}
+  h1 .grad{background:linear-gradient(96deg,var(--ink) 30%,var(--accent) 75%,var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  p.sub{color:var(--ink-mute);font-size:14px;margin-top:8px}
+  .who{color:var(--ink-dim)} .who b{color:var(--ink);font-weight:560}
+  .err{color:#ff6b6b;font-size:13px;min-height:16px;margin-top:10px}
+  .scopes{margin:18px 0 4px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--bg-elev-2);padding:12px 14px}
+  .scopes .k{font:600 10.5px/1 var(--mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+  .scopes ul{list-style:none;margin:9px 0 0;display:flex;flex-direction:column;gap:6px}
+  .scopes li{color:var(--ink-dim);font-size:13px;display:flex;gap:8px}
+  .scopes li::before{content:"›";color:var(--accent)}
+  .field{width:100%;margin:7px 0;padding:11px 13px;border-radius:9px;border:1px solid var(--line-strong);
+    background:#0b0c0e;color:var(--ink);font-size:14px;font-family:var(--font)}
+  .field::placeholder{color:var(--ink-faint)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    padding:11px 16px;border-radius:var(--radius);font-size:14.5px;font-weight:540;cursor:pointer;
+    border:1px solid transparent;transition:all .18s cubic-bezier(.22,1,.36,1);margin-top:10px}
+  .btn-primary{background:var(--ink);color:#0a0b0c}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(255,255,255,.12)}
+  .btn-ghost{border-color:var(--line-strong);color:var(--ink-dim);background:transparent}
+  .btn-ghost:hover{border-color:var(--accent);color:#fff}
+  .btn .ic{width:17px;height:17px;display:inline-block}
+  .row{display:flex;gap:10px} .row .btn{margin-top:0}
+  .or{display:flex;align-items:center;gap:12px;color:var(--ink-faint);font-size:12px;margin:18px 0 6px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .muted{color:var(--ink-faint);font-size:12px;margin-top:16px;text-align:center}
+  .link{color:var(--ink-mute);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+  .link:hover{color:var(--ink)}
+  .hide{display:none}
+  .spin{width:20px;height:20px;border:2px solid var(--line-strong);border-top-color:var(--accent);
+    border-radius:50%;animation:r .7s linear infinite;margin:8px auto}
+  @keyframes r{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="card">
+  <div class="brand"><span class="dot"></span>Lifeline<span class="ver">oauth</span></div>
+
+  <!-- estado: carregando -->
+  <div id="loading"><div class="spin"></div><p class="sub" style="text-align:center">Carregando o pedido…</p></div>
+
+  <!-- estado: login (sem sessão) -->
+  <div id="login" class="hide">
+    <h1>Entre para <span class="grad">autorizar</span></h1>
+    <p class="sub"><span id="login-app" class="who">Um aplicativo</span> quer conectar à sua Lifeline.</p>
+    <div class="err" id="login-err"></div>
+    <button class="btn btn-ghost" data-prov="google">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="#fff" d="M12 11v3.2h4.5c-.2 1.2-1.4 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-5s2.2-5 4.9-5c1.5 0 2.6.7 3.2 1.2l2.2-2.1C16.1 3.7 14.2 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.6 8.6-8.7 0-.6-.1-1-.2-1.5z"/></svg>
+      Continuar com Google
+    </button>
+    <button class="btn btn-ghost" data-prov="github">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.300-4.6-1.1-4.6-4.9 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.8-2.4 4.6-4.6 4.9.3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+      Continuar com GitHub
+    </button>
+    <div class="or">ou com email</div>
+    <input id="email" class="field" type="email" placeholder="email" autocomplete="username">
+    <input id="password" class="field" type="password" placeholder="senha" autocomplete="current-password">
+    <button class="btn btn-primary" id="email-go">Continuar</button>
+    <p class="muted">Primeiro acesso? <span class="link" id="signup-link">Criar conta</span></p>
+  </div>
+
+  <!-- estado: consentimento (com sessão) -->
+  <div id="consent" class="hide">
+    <h1><span id="consent-app" class="grad">Um aplicativo</span> quer acesso</h1>
+    <p class="sub">Conectado como <span id="who-email" class="who"></span>.</p>
+    <div class="scopes" id="scopes-box">
+      <div class="k">Vai poder</div>
+      <ul id="scopes-list"><li>Ler e propor no contexto da sua Lifeline (com sua curadoria)</li></ul>
+    </div>
+    <div class="err" id="consent-err"></div>
+    <button class="btn btn-primary" id="approve">Autorizar</button>
+    <button class="btn btn-ghost" id="deny">Negar</button>
+    <p class="muted"><span class="link" id="switch">Entrar com outra conta</span></p>
+  </div>
+
+  <!-- estado: erro -->
+  <div id="error" class="hide">
+    <h1>Algo deu errado</h1>
+    <p class="sub" id="error-msg">Erro desconhecido.</p>
+    <button class="btn btn-ghost" onclick="location.reload()">Tentar de novo</button>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// anon key é pública por design (client-side, protegida por RLS) — pode ficar no estático
+const SUPABASE_URL = 'https://rzphncyjrilhwpuemrcl.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6cGhuY3lqcmlsaHdwdWVtcmNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxODIyNjMsImV4cCI6MjA5NTc1ODI2M30.eoos8tKCFA8inMVTFLh3xE6wQDlKQgiU8jQOFsIET88'
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON)
+const $ = (id) => document.getElementById(id)
+const params = new URLSearchParams(location.search)
+const authId = params.get('authorization_id') || params.get('authorization_request_id')
+
+function show(state){ for(const s of ['loading','login','consent','error']) $(s).classList.toggle('hide', s!==state) }
+function fail(msg){ $('error-msg').textContent = msg; show('error') }
+
+async function main(){
+  if (!sb.auth.oauth){ return fail('supabase-js sem suporte ao OAuth Server (versão antiga em cache). Recarregue.') }
+  if (!authId){ return fail('Faltou o authorization_id na URL — recomece a conexão pelo cliente (claude.ai).') }
+  const { data:{ session } } = await sb.auth.getSession()
+  if (!session){ show('login'); return }
+
+  let details
+  try {
+    const res = await sb.auth.oauth.getAuthorizationDetails(authId)
+    if (res.error) throw res.error
+    details = res.data || res
+  } catch (e){ return fail('Não foi possível carregar o pedido: ' + (e.message||e)) }
+
+  const client = details.client || details
+  $('consent-app').textContent = client.name || client.client_name || 'Um aplicativo'
+  $('who-email').textContent = session.user?.email || session.user?.id || '—'
+  // a API devolve `scope` como string separada por espaço (fallback: array `scopes`)
+  const raw = details.scope ?? details.scopes ?? client.scope
+  const scopeArr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(/\s+/).filter(Boolean) : [])
+  if (scopeArr.length){
+    const ul = $('scopes-list'); ul.innerHTML = ''
+    for (const s of scopeArr){ const li = document.createElement('li'); li.textContent = s; ul.appendChild(li) }  // textContent = sem injeção
+  }
+  show('consent')
+}
+
+// ----- login: social -----
+for (const btn of document.querySelectorAll('[data-prov]')){
+  btn.addEventListener('click', async () => {
+    const provider = btn.dataset.prov
+    const { error } = await sb.auth.signInWithOAuth({ provider, options:{ redirectTo: location.href } })
+    if (error) $('login-err').textContent = error.message  // ex.: provider não habilitado no Supabase
+  })
+}
+// ----- login: email/senha (+ criar conta) -----
+let signupMode = false
+$('signup-link').addEventListener('click', () => {
+  signupMode = !signupMode
+  $('email-go').textContent = signupMode ? 'Criar conta e continuar' : 'Continuar'
+  $('signup-link').textContent = signupMode ? 'Já tenho conta' : 'Criar conta'
+})
+$('email-go').addEventListener('click', async () => {
+  $('login-err').textContent = ''
+  const email = $('email').value.trim(), password = $('password').value
+  if (!email || !password){ $('login-err').textContent = 'Preencha email e senha.'; return }
+  const fn = signupMode ? sb.auth.signUp({ email, password })
+                        : sb.auth.signInWithPassword({ email, password })
+  const { data, error } = await fn
+  if (error){ $('login-err').textContent = error.message; return }
+  if (signupMode && !data.session){ $('login-err').textContent = 'Conta criada — confirme pelo email e volte para entrar.'; return }
+  location.reload()  // tem sessão → vira a tela de consentimento
+})
+
+// ----- consentimento: aprovar / negar -----
+$('approve').addEventListener('click', () => finish('approve'))
+$('deny').addEventListener('click', () => finish('deny'))
+async function finish(kind){
+  $('consent-err').textContent = ''
+  try {
+    const call = kind==='approve' ? sb.auth.oauth.approveAuthorization(authId)
+                                  : sb.auth.oauth.denyAuthorization(authId)
+    const res = await call
+    if (res.error) throw res.error
+    const url = (res.data && (res.data.redirect_url || res.data.url)) || res.redirect_url
+    if (!url) throw new Error('o Supabase não devolveu o redirect_url')
+    location.href = url
+  } catch (e){ $('consent-err').textContent = 'Falha ao ' + (kind==='approve'?'autorizar':'negar') + ': ' + (e.message||e) }
+}
+$('switch').addEventListener('click', async () => { await sb.auth.signOut(); location.reload() })
+
+main()
+</script>
+</body>
+</html>
