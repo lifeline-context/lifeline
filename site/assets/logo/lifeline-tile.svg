@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Lifeline">
+  <defs>
+    <radialGradient id="ll-glowA" cx="0.18" cy="0.25" r="0.85">
+      <stop offset="0" stop-color="#7c89ff" stop-opacity="0.55"/>
+      <stop offset="0.6" stop-color="#7c89ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ll-glowB" cx="0.85" cy="0.8" r="0.75">
+      <stop offset="0" stop-color="#41d6c3" stop-opacity="0.42"/>
+      <stop offset="0.6" stop-color="#41d6c3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ll-ag" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7c89ff"/><stop offset="1" stop-color="#41d6c3"/>
+    </linearGradient>
+    <clipPath id="ll-tc"><rect width="1024" height="1024" rx="224"/></clipPath>
+  </defs>
+  <g clip-path="url(#ll-tc)">
+    <rect width="1024" height="1024" fill="#08090a"/>
+    <rect width="1024" height="1024" fill="url(#ll-glowA)"/>
+    <rect width="1024" height="1024" fill="url(#ll-glowB)"/>
+  </g>
+  <g fill="#fff">
+    <path d="M120 120 L270 120 L270 754 L660 754 L660 904 L210 904 Q120 904 120 814 L120 120 Z"/>
+    <path d="M364 120 L814 120 Q904 120 904 210 L904 904 L754 904 L754 270 L364 270 Z"/>
+  </g>
+  <g fill="url(#ll-ag)">
+    <rect x="412" y="330" width="72" height="364"/><rect x="540" y="330" width="72" height="364"/>
+    <rect x="330" y="412" width="364" height="72"/><rect x="330" y="540" width="364" height="72"/>
+  </g>
+</svg>
