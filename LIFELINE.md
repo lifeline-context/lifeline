@@ -1526,3 +1526,19 @@ Incidente no 1o teste com o claude.ai: o conector falhou no registro (DCR). Log 
 Segundo incidente do teste hospedado: o form de login dava 'Internal Server Error' em qualquer acao, sem log visivel. Reproduzido contra o servidor ao vivo (register -> authorize -> POST /oauth/login = 500). Causa raiz: SUPABASE_URL colada SEM 'https://' no Render -> httpx levanta UnsupportedProtocol na chamada de auth -> 500 (o store nao usa essa URL no login, por isso so apareceu aqui). Mesma classe de falha opaca que a sessao toda combate. Consertos: (1) clean_url() normaliza a URL do Supabase na ENTRADA (prepende https://, tira espacos/barra) — em cloud._SupabaseBase E em oauth.SupabaseAuthServer; mata o cenario inteiro mesmo se a env vier torta; (2) _supabase_token/_supabase_signup/load_access_token agora capturam erro de rede/URL e resposta nao-JSON -> LOGAM e devolvem None/mensagem clara, nunca 500; (3) login_post ganhou rede-de-seguranca try/except que devolve o form com erro legivel e loga o traceback. 4 testes novos (normalizacao + falha graciosa). Validado ao vivo: URL sem esquema agora alcanca o Supabase em vez de estourar. 39 testes oauth+supabase verdes.
 
 <!-- lifeline:end -->
+
+### #0079 — 2026-06-10T13:46:00.185474+00:00 — decision
+
+- **author**: claude
+- **agent**: claude-code
+- **provider**: anthropic
+- **model**: claude-fable-5
+- **kind**: decision
+- **summary**: Adota o OAuth Server NATIVO do Supabase como AS; nosso servidor vira Resource Server (JWKS). Supersede a premissa do AS próprio
+- **parents**: fb0cfb2dbf9465d18087ce6dc3915121e3acdd03b85930bd016c50b8c516db56
+- **id**: 04ac751c3fe6da11f08bad0d358a55b4210bdbe489afd1c2988d0da07925e367
+
+**Body**:
+Mudanca externa: o Supabase lancou um OAuth 2.1 Server nativo (beta, gratis no beta, todos os planos) — DCR, authorize/token, PKCE S256, metadata, e suporte explicito a MCP. Isso INVALIDA a premissa de #0046/#0047 ('Supabase Auth nao e um AS OAuth generico com DCR') que justificou construir o nosso AS (#0074). Direcao nova: o AS passa a ser o do Supabase (issuer .../auth/v1; discovery em /.well-known/oauth-authorization-server/auth/v1; DCR em /auth/v1/oauth/clients/register), e o nosso servidor volta a ser so RESOURCE SERVER — modo que ja tinhamos (LIFELINE_OAUTH=1). Trocas no codigo: o RS aponta o issuer pro OAuth Server do Supabase, e a validacao de token virou JWKS/ES256 (novo SupabaseJWKSVerifier; PyJWT ja vinha via mcp, sem dep nova) em vez de chamar /auth/v1/user — valido ao vivo contra a JWKS real (so a expiracao barrou o token de teste). GANHOS: padrao oficial mantido por eles; login hospedado do Supabase cobre Google/GitHub nativo (sem codigo nosso); menos superficie sensivel sob nossa guarda. lifeline/oauth.py (o AS proprio, grant de senha) FICA no repo como fallback p/ deploy sem o OAuth Server, ate o caminho novo provar ao vivo. CAVEATS declarados: e beta; o claude.ai tem bugs proprios de conector OAuth; aud do token ainda nao fixado (validamos issuer+assinatura+exp). 129 testes verdes.
+
+<!-- lifeline:end -->

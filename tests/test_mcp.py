@@ -122,6 +122,38 @@ class TestOAuthResourceServer(unittest.IsolatedAsyncioTestCase):
             v = srv.SupabaseTokenVerifier()           # sem url/key
         self.assertIsNone(await v.verify_token("whatever"))
 
+    async def test_jwks_verifier_accepts_valid_rejects_bad(self):
+        # #0049 trocou o AS próprio pelo OAuth Server do Supabase → validamos por JWKS/ES256.
+        import time
+        import jwt
+        from cryptography.hazmat.primitives.asymmetric import ec
+        priv = ec.generate_private_key(ec.SECP256R1())
+        ISS = "https://proj.supabase.co/auth/v1"
+
+        class _FakeJWK:   # mimetiza jwt.PyJWKClient
+            def get_signing_key_from_jwt(self, token):
+                return type("K", (), {"key": priv.public_key()})()
+
+        v = srv.SupabaseJWKSVerifier(url="https://proj.supabase.co", _jwk_client=_FakeJWK())
+        self.assertEqual(v.issuer, ISS)
+
+        good = jwt.encode({"iss": ISS, "sub": "user-7", "exp": int(time.time()) + 3600},
+                          priv, algorithm="ES256")
+        at = await v.verify_token(good)
+        self.assertIsNotNone(at)
+        self.assertEqual(at.client_id, "user-7")           # sub vira o id (escopo RLS)
+        self.assertEqual(at.token, good)                    # token original preservado p/ a RLS
+
+        expired = jwt.encode({"iss": ISS, "sub": "u", "exp": int(time.time()) - 10},
+                             priv, algorithm="ES256")
+        self.assertIsNone(await v.verify_token(expired))    # expirado → 401
+
+        wrong_iss = jwt.encode({"iss": "https://evil.example/auth/v1", "sub": "u",
+                                "exp": int(time.time()) + 3600}, priv, algorithm="ES256")
+        self.assertIsNone(await v.verify_token(wrong_iss))  # issuer errado → 401
+        self.assertIsNone(await v.verify_token(""))         # vazio → None
+        self.assertIsNone(await v.verify_token("garbage"))  # lixo → None (sem estourar)
+
     def test_build_remote_with_oauth_serves_metadata(self):
         self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
         env = {"LIFELINE_OAUTH": "1", "LIFELINE_STORE": "supabase",

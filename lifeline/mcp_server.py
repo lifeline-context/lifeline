@@ -17,6 +17,7 @@ completo (DCR + authorization-code) que os conectores claude.ai/ChatGPT/Gemini e
 depende de um AS compatível — o Supabase Auth não é um AS OAuth genérico com DCR. Ver
 docs/MCP_REMOTE.md.
 """
+import asyncio
 import logging
 import os
 from typing import Optional
@@ -197,6 +198,44 @@ class SupabaseTokenVerifier(TokenVerifier):
         return AccessToken(token=token, client_id=uid, scopes=["lifeline"], expires_at=None)
 
 
+class SupabaseJWKSVerifier(TokenVerifier):
+    """Valida o Bearer JWT do **OAuth Server nativo do Supabase** (decisão de trocar o AS
+    hand-rolled pelo oficial) por **JWKS/ES256**, offline — sem chamar /auth/v1/user a cada
+    request. Confere assinatura + issuer + expiração; o token ORIGINAL é mantido no AccessToken
+    para escopar a RLS por usuário no PostgREST. Vale tanto p/ token do OAuth Server quanto p/
+    token de sessão (mesma chave/issuer). `_jwk_client` injetável p/ teste."""
+
+    def __init__(self, url: Optional[str] = None, jwks_uri: Optional[str] = None, _jwk_client=None):
+        from lifeline.cloud import clean_url
+        self.url = clean_url(url or os.environ.get("SUPABASE_URL", ""))
+        self.issuer = f"{self.url}/auth/v1"
+        self.jwks_uri = jwks_uri or f"{self.issuer}/.well-known/jwks.json"
+        self._jwk_client = _jwk_client
+
+    def _client(self):
+        if self._jwk_client is None:
+            import jwt
+            self._jwk_client = jwt.PyJWKClient(self.jwks_uri)  # busca+cacheia as chaves
+        return self._jwk_client
+
+    async def verify_token(self, token: str) -> Optional[AccessToken]:
+        if not token:
+            return None
+        import jwt
+        try:
+            # PyJWKClient faz I/O bloqueante na 1ª vez (depois cacheia) → fora do event loop.
+            signing_key = await asyncio.to_thread(self._client().get_signing_key_from_jwt, token)
+            claims = jwt.decode(
+                token, signing_key.key, algorithms=["ES256"], issuer=self.issuer,
+                options={"verify_aud": False},  # aud do OAuth Server ainda não fixado — issuer já garante a origem
+            )
+        except Exception:
+            logging.getLogger("lifeline.mcp").info("JWKS verify falhou (token inválido/expirado)", exc_info=True)
+            return None  # assinatura/issuer/exp inválidos → 401
+        return AccessToken(token=token, client_id=claims.get("sub", "unknown"),
+                           scopes=["lifeline"], expires_at=claims.get("exp"))
+
+
 def _transport_security() -> TransportSecuritySettings:
     """Atrás de túnel/proxy/deploy o Host header é o domínio público — o default localhost-only
     do FastMCP bloqueia com 421 'Invalid Host header'. `LIFELINE_MCP_ALLOWED_HOSTS=host1,host2`
@@ -267,12 +306,18 @@ def _build_remote() -> FastMCP:
 
     if want_rs and have_supa:
         from mcp.server.auth.settings import AuthSettings
+        from lifeline.cloud import clean_url
+        # O AS é o OAuth Server NATIVO do Supabase (#0049 superseou o AS próprio): a metadata
+        # de protected-resource aponta o claude.ai pra cá; ele descobre /.well-known/oauth-
+        # authorization-server/auth/v1 (RFC 8414 com path), faz DCR/authorize/token DIRETO no
+        # Supabase, e o login hospedado (inclui Google/GitHub) é deles. Validamos por JWKS.
         issuer = os.environ.get("LIFELINE_OAUTH_ISSUER",
-                                f"{os.environ['SUPABASE_URL'].rstrip('/')}/auth/v1")
-        print(f"[lifeline] modo: RESOURCE SERVER (Bearer obrigatório) · público={public}", flush=True)
+                                f"{clean_url(os.environ['SUPABASE_URL'])}/auth/v1")
+        print(f"[lifeline] modo: RESOURCE SERVER (AS = OAuth Server do Supabase, JWKS) · "
+              f"issuer={issuer} · público={public}", flush=True)
         return _register(FastMCP(
             "Lifeline", instructions=_INSTRUCTIONS,
-            token_verifier=SupabaseTokenVerifier(),
+            token_verifier=SupabaseJWKSVerifier(),
             auth=AuthSettings(issuer_url=issuer, resource_server_url=public, required_scopes=[]),
             transport_security=ts,
         ))
