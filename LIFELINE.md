@@ -1590,3 +1590,23 @@ Rota GET /oauth/consent serve site/oauth/consent/index.html substituindo placeho
 _open_request/_staging_request passam a checar um factory por-requisicao opcional (_REQUEST_STORE_FACTORY/_REQUEST_STAGING_FACTORY). Se setado, tem prioridade e recebe o token do usuario. Permite o lifeline-hub (privado) rotear team-lines e usar o HubEventStore SEM tocar/forkar o core FSL. Generico (qualquer embedder usa). Testado.
 
 <!-- lifeline:end -->
+
+### #0083 — 2026-06-10T20:24:54.010064+00:00 — release
+
+- **author**: human
+- **agent**: claude-fable-5
+- **provider**: anthropic
+- **model**: human
+- **kind**: release
+- **summary**: lifeline-context 0.3.0 no PyPI + projeto migrado pra org lifeline-context + dominio lifelinecontext.com
+- **parents**: c879a0daa0a43437af9b00dccf4ed29bdc134921e389655d3fb7db8a66980885
+- **id**: d4f101d0543773dfbc7ffdfe71c8541b89b516540ad2b724cdffde50bf367ed6
+
+**Body**:
+Publica a 0.3.0 no PyPI (via Trusted Publishing/OIDC, sem token) e move o projeto pra org GitHub lifeline-context, agora servido em https://lifelinecontext.com (Pages + dominio proprio, HTTPS ok).
+
+PORQUE org + dominio: unifica a marca numa casa so (org guarda o core publico 'lifeline' e o hub privado 'lifeline-hub'), e o dominio proprio torna a URL canonica PERMANENTE — mover repo nunca mais quebra link/SEO. Feito agora porque o custo era zero: o site rodou pouco, nao indexou, e o repo era privado ate pouco (sem SEO a perder). lifeline.dev custava US0 (nome premium); lifelinecontext.com no .com ~US0 e bate com o pacote PyPI e o posicionamento ('context runtime').
+
+O 0.3.0 carrega o fechamento dos 9 gaps do audit + a seam _REQUEST_STORE_FACTORY (que o hub privado usa sem forkar o core) + endurecimento OAuth/JWKS. Sweep de URLs (build.py base, pyproject urls, site rebuildado, CNAME) verificado: site 200, canonical novo, /docs //llms.txt //sitemap.xml 200.
+
+<!-- lifeline:end -->
