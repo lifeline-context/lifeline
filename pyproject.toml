@@ -37,9 +37,9 @@ remote = ["python-multipart>=0.0.9"]  # AS OAuth hospedado: parse do form de /oa
 dev = ["pytest>=8"]       # ferramentas de teste (NÃO é dep de runtime) — usado no CI
 
 [project.urls]
-Homepage = "https://github.com/jessianmart/lifeline"
-Repository = "https://github.com/jessianmart/lifeline"
-Issues = "https://github.com/jessianmart/lifeline/issues"
+Homepage = "https://lifelinecontext.com"
+Repository = "https://github.com/lifeline-context/lifeline"
+Issues = "https://github.com/lifeline-context/lifeline/issues"
 
 [project.scripts]
 lifeline = "lifeline.cli:main"

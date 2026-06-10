@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MCP & remote — Lifeline docs</title>
 <meta name="description" content="The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.">
-<link rel="canonical" href="https://jessianmart.github.io/lifeline/docs/mcp.html">
+<link rel="canonical" href="https://lifelinecontext.com/docs/mcp.html">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Lifeline">
 <meta property="og:title" content="MCP & remote — Lifeline docs">
 <meta property="og:description" content="The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.">
-<meta property="og:url" content="https://jessianmart.github.io/lifeline/docs/mcp.html">
-<meta property="og:image" content="https://jessianmart.github.io/lifeline/assets/og.svg">
+<meta property="og:url" content="https://lifelinecontext.com/docs/mcp.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#08090a">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -21,17 +21,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"TechArticle","headline":"MCP & remote","description":"The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.","url":"https://jessianmart.github.io/lifeline/docs/mcp.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://jessianmart.github.io/lifeline/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+{"@context":"https://schema.org","@type":"TechArticle","headline":"MCP & remote","description":"The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.","url":"https://lifelinecontext.com/docs/mcp.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://lifelinecontext.com/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://lifelinecontext.com/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
 </script>
 </head>
 <body class="docs">
 <div class="bg-fx"></div>
 <header class="topbar">
-  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
   <nav class="topnav">
     <a href="index.html">Docs</a>
     <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
-    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
   </nav>
 </header>
 <div class="docs-shell">
@@ -85,13 +85,15 @@ Functions (those are Deno/TypeScript). Zero-/low-cost routes:</p>
 <p>Turn it on with <code>LIFELINE_OAUTH=1</code> (+ <code>LIFELINE_STORE=supabase</code> + <code>SUPABASE_URL</code>/<code>KEY</code>). The server
 becomes an <strong>OAuth 2.1 Resource Server</strong>:</p>
 <ul>
-<li>Requires <code>Authorization: Bearer &lt;user JWT&gt;</code> on every request; validates against Supabase
-  (<code>/auth/v1/user</code>). Invalid/expired → <strong>401</strong>.</li>
+<li>Requires <code>Authorization: Bearer &lt;user JWT&gt;</code> on every request; validates the JWT by <strong>JWKS
+  (ES256)</strong> against Supabase's signing keys — offline, no per-request <code>/auth/v1/user</code> call
+  (#0079). Bad signature / issuer / expiry → <strong>401</strong>.</li>
 <li>Scopes the store by <strong>that user's JWT</strong> → real multi-tenant via RLS (<code>owner=auth.uid()</code>):
   each user only sees/proposes in their own line. (Without <code>LIFELINE_OAUTH</code>, it's single-tenant via
   the environment's <code>SUPABASE_TOKEN</code>.)</li>
 <li>Publishes the <strong>discovery</strong> at <code>GET /.well-known/oauth-protected-resource</code> (RFC 9728), pointing
-  to the Authorization Server (<code>LIFELINE_OAUTH_ISSUER</code>, default <code>…/auth/v1</code>).</li>
+  to the Authorization Server (<code>LIFELINE_OAUTH_ISSUER</code>, default <code>…/auth/v1</code>). Pointed at Supabase's
+  native OAuth Server, this is the <strong>recommended</strong> hosted-connector path (below).</li>
 </ul>
 <pre><code class="language-bash">export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
 export SUPABASE_URL=… SUPABASE_KEY=&lt;apikey&gt;
@@ -102,6 +104,62 @@ lifeline-mcp-remote
 accept a token by header — e.g.: <code>claude mcp add --transport http lifeline https://your-host/mcp --header "Authorization: Bearer &lt;jwt&gt;"</code>.
 ⚠️ <strong>claude.ai web and ChatGPT do NOT accept a static Bearer</strong> (<code>static_bearer</code> not supported);
 on the hosted apps it's <strong>authless</strong> or <strong>OAuth</strong> — see below.</p>
+<h2>Recommended (hosted connectors): Supabase's native <strong>OAuth 2.1 Server</strong> — <code>LIFELINE_OAUTH=1</code></h2>
+<p>Supabase shipped a native <strong>OAuth 2.1 Server</strong> (beta) — DCR (RFC 7591) + authorization-code with
+<strong>PKCE (S256)</strong> + discovery metadata, MCP-aware. So Supabase <strong>is</strong> the Authorization Server; our
+remote MCP stays a thin <strong>Resource Server</strong> (above) and validates the issued JWT by JWKS. This is
+the recommended path (#0079): less of our own auth code, and Supabase's hosted login covers social
+providers (Google/GitHub).</p>
+<p>Setup:</p>
+<ol>
+<li><strong>Supabase dashboard → Authentication → OAuth Server:</strong> enable it + <strong>Dynamic Client
+   Registration</strong>. Enable Google/GitHub providers if you want social login.</li>
+<li><strong>Consent screen (you host it):</strong> Supabase does <em>not</em> host the consent/login UI — you build a
+   small page (<code>supabase-js</code>: <code>getAuthorizationDetails</code> → login → <code>approveAuthorization</code>) at your
+   Site URL + the configured authorization path. A ready page ships in <code>site/oauth/consent/</code>.</li>
+<li><strong>Run the Resource Server</strong> pointed at Supabase's issuer:</li>
+</ol>
+<pre><code class="language-bash">export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
+export SUPABASE_URL=https://&lt;ref&gt;.supabase.co SUPABASE_KEY=&lt;anon apikey&gt;
+# issuer auto-derives to &lt;SUPABASE_URL&gt;/auth/v1; discovery at
+#   &lt;SUPABASE_URL&gt;/.well-known/oauth-authorization-server/auth/v1
+lifeline-mcp-remote
+</code></pre>
+<p>claude.ai then discovers our protected-resource metadata → finds Supabase as the AS → does DCR +
+<code>/authorize</code> (Supabase hosted login + your consent page) + <code>/token</code> directly with Supabase; we
+validate the resulting JWT by JWKS. <strong>Beta + multi-party — expect live debugging.</strong></p>
+<h2>Fallback: bundled custom Authorization Server — <code>LIFELINE_OAUTH_AS=1</code></h2>
+<p>Self-contained AS (no Supabase OAuth Server needed): <strong>complete</strong> DCR (RFC 7591) + authorization-code
+with <strong>PKCE (S256)</strong> + discovery metadata (RFC 8414), with login <strong>delegated to Supabase</strong>. Use it
+when you can't/don't want to enable Supabase's OAuth Server. It lives in <code>lifeline/oauth.py</code>.</p>
+<pre><code class="language-bash">export LIFELINE_OAUTH_AS=1 LIFELINE_STORE=supabase
+export SUPABASE_URL=… SUPABASE_KEY=&lt;apikey&gt;
+export LIFELINE_MCP_PUBLIC_URL=https://your-host   # we are the issuer → goes into the AS metadata
+pip install 'lifeline-context[cloud,remote]'        # remote = python-multipart (form parsing)
+lifeline-mcp-remote
+</code></pre>
+<p>Flow (each step is one browser round-trip):</p>
+<ol>
+<li><code>POST /register</code> — the connector registers itself (DCR). <em>(SDK route)</em></li>
+<li><code>GET /authorize</code> — we stash the params (PKCE challenge, redirect, state, scopes) under an opaque
+   <code>ticket</code> and send the browser to <strong>our</strong> <code>/oauth/login</code>. <em>(SDK route)</em></li>
+<li><code>GET/POST /oauth/login</code> — a minimal form; the POST hands email+password to Supabase
+   (<code>grant_type=password</code>). <strong>We never store/validate the password — Supabase does</strong>; we only relay
+   it over TLS. Success → we mint <strong>our</strong> authorization code (bound to the Supabase session) and
+   redirect to the connector's <code>redirect_uri</code> with <code>code</code>+<code>state</code>. <em>(our route)</em></li>
+<li><code>POST /token</code> — the SDK verifies the <strong>PKCE verifier (S256)</strong> and the redirect; we swap the code
+   for <code>access_token = the Supabase JWT</code>, which the Resource Server already validates per request
+   (scoping the RLS by user). Refresh and revoke also hit Supabase. <em>(SDK route)</em></li>
+</ol>
+<p>Discovery: <code>GET /.well-known/oauth-authorization-server</code> advertises our <code>/authorize</code>, <code>/token</code>,
+<code>/register</code>. <code>LIFELINE_OAUTH_AS</code> implies the Resource Server (token introspection via the provider).</p>
+<p><strong>Declared limits (honest):</strong>
+- <strong>Password grant (ROPC):</strong> our server sees the password in transit. It's the minimal flow that's
+  testable and needs zero dashboard config. <strong>Production hardening:</strong> swap step 3 for a redirect to
+  Supabase's <strong>hosted</strong> login (SSO/social, GoTrue PKCE) — the AS here doesn't change, only step 3.
+- <strong>Client/code storage is in-memory:</strong> correct for a <strong>single instance</strong> (the current deploy). Codes
+  are one-time and expire (~300s). Multi-instance needs a shared client store — the
+  <code>lifeline_oauth_clients</code> table is in <code>schema.sql</code> for when you scale; point a client store at it.</p>
 <h2>Connecting on the web apps (claude.ai / ChatGPT) — what the research confirmed (Jun/2026)</h2>
 <ul>
 <li><strong>claude.ai accepts an AUTHLESS connector</strong> (<code>auth: "none"</code>) → "connect in one click" with <strong>no
@@ -129,7 +187,7 @@ DCR</strong>. In all routes, <strong>our RS doesn't change</strong> — it alrea
 the remote AI <strong>proposes</strong>, the human curates. The server does not expose <code>approve</code>/<code>reject</code> (curation
 is local/trusted), nor the git commands (<code>push/pull/clone</code>).</p>
     <div class="docs-foot">
-      <span>Lifeline — MIT licensed · <a href="https://github.com/jessianmart/lifeline/blob/main/docs/MCP_REMOTE.md">Edit on GitHub</a></span>
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/docs/MCP_REMOTE.md">Edit on GitHub</a></span>
       <span><a href="../">← Back to the lifeline</a></span>
     </div>
   </main>

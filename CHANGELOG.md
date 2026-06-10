@@ -83,4 +83,4 @@ First public release. 🧬
 
 The full *why* behind every decision lives in [`LIFELINE.md`](LIFELINE.md), starting at #0001.
 
-[0.1.0]: https://github.com/jessianmart/lifeline/releases/tag/v0.1.0
+[0.1.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.1.0

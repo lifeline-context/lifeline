@@ -25,7 +25,7 @@ The image rebuilds the `.db` from `LIFELINE.md` on boot and serves authless. Two
 
 **A) Blueprint (reads `render.yaml`, fewer clicks):**
 1. [render.com](https://render.com) → sign up (GitHub login).
-2. **New → Blueprint** → connect the `jessianmart/lifeline` repo → it reads `render.yaml` → **Apply**.
+2. **New → Blueprint** → connect the `lifeline-context/lifeline` repo → it reads `render.yaml` → **Apply**.
 
 **B) Manual:**
 1. **New → Web Service** → connect the repo → **Runtime: Docker** → **Instance Type: Free** → **Create**.

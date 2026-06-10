@@ -20,7 +20,7 @@ except ImportError:
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DOCS_OUT = os.path.join(HERE, "docs")
-BASE = "https://jessianmart.github.io/lifeline/"
+BASE = "https://lifelinecontext.com/"
 
 # slug, nav-title, <title>/meta description, source markdown (relative to repo root)
 PAGES = [
@@ -41,13 +41,13 @@ LINK_MAP = {
     "docs/ARCHITECTURE.md": "architecture.html", "ARCHITECTURE.md": "architecture.html",
     "docs/INTEGRATION.md": "integration.html", "INTEGRATION.md": "integration.html",
     "docs/MCP_REMOTE.md": "mcp.html", "MCP_REMOTE.md": "mcp.html",
-    "docs/M3_TIER1_SUPABASE.md": "https://github.com/jessianmart/lifeline/blob/main/docs/M3_TIER1_SUPABASE.md",
-    "docs/DEPLOY.md": "https://github.com/jessianmart/lifeline/blob/main/docs/DEPLOY.md",
-    "LIFELINE.md": "https://github.com/jessianmart/lifeline/blob/main/LIFELINE.md",
-    "CONTRIBUTING.md": "https://github.com/jessianmart/lifeline/blob/main/CONTRIBUTING.md",
-    "PRD.md": "https://github.com/jessianmart/lifeline/blob/main/PRD.md",
-    ".mcp.json": "https://github.com/jessianmart/lifeline/blob/main/.mcp.json",
-    "llms.txt": "../llms.txt", "AGENTS.md": "https://github.com/jessianmart/lifeline/blob/main/AGENTS.md",
+    "docs/M3_TIER1_SUPABASE.md": "https://github.com/lifeline-context/lifeline/blob/main/docs/M3_TIER1_SUPABASE.md",
+    "docs/DEPLOY.md": "https://github.com/lifeline-context/lifeline/blob/main/docs/DEPLOY.md",
+    "LIFELINE.md": "https://github.com/lifeline-context/lifeline/blob/main/LIFELINE.md",
+    "CONTRIBUTING.md": "https://github.com/lifeline-context/lifeline/blob/main/CONTRIBUTING.md",
+    "PRD.md": "https://github.com/lifeline-context/lifeline/blob/main/PRD.md",
+    ".mcp.json": "https://github.com/lifeline-context/lifeline/blob/main/.mcp.json",
+    "llms.txt": "../llms.txt", "AGENTS.md": "https://github.com/lifeline-context/lifeline/blob/main/AGENTS.md",
 }
 
 SHELL = """<!doctype html>
@@ -79,11 +79,11 @@ SHELL = """<!doctype html>
 <body class="docs">
 <div class="bg-fx"></div>
 <header class="topbar">
-  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.2.0</span></a>
+  <a class="brand" href="../"><span class="dot"></span> Lifeline <span class="ver">v0.3.0</span></a>
   <nav class="topnav">
     <a href="index.html">Docs</a>
     <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
-    <a class="pill" href="https://github.com/jessianmart/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
   </nav>
 </header>
 <div class="docs-shell">
@@ -133,7 +133,7 @@ def render(slug, title, desc, src_rel):
     raw = open(os.path.join(ROOT, src_rel), encoding="utf-8").read()
     body_md = rewrite_links(strip_first_h1(raw))
     body_html = md.markdown(body_md, extensions=["fenced_code", "tables", "sane_lists"])
-    edit = "https://github.com/jessianmart/lifeline/blob/main/" + src_rel
+    edit = "https://github.com/lifeline-context/lifeline/blob/main/" + src_rel
     html = (SHELL
             .replace("__TITLE__", title).replace("__DESC__", desc)
             .replace("__CANON__", BASE + "docs/" + slug + ".html")
@@ -153,7 +153,7 @@ def docs_index():
             .replace("__TITLE__", "Documentation").replace("__DESC__", "Everything about Lifeline — install, concepts, architecture, integration, MCP, and the CLI.")
             .replace("__CANON__", BASE + "docs/").replace("__BASE__", BASE)
             .replace("__SIDENAV__", sidenav(None)).replace("__H1__", "Documentation")
-            .replace("__BODY__", body).replace("__EDIT__", "https://github.com/jessianmart/lifeline/tree/main/docs"))
+            .replace("__BODY__", body).replace("__EDIT__", "https://github.com/lifeline-context/lifeline/tree/main/docs"))
     open(os.path.join(DOCS_OUT, "index.html"), "w", encoding="utf-8").write(html)
 
 
@@ -202,7 +202,7 @@ def geo_files(full_text):
     llms += [
         "",
         "## Source",
-        "- [GitHub repository](https://github.com/jessianmart/lifeline)",
+        "- [GitHub repository](https://github.com/lifeline-context/lifeline)",
         "- [PyPI package: lifeline-context](https://pypi.org/project/lifeline-context/)",
         "- [Full text for LLMs](%sllms-full.txt)" % BASE,
     ]
@@ -213,7 +213,7 @@ def geo_files(full_text):
 def main():
     os.makedirs(DOCS_OUT, exist_ok=True)
     full = ["# Lifeline — full documentation for LLMs\n",
-            "Source: %s — MIT licensed. https://github.com/jessianmart/lifeline\n" % BASE]
+            "Source: %s — MIT licensed. https://github.com/lifeline-context/lifeline\n" % BASE]
     for slug, title, desc, src in PAGES:
         raw = render(slug, title, desc, src)
         full.append("\n\n" + "=" * 78 + "\n# " + title + "\n" + "=" * 78 + "\n\n" + raw.strip())

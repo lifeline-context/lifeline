@@ -1,6 +1,6 @@
 # Lifeline — full documentation for LLMs
 
-Source: https://jessianmart.github.io/lifeline/ — MIT licensed. https://github.com/jessianmart/lifeline
+Source: https://lifelinecontext.com/ — MIT licensed. https://github.com/lifeline-context/lifeline
 
 
 
@@ -397,13 +397,15 @@ Supabase stays free as the **store** (Postgres+RLS); the host only runs the MCP 
 Turn it on with `LIFELINE_OAUTH=1` (+ `LIFELINE_STORE=supabase` + `SUPABASE_URL`/`KEY`). The server
 becomes an **OAuth 2.1 Resource Server**:
 
-- Requires `Authorization: Bearer <user JWT>` on every request; validates against Supabase
-  (`/auth/v1/user`). Invalid/expired → **401**.
+- Requires `Authorization: Bearer <user JWT>` on every request; validates the JWT by **JWKS
+  (ES256)** against Supabase's signing keys — offline, no per-request `/auth/v1/user` call
+  (#0079). Bad signature / issuer / expiry → **401**.
 - Scopes the store by **that user's JWT** → real multi-tenant via RLS (`owner=auth.uid()`):
   each user only sees/proposes in their own line. (Without `LIFELINE_OAUTH`, it's single-tenant via
   the environment's `SUPABASE_TOKEN`.)
 - Publishes the **discovery** at `GET /.well-known/oauth-protected-resource` (RFC 9728), pointing
-  to the Authorization Server (`LIFELINE_OAUTH_ISSUER`, default `…/auth/v1`).
+  to the Authorization Server (`LIFELINE_OAUTH_ISSUER`, default `…/auth/v1`). Pointed at Supabase's
+  native OAuth Server, this is the **recommended** hosted-connector path (below).
 
 ```bash
 export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
@@ -416,6 +418,73 @@ lifeline-mcp-remote
 accept a token by header — e.g.: `claude mcp add --transport http lifeline https://your-host/mcp --header "Authorization: Bearer <jwt>"`.
 ⚠️ **claude.ai web and ChatGPT do NOT accept a static Bearer** (`static_bearer` not supported);
 on the hosted apps it's **authless** or **OAuth** — see below.
+
+## Recommended (hosted connectors): Supabase's native **OAuth 2.1 Server** — `LIFELINE_OAUTH=1`
+
+Supabase shipped a native **OAuth 2.1 Server** (beta) — DCR (RFC 7591) + authorization-code with
+**PKCE (S256)** + discovery metadata, MCP-aware. So Supabase **is** the Authorization Server; our
+remote MCP stays a thin **Resource Server** (above) and validates the issued JWT by JWKS. This is
+the recommended path (#0079): less of our own auth code, and Supabase's hosted login covers social
+providers (Google/GitHub).
+
+Setup:
+
+1. **Supabase dashboard → Authentication → OAuth Server:** enable it + **Dynamic Client
+   Registration**. Enable Google/GitHub providers if you want social login.
+2. **Consent screen (you host it):** Supabase does *not* host the consent/login UI — you build a
+   small page (`supabase-js`: `getAuthorizationDetails` → login → `approveAuthorization`) at your
+   Site URL + the configured authorization path. A ready page ships in `site/oauth/consent/`.
+3. **Run the Resource Server** pointed at Supabase's issuer:
+
+```bash
+export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
+export SUPABASE_URL=https://<ref>.supabase.co SUPABASE_KEY=<anon apikey>
+# issuer auto-derives to <SUPABASE_URL>/auth/v1; discovery at
+#   <SUPABASE_URL>/.well-known/oauth-authorization-server/auth/v1
+lifeline-mcp-remote
+```
+
+claude.ai then discovers our protected-resource metadata → finds Supabase as the AS → does DCR +
+`/authorize` (Supabase hosted login + your consent page) + `/token` directly with Supabase; we
+validate the resulting JWT by JWKS. **Beta + multi-party — expect live debugging.**
+
+## Fallback: bundled custom Authorization Server — `LIFELINE_OAUTH_AS=1`
+
+Self-contained AS (no Supabase OAuth Server needed): **complete** DCR (RFC 7591) + authorization-code
+with **PKCE (S256)** + discovery metadata (RFC 8414), with login **delegated to Supabase**. Use it
+when you can't/don't want to enable Supabase's OAuth Server. It lives in `lifeline/oauth.py`.
+
+```bash
+export LIFELINE_OAUTH_AS=1 LIFELINE_STORE=supabase
+export SUPABASE_URL=… SUPABASE_KEY=<apikey>
+export LIFELINE_MCP_PUBLIC_URL=https://your-host   # we are the issuer → goes into the AS metadata
+pip install 'lifeline-context[cloud,remote]'        # remote = python-multipart (form parsing)
+lifeline-mcp-remote
+```
+
+Flow (each step is one browser round-trip):
+
+1. `POST /register` — the connector registers itself (DCR). *(SDK route)*
+2. `GET /authorize` — we stash the params (PKCE challenge, redirect, state, scopes) under an opaque
+   `ticket` and send the browser to **our** `/oauth/login`. *(SDK route)*
+3. `GET/POST /oauth/login` — a minimal form; the POST hands email+password to Supabase
+   (`grant_type=password`). **We never store/validate the password — Supabase does**; we only relay
+   it over TLS. Success → we mint **our** authorization code (bound to the Supabase session) and
+   redirect to the connector's `redirect_uri` with `code`+`state`. *(our route)*
+4. `POST /token` — the SDK verifies the **PKCE verifier (S256)** and the redirect; we swap the code
+   for `access_token = the Supabase JWT`, which the Resource Server already validates per request
+   (scoping the RLS by user). Refresh and revoke also hit Supabase. *(SDK route)*
+
+Discovery: `GET /.well-known/oauth-authorization-server` advertises our `/authorize`, `/token`,
+`/register`. `LIFELINE_OAUTH_AS` implies the Resource Server (token introspection via the provider).
+
+**Declared limits (honest):**
+- **Password grant (ROPC):** our server sees the password in transit. It's the minimal flow that's
+  testable and needs zero dashboard config. **Production hardening:** swap step 3 for a redirect to
+  Supabase's **hosted** login (SSO/social, GoTrue PKCE) — the AS here doesn't change, only step 3.
+- **Client/code storage is in-memory:** correct for a **single instance** (the current deploy). Codes
+  are one-time and expire (~300s). Multi-instance needs a shared client store — the
+  `lifeline_oauth_clients` table is in `schema.sql` for when you scale; point a client store at it.
 
 ## Connecting on the web apps (claude.ai / ChatGPT) — what the research confirmed (Jun/2026)
 
