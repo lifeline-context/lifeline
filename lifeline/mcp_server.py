@@ -73,9 +73,19 @@ def _request_token() -> Optional[str]:
         return None
 
 
+# Costura p/ hub/embedder: um factory de store POR REQUISIÇÃO (ex.: roteamento de team-line)
+# pode ser injetado SEM forkar o core. Recebe o token do usuário e devolve o store; se setado,
+# tem prioridade sobre a resolução padrão. (store: async/inicializado; staging: sync.)
+_REQUEST_STORE_FACTORY = None     # Optional[Callable[[Optional[str]], Awaitable[EventStore]]]
+_REQUEST_STAGING_FACTORY = None   # Optional[Callable[[Optional[str]], StagingStore]]
+
+
 async def _open_request():
-    """Store da requisição: na nuvem com token de usuário → escopa por RLS; senão, factory padrão."""
+    """Store da requisição: na nuvem com token de usuário → escopa por RLS; senão, factory padrão.
+    Um hub pode setar `_REQUEST_STORE_FACTORY` p/ adicionar tenancy (team-line) sem tocar no core."""
     tok = _request_token()
+    if _REQUEST_STORE_FACTORY is not None:
+        return await _REQUEST_STORE_FACTORY(tok)
     if _STORE["kind"] == "supabase" and tok:
         from lifeline.cloud import SupabaseEventStore
         s = SupabaseEventStore(line=_STORE["line"], token=tok)
@@ -86,6 +96,8 @@ async def _open_request():
 
 def _staging_request():
     tok = _request_token()
+    if _REQUEST_STAGING_FACTORY is not None:
+        return _REQUEST_STAGING_FACTORY(tok)
     if _STORE["kind"] == "supabase" and tok:
         from lifeline.cloud import SupabaseStagingStore
         return SupabaseStagingStore(line=_STORE["line"], token=tok)

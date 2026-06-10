@@ -91,6 +91,17 @@ class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
         self.assertIn("use SQLite", await srv.lifeline_recall("sqlite"))         # recall acha
         self.assertIn("Nada relevante", await srv.lifeline_recall("zzqxyznada"))  # sem match → mensagem vazia
 
+    async def test_request_store_factory_seam(self):
+        # costura p/ o hub injetar tenancy (team-line) SEM forkar: o factory tem prioridade
+        self.addCleanup(setattr, srv, "_REQUEST_STORE_FACTORY", None)
+        called = {}
+        async def factory(token):
+            called["token"] = token
+            return "hub-store"
+        srv._REQUEST_STORE_FACTORY = factory
+        self.assertEqual(await srv._open_request(), "hub-store")   # usou o factory
+        self.assertIn("token", called)                            # e passou o token (None fora de auth)
+
 
 class TestOAuthResourceServer(unittest.IsolatedAsyncioTestCase):
     def _verifier(self, handler):

@@ -1574,3 +1574,19 @@ O nucleo segue legivel e auto-hospedavel (confianca + adocao), mas reserva o uso
 Rota GET /oauth/consent serve site/oauth/consent/index.html substituindo placeholders pelo SUPABASE_URL/KEY do ambiente. Resolve duas coisas: (1) hospeda a consent page sem GitHub Pages -> o repo pode ficar PRIVADO; (2) tira o hardcode do projeto Supabase do core publico (fica generico/configuravel). O Supabase OAuth Server redireciona pra <PUBLIC_URL>/oauth/consent; favicon virou data-uri (host-agnostico). 18 testes mcp verdes.
 
 <!-- lifeline:end -->
+
+### #0082 — 2026-06-10T17:00:25.686734+00:00 — feature
+
+- **author**: jess
+- **agent**: claude-code
+- **provider**: anthropic
+- **model**: claude-fable-5
+- **kind**: feature
+- **summary**: Costura de tenancy no MCP: _REQUEST_STORE_FACTORY injetavel (hub adiciona team-line routing sem forkar o core)
+- **parents**: 8ab5f27a8213296ba4fadf96654fd59f16836c9277e28b6a45eca2724bbbb3af
+- **id**: c879a0daa0a43437af9b00dccf4ed29bdc134921e389655d3fb7db8a66980885
+
+**Body**:
+_open_request/_staging_request passam a checar um factory por-requisicao opcional (_REQUEST_STORE_FACTORY/_REQUEST_STAGING_FACTORY). Se setado, tem prioridade e recebe o token do usuario. Permite o lifeline-hub (privado) rotear team-lines e usar o HubEventStore SEM tocar/forkar o core FSL. Generico (qualquer embedder usa). Testado.
+
+<!-- lifeline:end -->
