@@ -5,7 +5,7 @@
 
 🌐 **Português** · [English](README.md)
 
-[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-75%20passing-brightgreen) ![license](https://img.shields.io/badge/license-MIT-green)
+[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-125%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
 
 É, em uma frase, **o "git do raciocínio"**: assim como o git versiona *o quê* mudou no
 código, o Lifeline versiona *por quê* — decisões, reversões, incidentes, o estado atual —
@@ -112,6 +112,22 @@ lifeline --store supabase context
 ```
 Setup da nuvem: [`docs/M3_TIER1_SUPABASE.md`](docs/M3_TIER1_SUPABASE.md). Conectar nos clientes: [`docs/INTEGRATION.md`](docs/INTEGRATION.md).
 
+## Status
+
+**Alpha.** Núcleo **local single-user** sólido — correção travada por testes (determinismo,
+anti-adulteração, detecção de omissão, supersessão reversível, round-trip ponto-fixo, abstenção
+do recall). **Nuvem (M3) funcional e validada ao vivo.** 125 testes verdes; CI no GitHub Actions.
+Conectores web hospedados funcionam via o **OAuth Server nativo do Supabase** (o MCP remoto é um
+Resource Server que valida o JWT por JWKS); validação end-to-end ao vivo em andamento (#0049, #0079).
+
+**Limites honestos hoje:** recall default é lexical (palavras); o **semântico denso** é opt-in
+(`pip install lifeline-context[embeddings]` + `LIFELINE_EMBEDDER=dense`, #0029). Nuvem **paga**
+turnkey ainda precisa de billing — hoje é **core source-available + traga-seu-Supabase**. Sem
+retry/backoff no adapter de nuvem ainda (só log+raise).
+
 ## Licença
 
-[MIT](LICENSE). Core open-source; o modo nuvem é open-core.
+[FSL-1.1-MIT](LICENSE) (Functional Source License) — **source-available**: leia, rode, modifique e
+auto-hospede para qualquer fim *exceto* oferecer como serviço comercial concorrente; **converte para
+MIT em 2 anos** após cada release. (Versões ≤ 0.2.0 foram publicadas sob MIT e seguem MIT.) O que se
+paga é o **hub** hospedado, não o código.

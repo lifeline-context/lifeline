@@ -1542,3 +1542,19 @@ Segundo incidente do teste hospedado: o form de login dava 'Internal Server Erro
 Mudanca externa: o Supabase lancou um OAuth 2.1 Server nativo (beta, gratis no beta, todos os planos) — DCR, authorize/token, PKCE S256, metadata, e suporte explicito a MCP. Isso INVALIDA a premissa de #0046/#0047 ('Supabase Auth nao e um AS OAuth generico com DCR') que justificou construir o nosso AS (#0074). Direcao nova: o AS passa a ser o do Supabase (issuer .../auth/v1; discovery em /.well-known/oauth-authorization-server/auth/v1; DCR em /auth/v1/oauth/clients/register), e o nosso servidor volta a ser so RESOURCE SERVER — modo que ja tinhamos (LIFELINE_OAUTH=1). Trocas no codigo: o RS aponta o issuer pro OAuth Server do Supabase, e a validacao de token virou JWKS/ES256 (novo SupabaseJWKSVerifier; PyJWT ja vinha via mcp, sem dep nova) em vez de chamar /auth/v1/user — valido ao vivo contra a JWKS real (so a expiracao barrou o token de teste). GANHOS: padrao oficial mantido por eles; login hospedado do Supabase cobre Google/GitHub nativo (sem codigo nosso); menos superficie sensivel sob nossa guarda. lifeline/oauth.py (o AS proprio, grant de senha) FICA no repo como fallback p/ deploy sem o OAuth Server, ate o caminho novo provar ao vivo. CAVEATS declarados: e beta; o claude.ai tem bugs proprios de conector OAuth; aud do token ainda nao fixado (validamos issuer+assinatura+exp). 129 testes verdes.
 
 <!-- lifeline:end -->
+
+### #0080 — 2026-06-10T15:12:48.005134+00:00 — decision
+
+- **author**: jess
+- **agent**: claude-code
+- **provider**: anthropic
+- **model**: claude-fable-5
+- **kind**: decision
+- **summary**: Relicencia 0.3.0+ para FSL-1.1-MIT (source-available); versoes <=0.2.0 seguem MIT (ja na PyPI)
+- **parents**: 04ac751c3fe6da11f08bad0d358a55b4210bdbe489afd1c2988d0da07925e367
+- **id**: f450ab42a45256cfcea8bbc18f7972e9d0a876ce12e1dea66cf62c50e55bf93b
+
+**Body**:
+O nucleo segue legivel e auto-hospedavel (confianca + adocao), mas reserva o uso comercial CONCORRENTE (oferecer o Lifeline como servico) — a FSL converte para MIT em 2 anos por release. As versoes 0.1.0-0.2.0 ja publicadas na PyPI permanecem MIT (irrevogavel; o codigo de core+nuvem ja saiu sob MIT). Refina o licenciamento do #d9b21042 (de 'OSS/MIT' para 'source-available') sem reverter a tese open-core/hub-pago. O *porque* de negocio detalhado (alvo de receita, moat) vive na LINHA PRIVADA de estrategia, fora de qualquer repo.
+
+<!-- lifeline:end -->

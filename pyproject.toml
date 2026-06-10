@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lifeline-context"
-version = "0.2.0"
+version = "0.3.0"
 description = "Runtime de contexto para desenvolvimento com IA — o projeto guarda por que ele é o que é; qualquer IA conecta e já sabe."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "FSL-1.1-MIT" }   # source-available; converte p/ MIT em 2 anos. Versões <= 0.2.0 seguem MIT.
 authors = [{ name = "jessianmart" }]
 keywords = ["mcp", "ai", "llm", "context", "memory", "ledger", "agents", "claude", "provenance"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

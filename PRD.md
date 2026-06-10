@@ -97,8 +97,10 @@ locking up the core.
   → MCP. Dogfood: ingests its own LIFELINE; the acceptance test runs against the repo itself.
 - **M2 Recall + projections:** anchored semantic search (default is lexical; dense embedder #0029,
   open); "why" projection; summaries.
-- **M3 Cloud (✔ store/HITL/remote MCP/OAuth RS):** Supabase adapter + RLS + cloud HITL + remote
-  MCP (HTTP/SSE) + OAuth Resource Server. Remaining: Authorization Server (#0049).
+- **M3 Cloud (✔ store/HITL/remote MCP/OAuth):** Supabase adapter + RLS + cloud HITL + remote
+  MCP (HTTP/SSE) + OAuth — the remote MCP is a Resource Server that validates Supabase's native
+  **OAuth 2.1 Server** (DCR + auth-code/PKCE) by JWKS; a bundled custom AS exists as a fallback
+  (#0049, #0079). Remaining for a turnkey paid cloud: billing + live-validated hosted onboarding.
 - **M4 Multi-user:** real DAG merge + recontextualization + conflict / hub.
 
 ## 13. Risks
