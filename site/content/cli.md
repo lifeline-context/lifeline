@@ -36,5 +36,8 @@ requires the *why* (the `--body`), so junk never enters the line.
 
 ## A line
 
-One reasoning ledger (code *or* conversation). A project has 1 by default and supports N via
-`--line <name>` — no collisions between them.
+One **independent, content-addressed reasoning ledger** (its own DAG + view). A project has 1 by
+default (`ledger` → `LIFELINE.md`) and supports N via `--line <name>` (`.lifeline/<name>.db` +
+`LIFELINE.<name>.md`) — no collisions; the MCP server picks one via `LIFELINE_LINE`. Use separate
+lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
+[Concepts → Lines](concepts.html).

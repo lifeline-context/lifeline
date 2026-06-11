@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Concepts & laws — Lifeline docs</title>
-<meta name="description" content="The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.">
+<meta name="description" content="The Entry, content-addressing, the 3 memory layers, supersession, lines as separate reasoning threads (Tree-of-Thoughts), and the 7 laws.">
 <link rel="canonical" href="https://lifelinecontext.com/docs/concepts.html">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Lifeline">
 <meta property="og:title" content="Concepts & laws — Lifeline docs">
-<meta property="og:description" content="The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.">
+<meta property="og:description" content="The Entry, content-addressing, the 3 memory layers, supersession, lines as separate reasoning threads (Tree-of-Thoughts), and the 7 laws.">
 <meta property="og:url" content="https://lifelinecontext.com/docs/concepts.html">
 <meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
 <meta name="twitter:card" content="summary_large_image">
@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"TechArticle","headline":"Concepts & laws","description":"The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.","url":"https://lifelinecontext.com/docs/concepts.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://lifelinecontext.com/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://lifelinecontext.com/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Concepts & laws","description":"The Entry, content-addressing, the 3 memory layers, supersession, lines as separate reasoning threads (Tree-of-Thoughts), and the 7 laws.","url":"https://lifelinecontext.com/docs/concepts.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://lifelinecontext.com/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://lifelinecontext.com/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
 </script>
 </head>
 <body class="docs">
@@ -46,7 +46,7 @@
       <a href="mcp.html">MCP & remote</a></aside>
   <main class="docs-main">
     <h1>Concepts & laws</h1>
-    <p class="docs-lead">The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.</p>
+    <p class="docs-lead">The Entry, content-addressing, the 3 memory layers, supersession, lines as separate reasoning threads (Tree-of-Thoughts), and the 7 laws.</p>
 <p>Lifeline is an <strong>event-sourced reasoning ledger</strong>. The "current truth" an AI reads is a <em>derived
 projection</em> of an immutable, content-addressed event log — never the source itself.</p>
 <h2>Entry — the atomic unit</h2>
@@ -72,6 +72,40 @@ hash, so a merge of A+B equals B+A.</p>
 <p>A <code>correction</code> entry referencing another entry's id removes it from the current truth — a reverted
 decision, a closed thread. <strong>Append-only:</strong> the past is never edited; closing or reverting is always
 a <em>new</em> entry.</p>
+<h2>Lines — separate reasoning threads</h2>
+<p>A <strong>line</strong> is an independent, content-addressed ledger: its own DAG and its own generated view. A
+project has one by default (<code>ledger</code> → <code>LIFELINE.md</code>) and adds more on demand — <code>--line &lt;name&gt;</code> on the
+CLI, <code>LIFELINE_LINE</code> for the MCP server, or per-request on the hosted hub. Each maps to its own files
+(<code>.lifeline/&lt;name&gt;.db</code> + <code>LIFELINE.&lt;name&gt;.md</code>) with <strong>no collisions</strong>; <code>lifeline lines</code> lists them.</p>
+<p>Lines are <strong>isolated</strong> — there are no cross-line references. Use them to keep distinct <em>contexts</em>
+apart instead of letting one stream blur them:</p>
+<ul>
+<li><strong>Audience / visibility</strong> — this project runs a public <code>ledger</code> (engineering) next to a private
+  <code>--line strategy</code> (<code>LIFELINE.strategy.md</code>: pricing, moat), so each <em>why</em> lives where it belongs.</li>
+<li><strong>Subsystem or experiment</strong> — one line per service, spike, or A/B path: each thread stays
+  self-contained and its view diffs on its own.</li>
+<li><strong>Branch of exploration</strong> — give a candidate direction its own line. Ids are content-addressed, so
+  promoting a branch's conclusion into another line is <strong>idempotent</strong> — the same entry can't double-insert.</li>
+</ul>
+<h3>Branching <em>within</em> a line — the DAG</h3>
+<p>Inside one line, reasoning isn't flat: every entry carries <code>parents</code>. A <strong>merge</strong> entry
+(<code>parents = [A, B]</code>) joins two sub-threads — and because parents are sorted in the hash, A+B ≡ B+A. A
+<strong>correction</strong> <em>prunes</em> a branch: it supersedes its parents, so a rejected direction leaves the
+current truth while staying in history — <strong>anchored and visibly reverted</strong>, never deleted.</p>
+<h3>Lines and Tree-of-Thoughts (ToT)</h3>
+<p>Lifeline is the <strong>memory</strong> a Tree-of-Thoughts writes to and reads from — it <em>records</em> the tree; it
+does not run it (orchestrating agents is a non-goal — see below). Two clean mappings:</p>
+<ul>
+<li><strong>Branches as lines</strong> — one line per candidate branch: fully isolated parallel exploration, each
+  branch's <em>why</em> anchored. When one wins, you log its conclusion into the main line.</li>
+<li><strong>Branches within a line</strong> — each thought is an entry whose <code>parents</code> point at the thought it
+  extends; siblings off one parent are alternatives; a <code>correction</code> prunes the loser; a merge entry
+  fuses the survivors.</li>
+</ul>
+<p>The payoff is specific to ToT: its worst waste is <strong>re-exploring an already-pruned branch</strong> —
+<em>decision amnesia</em> at the branch level. Because Lifeline keeps pruned branches <em>superseded, not gone</em>,
+the next pass reads "this path was tried and rejected, and why," and routes around it instead of
+redoing dead work.</p>
 <h2>The anti-hallucination anchor</h2>
 <p>Every item the AI reads carries its source event's hash. <strong>No anchor, no entry.</strong> Getting a recall
 match wrong cannot turn into a hallucination, because the vector is only an index — the truth is the

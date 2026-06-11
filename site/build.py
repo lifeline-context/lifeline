@@ -29,7 +29,7 @@ BASE = "https://lifelinecontext.com/"
 # slug, nav-title, <title>/meta description, source markdown (relative to repo root)
 PAGES = [
     ("getting-started", "Getting started", "Install Lifeline, run the loop, and bootstrap an existing project. Git for reasoning, in minutes.", "site/content/getting-started.md"),
-    ("concepts",        "Concepts & laws", "The Entry, content-addressing, the 3 memory layers, supersession, the anti-hallucination anchor, and the 7 laws.", "site/content/concepts.md"),
+    ("concepts",        "Concepts & laws", "The Entry, content-addressing, the 3 memory layers, supersession, lines as separate reasoning threads (Tree-of-Thoughts), and the 7 laws.", "site/content/concepts.md"),
     ("architecture",    "Architecture",    "Lifeline's architecture: the deterministic event model, reducers, recall, projection, and the store-is-source cutover.", "docs/ARCHITECTURE.md"),
     ("integration",     "Integration",     "Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.", "docs/INTEGRATION.md"),
     ("mcp",             "MCP & remote",    "The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.", "docs/MCP_REMOTE.md"),

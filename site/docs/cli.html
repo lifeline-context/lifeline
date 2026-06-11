@@ -115,8 +115,11 @@ requires the <em>why</em> (the <code>--body</code>), so junk never enters the li
 <p><code>bootstrap</code> (project identity) · <code>decision</code> · <code>feature</code> · <code>fix</code> · <code>incident</code> · <code>milestone</code> ·
 <code>release</code> · <code>note</code> · <code>open</code> (an open thread) · <code>correction</code> (supersedes its parents).</p>
 <h2>A line</h2>
-<p>One reasoning ledger (code <em>or</em> conversation). A project has 1 by default and supports N via
-<code>--line &lt;name&gt;</code> — no collisions between them.</p>
+<p>One <strong>independent, content-addressed reasoning ledger</strong> (its own DAG + view). A project has 1 by
+default (<code>ledger</code> → <code>LIFELINE.md</code>) and supports N via <code>--line &lt;name&gt;</code> (<code>.lifeline/&lt;name&gt;.db</code> +
+<code>LIFELINE.&lt;name&gt;.md</code>) — no collisions; the MCP server picks one via <code>LIFELINE_LINE</code>. Use separate
+lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
+<a href="concepts.html">Concepts → Lines</a>.</p>
     <div class="docs-foot">
       <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/cli.md">Edit on GitHub</a></span>
       <span><a href="../">← Back to the lifeline</a></span>

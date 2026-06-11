@@ -1658,3 +1658,19 @@ Auditoria das 6 docs publicadas (getting-started, concepts, architecture, integr
 Fecha os 2 limites declarados do AS empacotado (lifeline/oauth.py). (1) LOGIN HOSPEDADO: com LIFELINE_OAUTH_PROVIDER (ex.: github), /oauth/login redireciona ao login social do Supabase (GoTrue /auth/v1/authorize?provider=...) com PKCE server-side NOSSO; /oauth/callback troca o code via grant_type=pkce (auth_code+code_verifier guardado sob o ticket). A SENHA NUNCA toca nosso servidor. O form ROPC vira fallback só de dev/CLI (sem provider) — backward-compat, testes antigos verdes. (2) CLIENT STORE PLUGGABLE: ClientStore + InMemoryClientStore (default) + SupabaseClientStore (PostgREST, chave de serviço — registro e pre-login, e infra do AS por schema.sql:84-98); ativa com SUPABASE_SERVICE_ROLE, persiste em lifeline_oauth_clients e sobrevive a restart/sleep do Render e a multiplas replicas (senao some no restart e o conector quebra). Codes seguem one-time/efemeros (TTL 300s). Contrato GoTrue confirmado por pesquisa antes de codar (server-side PKCE: redirect_to + code_challenge_method=s256 -> ?code -> POST /token?grant_type=pkce {auth_code,code_verifier}). 9 testes novos (TestHostedLogin + TestPersistentClientStore); 31/31 em test_oauth.py, 142 na suite. MCP_REMOTE.md atualizado (env vars + config de Redirect URL no Supabase).
 
 <!-- lifeline:end -->
+
+### #0087 — 2026-06-11T03:22:39.853293+00:00 — note
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: note
+- **summary**: Doc do site: seção 'Lines' (threads de raciocínio separadas) + mapeamento pra Tree-of-Thoughts
+- **parents**: 0f670c3f88eaa42ab8eb2a28d25e9211a6a7ddaee2d18da038bf3c36f74d78e7
+- **id**: 65e9ebef9b636636b229eb0ef0f47fbd50666fc5e37a758d571dadabfc8a9921
+
+**Body**:
+O site nao explicava lines — so citava --line de passagem no CLI. Adicionada secao em concepts.md: line = ledger independente content-addressed (proprio DAG + view; .lifeline/<nome>.db + LIFELINE.<nome>.md; --line / LIFELINE_LINE / per-request no hub; sem cross-line refs). Por que multiplas: audiencia/visibilidade (ex.: ledger publico vs --line strategy privado), subsistema/experimento, branch de exploracao. Branching DENTRO de uma line = o DAG (merge parents=[A,B], A+B=B+A; correction poda/supersede, fica ancorado e visivelmente revertido). Mapeamento ToT (honesto: Lifeline GRAVA a arvore, nao a executa — orquestrar e non-goal): branches-como-lines (paralelo isolado) ou branches-no-DAG; o ganho especifico e nao re-explorar branch ja podado (decision amnesia no nivel de branch). Cross-link no cli.md + meta description + GEO (llms-full).
+
+<!-- lifeline:end -->
