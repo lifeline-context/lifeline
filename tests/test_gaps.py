@@ -244,6 +244,55 @@ class TestG6_LosslessRoundtrip(_Tmp):
         self.assertEqual(got[0].body, e.body)
 
 
+# --------------------------------------------------------------------------- #G6-file
+class TestG6File_LosslessThroughDisk(_Tmp):
+    """#G6 (continuação): o G6 acima prova o round-trip só EM MEMÓRIA
+    (render→ingest_text). O caminho REAL passa por ARQUIVO — `_write_view` (open "w") e
+    `migrate --from LIFELINE.md` (lê o arquivo). Em modo-texto o write traduzia "\\n"→os.linesep
+    e o read fazia universal-newlines, então um body com "\\r\\n" (CRLF, ex.: paste no Windows)
+    dobrava p/ "\\r\\r\\n" e voltava como "\\n\\n" — mudando os BYTES do body, logo o id
+    content-addressed (Lei #3); um filho que citava o id antigo virava pai fantasma e o
+    `verify` do rebuild dava BROKEN. Foi exatamente o que aconteceu com #0042 (id 45bfc3…).
+    Aqui exercitamos o caminho de DISCO com body CRLF + multi-pai + supersessão."""
+
+    async def test_file_roundtrip_preserves_crlf_body_and_dag(self):
+        # cadeia não-linear: raiz → decisão(body CRLF) + nota ; correção com DOIS pais supersede
+        root = mk(kind="bootstrap", summary="Funda", body="b")
+        await self.store.append(root)
+        crlf_body = "primeiro paragrafo\r\n\r\nsegundo paragrafo\r\nterceira linha"
+        dec = mk(kind="decision", summary="usar X", body=crlf_body, parents=[root.id])
+        await self.store.append(dec)
+        note = mk(kind="note", summary="contexto da nota", body="n", parents=[root.id])
+        await self.store.append(note)
+        corr = mk(kind="correction", summary="X cancelado", body="motivo",
+                  parents=[dec.id, note.id])
+        await self.store.append(corr)
+        ids1 = [e.id async for e in self.store.stream()]
+
+        # store → ARQUIVO (writer byte-fiel) — o CRLF tem de sobreviver nos bytes do disco
+        await cli.cmd_rebuild(self.db, self.out)
+        raw = open(self.out, "rb").read()
+        self.assertIn(crlf_body.encode("utf-8"), raw)        # "\r\n" intacto, não dobrado
+        self.assertEqual(raw.count(b"\r\r\n"), 0)            # sem o artefato de modo-texto
+
+        # ARQUIVO → store2 pela MESMA porta que o usuário roda (migrate)
+        db2 = os.path.join(self.dir, "rebuilt.db")
+        n = await cli.cmd_migrate(self.out, db2)
+        self.assertEqual(n, 4)
+
+        ok, _cnt, tampered, dangling = await cli.cmd_verify(db2)
+        self.assertTrue(ok, f"verify deve passar; dangling={dangling} tampered={tampered}")
+        self.assertEqual(dangling, [])                        # nenhum pai fantasma
+
+        s2 = SQLiteEventStore(db2)
+        await s2.initialize()
+        ids2 = [e.id async for e in s2.stream()]
+        self.assertEqual(ids1, ids2)                          # PONTO FIXO via disco
+        self.assertEqual((await s2.get(dec.id)).body, crlf_body)            # CRLF byte-a-byte
+        self.assertEqual(sorted((await s2.get(corr.id)).parents),
+                         sorted([dec.id, note.id]))           # multi-pai (DAG) preservado
+
+
 # ----------------------------------------------------------------------------- #G7
 class TestG7_ApproveHonorsDedup(_Tmp):
     """#G7 (MÉDIA): approve marcava 'approved' mesmo quando o append era dedup (nada entrava)."""

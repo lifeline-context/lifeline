@@ -1,0 +1,7 @@
+# As views LIFELINE.* são projeções CONTENT-ADDRESSED do ledger: os bytes EXATOS de cada
+# entrada (inclusive um "\r\n" interno num body) entram no sha256 que forma o id (Lei #3).
+# Com core.autocrlf=true (default no Windows) o git normalizaria o fim-de-linha no add/checkout
+# e mudaria esses bytes — quebrando o `verify` após `migrate --from LIFELINE.md`. `-text` pina
+# o arquivo: git guarda e extrai byte-a-byte, sem traduzir. NÃO edite a view à mão (é gerada).
+LIFELINE.md -text
+LIFELINE.*.md -text

@@ -7,7 +7,6 @@ round-trip estável que torna o store a fonte de verdade e a markdown uma proje�
 """
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List
 
 from lifeline.entry import Entry
@@ -102,4 +101,10 @@ async def ingest_text(text: str, store: EventStore) -> int:
 
 
 async def ingest_markdown(path: str, store: EventStore) -> int:
-    return await ingest_text(Path(path).read_text(encoding="utf-8"), store)
+    # newline="" → lê os bytes VERBATIM (sem universal-newlines). Espelha o write byte-fiel de
+    # `_write_view`: o par write/read é a INVERSA exata um do outro, então o body volta com os
+    # mesmos bytes (inclusive "\r\n" interno) e o id content-addressed se reproduz. Com
+    # `read_text` (universal-newlines) um "\r\r\n" legado colapsava p/ "\n\n" (dobra), mudando
+    # o body e quebrando o `verify` no rebuild.
+    with open(path, encoding="utf-8", newline="") as f:
+        return await ingest_text(f.read(), store)

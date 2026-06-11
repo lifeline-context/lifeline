@@ -939,14 +939,14 @@ Opcao 1 da outra sessao, com a disciplina do #0039 (sem overclaim). (1) Adapter 
 - **id**: 45bfc3f95984780ca4093abc26cb34155e496113efd05bdda778194538bdaf57
 
 **Body**:
-Fecha o caveat do #0039/#0041 (o kit estava "nao validado ao vivo"). Com o PAT do dono no .env, apliquei cloud/schema.sql via Management API (role postgres): tabela lifeline_entries criada, RLS habilitada, policies so SELECT/INSERT (append-only imposto pelo banco).
-
-Provas AO VIVO pelo PostgREST contra o projeto real (ref rzphncyjrilhwpuemrcl):
-- INSERT anon NEGADO -> 42501 "new row violates row-level security policy": append-only/anti-tenant garantido pelo Postgres (Leis #1 e #2), nao so por convencao.
-- Round-trip autenticado OK: INSERT com apikey=anon + Authorization=Bearer <JWT de usuario> seta owner=auth.uid() e passa a RLS; get/stream leem de volta.
-
-BUG achado por DOGFOODING (nao pelos mocks): o SupabaseEventStore mandava self.key tanto no header apikey quanto no Authorization. O gateway do Supabase REJEITA o JWT de usuario como apikey -> 401 "Invalid API key". Os mocks nao pegaram porque nao exercitam a validacao de apikey do gateway. Fix em lifeline/cloud.py: separar apikey (chave do projeto) do token (Bearer = JWT), lido de SUPABASE_TOKEN; e construcao com key explicita NAO herda token do ambiente (isolamento de teste). Mocks seguem verdes e os 2 testes live agora passam -> suite 55/55 (com creds; 8+2skip sem creds, CI-safe).
-
+Fecha o caveat do #0039/#0041 (o kit estava "nao validado ao vivo"). Com o PAT do dono no .env, apliquei cloud/schema.sql via Management API (role postgres): tabela lifeline_entries criada, RLS habilitada, policies so SELECT/INSERT (append-only imposto pelo banco).
+
+Provas AO VIVO pelo PostgREST contra o projeto real (ref rzphncyjrilhwpuemrcl):
+- INSERT anon NEGADO -> 42501 "new row violates row-level security policy": append-only/anti-tenant garantido pelo Postgres (Leis #1 e #2), nao so por convencao.
+- Round-trip autenticado OK: INSERT com apikey=anon + Authorization=Bearer <JWT de usuario> seta owner=auth.uid() e passa a RLS; get/stream leem de volta.
+
+BUG achado por DOGFOODING (nao pelos mocks): o SupabaseEventStore mandava self.key tanto no header apikey quanto no Authorization. O gateway do Supabase REJEITA o JWT de usuario como apikey -> 401 "Invalid API key". Os mocks nao pegaram porque nao exercitam a validacao de apikey do gateway. Fix em lifeline/cloud.py: separar apikey (chave do projeto) do token (Bearer = JWT), lido de SUPABASE_TOKEN; e construcao com key explicita NAO herda token do ambiente (isolamento de teste). Mocks seguem verdes e os 2 testes live agora passam -> suite 55/55 (com creds; 8+2skip sem creds, CI-safe).
+
 Caveat honesto: o JWT de usuario e curto (~1h) -> auth duravel do CLI (login/refresh) e o proximo passo do Tier 1. O .mcp.json ganhou o servidor supabase oficial (npx), mas a Management API direta com o PAT ja bastou pra criar+validar; o MCP fica como opcao p/ sessoes futuras.
 
 <!-- lifeline:end -->
@@ -1608,5 +1608,21 @@ Publica a 0.3.0 no PyPI (via Trusted Publishing/OIDC, sem token) e move o projet
 PORQUE org + dominio: unifica a marca numa casa so (org guarda o core publico 'lifeline' e o hub privado 'lifeline-hub'), e o dominio proprio torna a URL canonica PERMANENTE — mover repo nunca mais quebra link/SEO. Feito agora porque o custo era zero: o site rodou pouco, nao indexou, e o repo era privado ate pouco (sem SEO a perder). lifeline.dev custava US0 (nome premium); lifelinecontext.com no .com ~US0 e bate com o pacote PyPI e o posicionamento ('context runtime').
 
 O 0.3.0 carrega o fechamento dos 9 gaps do audit + a seam _REQUEST_STORE_FACTORY (que o hub privado usa sem forkar o core) + endurecimento OAuth/JWKS. Sweep de URLs (build.py base, pyproject urls, site rebuildado, CNAME) verificado: site 200, canonical novo, /docs //llms.txt //sitemap.xml 200.
+
+<!-- lifeline:end -->
+
+### #0084 — 2026-06-11T01:23:30.264744+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: Round-trip por disco: writer/reader byte-fiéis (newline="") + pino .gitattributes -text
+- **parents**: d4f101d0543773dfbc7ffdfe71c8541b89b516540ad2b724cdffde50bf367ed6
+- **id**: ec02eeb620dab89eb4fce2460f5791f45be1ae1bb09d32635a5f2838d0431586
+
+**Body**:
+A projeção store->LIFELINE.md->store nao era ponto-fixo NO DISCO (so em memoria). Em modo-texto, _write_view traduzia \n->os.linesep (CRLF no Windows) e ingest_markdown fazia universal-newlines: um body com \r\n dobrava p/ \r\r\n no arquivo e voltava como \n\n, mudando os BYTES do body e portanto o id content-addressed (Lei #3). Um filho que citava o id antigo virava pai-fantasma e o verify do rebuild dava BROKEN (foi o #0042, id 45bfc3...). Fix: abrir write e read com newline="" (inversa exata um do outro) + .gitattributes pina LIFELINE.* como -text p/ o git nao re-normalizar EOL no add/checkout. Teste novo (TestG6File) exercita o caminho de disco com body CRLF + multi-pai + supersessao e prova ids estaveis + verify OK + DAG preservado.
 
 <!-- lifeline:end -->

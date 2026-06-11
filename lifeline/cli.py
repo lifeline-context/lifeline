@@ -117,7 +117,13 @@ async def _head_id(store):
 
 async def _write_view(store, out):
     md = await render_ledger_markdown(store, PREAMBLE)
-    with open(out, "w", encoding="utf-8") as f:
+    # newline="" → escreve os bytes VERBATIM, sem traduzir "\n"→os.linesep (CRLF no Windows).
+    # A tradução do modo-texto entrelaça o conteúdo com o fim-de-linha da plataforma: um body
+    # com "\r\n" virava "\r\r\n" no arquivo e, na releitura (universal newlines), "\n\n" —
+    # mudando os bytes do body e portanto o id content-addressed (Lei #3), o que quebrava o
+    # `verify` após `migrate --from LIFELINE.md`. A projeção tem de ser determinística e
+    # idêntica em qualquer SO; o pino em .gitattributes (-text) impede o git de re-mexer.
+    with open(out, "w", encoding="utf-8", newline="") as f:
         f.write(md)
     n = 0
     async for _ in store.stream():
