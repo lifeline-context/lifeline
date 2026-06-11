@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>vs alternatives — Lifeline docs</title>
+<meta name="description" content="Lifeline vs ADRs, CLAUDE.md, RAG, and memory MCPs (mem0, Letta, Honcho) — honest differences, and when not to use it.">
+<link rel="canonical" href="https://lifelinecontext.com/docs/compare.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="vs alternatives — Lifeline docs">
+<meta property="og:description" content="Lifeline vs ADRs, CLAUDE.md, RAG, and memory MCPs (mem0, Letta, Honcho) — honest differences, and when not to use it.">
+<meta property="og:url" content="https://lifelinecontext.com/docs/compare.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"vs alternatives","description":"Lifeline vs ADRs, CLAUDE.md, RAG, and memory MCPs (mem0, Letta, Honcho) — honest differences, and when not to use it.","url":"https://lifelinecontext.com/docs/compare.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://lifelinecontext.com/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://lifelinecontext.com/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><svg class="brandmark" viewBox="0 0 1024 1024" aria-hidden="true"><g fill="currentColor"><path d="M120 120 L270 120 L270 754 L660 754 L660 904 L210 904 Q120 904 120 814 L120 120 Z"/><path d="M364 120 L814 120 Q904 120 904 210 L904 904 L754 904 L754 270 L364 270 Z"/><rect x="412" y="330" width="72" height="364"/><rect x="540" y="330" width="72" height="364"/><rect x="330" y="412" width="364" height="72"/><rect x="330" y="540" width="364" height="72"/></g></svg> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="../blog/">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html">MCP & remote</a>
+      <div class="group">Decide</div>
+      <a href="compare.html" class="current">vs alternatives</a>
+      <a href="curate.html">Curate well</a>
+      <div class="group">Teams</div>
+      <a href="teams.html">Teams & hosted</a></aside>
+  <main class="docs-main">
+    <h1>vs alternatives</h1>
+    <p class="docs-lead">Lifeline vs ADRs, CLAUDE.md, RAG, and memory MCPs (mem0, Letta, Honcho) — honest differences, and when not to use it.</p>
+<p>Lifeline isn't trying to replace your docs, your wiki, or your memory tool. It occupies one narrow
+slot most stacks leave empty: an <strong>append-only, anchored record of <em>why</em></strong> the project is what it is,
+served to any AI. Here's honestly where it sits next to the things it gets compared to — and where it
+<em>isn't</em> the right tool.</p>
+<h2>At a glance</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it stores</th>
+<th>Mutable?</th>
+<th>Provenance / "still true?"</th>
+<th>Machine-served</th>
+<th>Lifeline's relationship</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lifeline</strong></td>
+<td>the project's <em>why</em> (decisions, reversals, incidents, open threads)</td>
+<td><strong>append-only</strong></td>
+<td>every item carries its event hash; corrections supersede</td>
+<td><strong>MCP-native</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>ADRs</strong> (markdown)</td>
+<td>architecture decisions</td>
+<td>edited in place</td>
+<td>by convention only</td>
+<td>no (just files)</td>
+<td>ADRs <em>as a runtime</em> — anchored, AI-readable, supersession-aware</td>
+</tr>
+<tr>
+<td><strong>CLAUDE.md / .cursorrules / AGENTS.md</strong></td>
+<td>how the AI should <em>behave</em> (rules)</td>
+<td>edited in place</td>
+<td>none</td>
+<td>read as instructions</td>
+<td><strong>complementary</strong> — rules ≠ rationale; this project ships both</td>
+</tr>
+<tr>
+<td><strong>RAG over your repo</strong></td>
+<td>code/text chunks by similarity</td>
+<td>n/a (index)</td>
+<td>none — ranks by match, not truth</td>
+<td>yes</td>
+<td>answers <em>where is X</em>; Lifeline answers <em>why X, and is it current</em></td>
+</tr>
+<tr>
+<td><strong>Memory MCPs</strong> (mem0, Letta/MemGPT, Honcho)</td>
+<td>agent/user memories, often vector-backed</td>
+<td>auto-written, overwritten</td>
+<td>usually none</td>
+<td>yes</td>
+<td><strong>complementary</strong> — they recall; Lifeline <em>anchors</em> the why</td>
+</tr>
+<tr>
+<td><strong>Wiki / Notion / Confluence</strong></td>
+<td>human knowledge base</td>
+<td>fully mutable</td>
+<td>none</td>
+<td>no</td>
+<td>broader + human; Lifeline is narrower, tamper-evident, machine-native</td>
+</tr>
+<tr>
+<td><strong>git</strong></td>
+<td>the <em>what</em> (code), content-addressed by commit</td>
+<td>append-only history</td>
+<td>commit SHA</td>
+<td>no</td>
+<td>the <em>why</em> to git's <em>what</em>; <strong>not</strong> a git replacement (a non-goal)</td>
+</tr>
+</tbody>
+</table>
+<h2>The honest distinctions</h2>
+<ul>
+<li><strong>vs ADRs</strong> — the closest cousin. ADRs are a <em>doc convention</em>; Lifeline is a <em>runtime</em>. Same instinct
+  (record the decision + the why), but content-addressed, served over MCP, <strong>proposable by the AI</strong>
+  (human-approved), with supersession, relevance recall, and budgeted assembly. If you love ADRs,
+  Lifeline is ADRs an AI can read, extend, and <code>verify</code> — that can't silently contradict themselves.</li>
+<li><strong>vs CLAUDE.md / rules files</strong> — those say <em>how to act</em> ("always run tests"); Lifeline says <em>why the
+  project is this way</em> ("Postgres, because the audit needs ACID <code>[hash]</code>"). Different jobs. Keep both.</li>
+<li><strong>vs RAG / vector search over code</strong> — retrieval ranks text by similarity and has <strong>no provenance</strong>
+  and no concept of <em>reverted</em>. Code shows <em>what</em>, never <em>why</em>. Lifeline anchors every claim to its
+  source event and marks dead decisions dead — so a wrong match can't become a confident hallucination.</li>
+<li><strong>vs memory MCPs</strong> — mem0/Letta/Honcho store mutable, auto-written memories (great for <em>recall</em> of
+  what happened, user modeling, session continuity). Lifeline is <strong>append-only + human-in-the-loop +
+  content-addressed</strong>: no silent overwrite, no machine-generated drift, every entry checkable against
+  its origin. They're a recall layer; Lifeline is the anchored <em>why</em> layer. Run both.</li>
+<li><strong>vs git</strong> — git is content-addressed <em>what</em>; Lifeline is content-addressed <em>why</em>. The <code>LIFELINE.md</code>
+  even lives in git. Lifeline explicitly does <strong>not</strong> replace version control.</li>
+</ul>
+<h2>When <em>not</em> to use Lifeline</h2>
+<p>Honesty is the brand, so:</p>
+<ul>
+<li><strong>A throwaway spike or solo one-off</strong> with no future reader — the ceremony isn't worth it.</li>
+<li><strong>You won't curate it.</strong> Writes are human-in-the-loop by design; a ledger nobody approves or
+  supersedes <strong>rots</strong>, and a stale, confident ledger is <em>worse</em> than none. (See <a href="curate.html">Curate well</a>.)</li>
+<li><strong>You want an agent orchestrator, workflow engine, or execution memory</strong> — those are explicit
+  <a href="concepts.html">non-goals</a>. Lifeline records <em>reasoning</em>, it doesn't run anything.</li>
+<li><strong>You need to store code, secrets, or large blobs</strong> — wrong tool; the body of an entry is <em>why</em> text.</li>
+<li><strong>A pure docs/marketing surface with no decisions</strong> — there's nothing to anchor.</li>
+</ul>
+<p>Lifeline pays off when a project has <strong>ongoing decisions whose rationale future minds (AI or human)
+must inherit</strong>, and someone will spend thirty seconds approving the entries that matter.</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/compare.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

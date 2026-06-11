@@ -1674,3 +1674,19 @@ Fecha os 2 limites declarados do AS empacotado (lifeline/oauth.py). (1) LOGIN HO
 O site nao explicava lines — so citava --line de passagem no CLI. Adicionada secao em concepts.md: line = ledger independente content-addressed (proprio DAG + view; .lifeline/<nome>.db + LIFELINE.<nome>.md; --line / LIFELINE_LINE / per-request no hub; sem cross-line refs). Por que multiplas: audiencia/visibilidade (ex.: ledger publico vs --line strategy privado), subsistema/experimento, branch de exploracao. Branching DENTRO de uma line = o DAG (merge parents=[A,B], A+B=B+A; correction poda/supersede, fica ancorado e visivelmente revertido). Mapeamento ToT (honesto: Lifeline GRAVA a arvore, nao a executa — orquestrar e non-goal): branches-como-lines (paralelo isolado) ou branches-no-DAG; o ganho especifico e nao re-explorar branch ja podado (decision amnesia no nivel de branch). Cross-link no cli.md + meta description + GEO (llms-full).
 
 <!-- lifeline:end -->
+
+### #0088 — 2026-06-11T03:46:09.177736+00:00 — feature
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: feature
+- **summary**: Site funnel: prova (dogfood+demo), página vs-alternatives, gancho de distribuição, curate-well, página Teams
+- **parents**: 65e9ebef9b636636b229eb0ef0f47fbd50666fc5e37a758d571dadabfc8a9921
+- **id**: 0a7b6cc5dd4fa54de4e87ebf219a2e81b67e517fd6c9e926bf8718f822699255
+
+**Body**:
+Análise sênior achou que a doc explicava o MECANISMO mas nao provava/posicionava/convertia. Endereçado em 5 frentes: (1) PROVA na landing — painel com a saida REAL de 'lifeline context' deste repo (87 entradas, IA+humano, ancorado) + link pro LIFELINE.md vivo (dogfood exposto). (2) Pagina compare.html — Lifeline vs ADRs/CLAUDE.md/RAG/memory MCPs (mem0,Letta,Honcho)/wiki/git, com 'quando NAO usar' honesto. (3) Gancho de DISTRIBUICAO nivel-hero — painel 'sua IA ja le, mora no repo': qualquer IA que le o repo herda o porque via LIFELINE.md, sem MCP. (4) Pagina curate.html — higiene do ledger (boa entrada, granularidade, supersede-nao-edite, ser ruthless no approve) + o modo de falha 'ledger rot' nomeado e como resistir. (5) Pagina teams.html — hub hospedado em early access (lines de time, MCP zero-ops, GitHub App, billing Marketplace), free-vs-pago honesto, CTA via GitHub. Wired no build (PAGES+NAV grupos Decide/Teams), nav/footer com Teams, footer corrigido (FSL nao MIT). Verificado no preview: painel proof fits (d=0), distribution igual ao mcp existente; mobile fits + pre scrolla horizontal (padrao). 9 doc pages agora.
+
+<!-- lifeline:end -->

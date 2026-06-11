@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teams & hosted — Lifeline docs</title>
+<meta name="description" content="The hosted Lifeline hub: zero-ops MCP, shared team lines, the GitHub App, and Marketplace billing — in early access.">
+<link rel="canonical" href="https://lifelinecontext.com/docs/teams.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Teams & hosted — Lifeline docs">
+<meta property="og:description" content="The hosted Lifeline hub: zero-ops MCP, shared team lines, the GitHub App, and Marketplace billing — in early access.">
+<meta property="og:url" content="https://lifelinecontext.com/docs/teams.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Teams & hosted","description":"The hosted Lifeline hub: zero-ops MCP, shared team lines, the GitHub App, and Marketplace billing — in early access.","url":"https://lifelinecontext.com/docs/teams.html","author":{"@type":"Person","name":"jessianmart"},"publisher":{"@type":"Organization","name":"Lifeline","url":"https://lifelinecontext.com/"},"isPartOf":{"@type":"WebSite","name":"Lifeline","url":"https://lifelinecontext.com/"},"inLanguage":"en","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><svg class="brandmark" viewBox="0 0 1024 1024" aria-hidden="true"><g fill="currentColor"><path d="M120 120 L270 120 L270 754 L660 754 L660 904 L210 904 Q120 904 120 814 L120 120 Z"/><path d="M364 120 L814 120 Q904 120 904 210 L904 904 L754 904 L754 270 L364 270 Z"/><rect x="412" y="330" width="72" height="364"/><rect x="540" y="330" width="72" height="364"/><rect x="330" y="412" width="364" height="72"/><rect x="330" y="540" width="364" height="72"/></g></svg> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Docs</a>
+    <a href="../blog/">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Start</div>
+      <a href="getting-started.html">Getting started</a>
+      <a href="concepts.html">Concepts & laws</a>
+      <a href="cli.html">CLI reference</a>
+      <div class="group">Deep dive</div>
+      <a href="architecture.html">Architecture</a>
+      <a href="integration.html">Integration</a>
+      <a href="mcp.html">MCP & remote</a>
+      <div class="group">Decide</div>
+      <a href="compare.html">vs alternatives</a>
+      <a href="curate.html">Curate well</a>
+      <div class="group">Teams</div>
+      <a href="teams.html" class="current">Teams & hosted</a></aside>
+  <main class="docs-main">
+    <h1>Teams & hosted</h1>
+    <p class="docs-lead">The hosted Lifeline hub: zero-ops MCP, shared team lines, the GitHub App, and Marketplace billing — in early access.</p>
+<p>The open-source core is everything one person needs: a local ledger, the MCP server, recall, the loop.
+The <strong>hub</strong> is the hosted layer that makes Lifeline work for a <em>team</em> without anyone running infra.</p>
+<blockquote>
+<p><strong>Status: early access.</strong> The hub is deployed and the GitHub App + Marketplace billing are built and
+tested, but onboarding is hands-on while we shape it with the first teams. Want in? See
+<a href="#request-access">Request access</a> below.</p>
+</blockquote>
+<h2>Free vs hosted</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Core (free, OSS)</strong></th>
+<th><strong>Hub (hosted, paid)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>License</td>
+<td>FSL-1.1-MIT (self-host anything)</td>
+<td>proprietary service</td>
+</tr>
+<tr>
+<td>Ledger</td>
+<td>local <code>.lifeline/</code>, or your own Supabase</td>
+<td>managed, backed up</td>
+</tr>
+<tr>
+<td>MCP server</td>
+<td>run <code>lifeline-mcp</code> yourself</td>
+<td><strong>zero-ops hosted endpoint</strong> per line</td>
+</tr>
+<tr>
+<td>Users</td>
+<td>single-user</td>
+<td><strong>team lines</strong> — shared, multi-user, role-scoped</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>your own</td>
+<td>hosted OAuth (Google/GitHub)</td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td>—</td>
+<td><strong>GitHub App</strong>: capture decisions from PRs, anchored to the merge SHA</td>
+</tr>
+<tr>
+<td>Billing</td>
+<td>—</td>
+<td><strong>GitHub Marketplace</strong> (GitHub bills; you keep 95%)</td>
+</tr>
+</tbody>
+</table>
+<p>The free core never becomes a trial that expires — local Lifeline is yours under the FSL. The hub
+charges for <strong>not operating it yourself</strong> plus the team features (shared lines, sync, backup, the App).</p>
+<h2>What the hub adds, concretely</h2>
+<ul>
+<li><strong>Hosted MCP, multi-tenant.</strong> Point your AI at <em>your</em> endpoint; an OAuth token scopes it to your
+  line by row-level security. No process to babysit.</li>
+<li><strong>Team lines.</strong> A shared, append-only line your whole team reads and proposes into — same
+  content-addressed entries, namespaced to the team, curated by line owners.</li>
+<li><strong>GitHub App.</strong> Opt-in capture: a <code>/lifeline</code> comment or the <code>lifeline</code> label on a PR drafts a
+  proposal from the human PR text (never the diff), anchored to the merge-commit SHA — Law 1 for free,
+  without touching the entry id (Law 3).</li>
+<li><strong>Backup &amp; sync.</strong> The ledger is content-addressed, so backup/restore is lossless and idempotent.</li>
+</ul>
+<p>The hub is a thin proprietary control-plane <strong>around</strong> the open core — it imports <code>lifeline-context</code>,
+never forks it. Your reasoning stays portable: export anytime, re-seed anywhere, same ids.</p>
+<h2>Request access {#request-access}</h2>
+<ul>
+<li><strong>Star / watch</strong> the repo to track the launch: <a href="https://github.com/lifeline-context/lifeline">github.com/lifeline-context/lifeline</a></li>
+<li><strong>Tell us about your team</strong> — open a GitHub issue tagged <code>hosted</code> with your team size and what you'd
+  put in a shared line. That shapes the early-access cohort.</li>
+<li>Curious what the control-plane looks like? There's a live (early, bare) dashboard — ask in the issue
+  and we'll point you at it.</li>
+</ul>
+<p>Not ready for a team yet? Start solo with the free core — <a href="getting-started.html">Getting started</a> — and
+graduate the same ledger to a hosted line later. Nothing to migrate; the entries are already portable.</p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/teams.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

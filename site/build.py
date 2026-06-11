@@ -34,10 +34,15 @@ PAGES = [
     ("integration",     "Integration",     "Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.", "docs/INTEGRATION.md"),
     ("mcp",             "MCP & remote",    "The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.", "docs/MCP_REMOTE.md"),
     ("cli",             "CLI reference",   "Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.", "site/content/cli.md"),
+    ("compare",         "vs alternatives", "Lifeline vs ADRs, CLAUDE.md, RAG, and memory MCPs (mem0, Letta, Honcho) — honest differences, and when not to use it.", "site/content/compare.md"),
+    ("curate",          "Curate well",     "How to keep a Lifeline ledger signal not noise: good entries, granularity, supersession, and avoiding ledger rot.", "site/content/curate.md"),
+    ("teams",           "Teams & hosted",  "The hosted Lifeline hub: zero-ops MCP, shared team lines, the GitHub App, and Marketplace billing — in early access.", "site/content/teams.md"),
 ]
 NAV = [
     ("Start", [("getting-started", "Getting started"), ("concepts", "Concepts & laws"), ("cli", "CLI reference")]),
     ("Deep dive", [("architecture", "Architecture"), ("integration", "Integration"), ("mcp", "MCP & remote")]),
+    ("Decide", [("compare", "vs alternatives"), ("curate", "Curate well")]),
+    ("Teams", [("teams", "Teams & hosted")]),
 ]
 
 # cross-document link rewrites so repo-relative links resolve on the site

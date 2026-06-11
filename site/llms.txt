@@ -15,6 +15,9 @@ the cryptographic hash of its source event (anti-hallucination); append-only wit
 - [Integration](https://lifelinecontext.com/docs/integration.html): Wire Lifeline into Claude Code, Cursor, Claude Desktop, and Gemini CLI via MCP — with auto-connect.
 - [MCP & remote](https://lifelinecontext.com/docs/mcp.html): The MCP surface: local stdio, remote HTTP/SSE, the OAuth Resource Server, and multi-tenant cloud.
 - [CLI reference](https://lifelinecontext.com/docs/cli.html): Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.
+- [vs alternatives](https://lifelinecontext.com/docs/compare.html): Lifeline vs ADRs, CLAUDE.md, RAG, and memory MCPs (mem0, Letta, Honcho) — honest differences, and when not to use it.
+- [Curate well](https://lifelinecontext.com/docs/curate.html): How to keep a Lifeline ledger signal not noise: good entries, granularity, supersession, and avoiding ledger rot.
+- [Teams & hosted](https://lifelinecontext.com/docs/teams.html): The hosted Lifeline hub: zero-ops MCP, shared team lines, the GitHub App, and Marketplace billing — in early access.
 
 ## Articles
 - [How one AI inherits another's context: solving the handoff problem](https://lifelinecontext.com/blog/ai-context-handoff.html): Two AIs on one project share nothing. Here's why the context handoff breaks — and how an anchored ledger over MCP makes context portable between models.

@@ -103,6 +103,7 @@
   <a class="brand" href="./"><svg class="brandmark" viewBox="0 0 1024 1024" aria-hidden="true"><g fill="currentColor"><path d="M120 120 L270 120 L270 754 L660 754 L660 904 L210 904 Q120 904 120 814 L120 120 Z"/><path d="M364 120 L814 120 Q904 120 904 210 L904 904 L754 904 L754 270 L364 270 Z"/><rect x="412" y="330" width="72" height="364"/><rect x="540" y="330" width="72" height="364"/><rect x="330" y="412" width="364" height="72"/><rect x="330" y="540" width="364" height="72"/></g></svg> Lifeline <span class="ver">v0.3.0</span></a>
   <nav class="topnav">
     <a href="docs/">Docs</a>
+    <a href="docs/teams.html">Teams</a>
     <a href="blog/">Blog</a>
     <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
     <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
@@ -144,6 +145,26 @@
       <h2 class="title reveal d1">One metric.<br>One acceptance test.</h2>
       <p class="lead reveal d2">A fresh AI connects, <strong>with no human in the loop</strong>, and correctly answers: <strong>what / why / what's decided / what's next?</strong></p>
       <p class="body reveal d3">Lifeline keeps the project's lifeline queryable, compressible, and <strong>anchored</strong> — so it never overflows the window and never invents recall. The <em>why</em> outweighs the <em>what</em>.</p>
+    </div>
+  </section>
+
+  <!-- 2.5 · PROOF / DOGFOOD -->
+  <section class="panel" id="p-proof" aria-label="Proof — this project is its own Lifeline">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[proof]</span> <span class="bar"></span> not a mockup · this repo is its own ledger</p>
+      <h2 class="title reveal d1">A fresh AI connects.<br>This is what it reads.</h2>
+      <p class="body reveal d2">Real output of <code>python -m lifeline context</code> on <strong>this very repo</strong> — what / why / decided / next, to a budget. Every line anchored to its event id; built by AIs + a human from #0001.</p>
+      <pre class="code reveal d3"><span class="c"># Lifeline — contexto do projeto · 87 entradas · head 65e9ebef</span>
+<span class="c"># claude-opus (39) · claude-fable (10) · human (38)</span>
+<span class="c">## Decisões em vigor (o porquê)</span>
+- Adota o OAuth Server nativo do Supabase como AS; nosso vira RS <span class="hash">[04ac751c]</span>
+- Relicencia 0.3.0+ para FSL-1.1-MIT (source-available) <span class="hash">[f450ab42]</span>
+<span class="c">## Recente (o que vem a seguir)</span>
+- <span class="s">[release]</span> 0.3.0 no PyPI · org + domínio próprio
+- <span class="s">[feature]</span> AS endurecido — login hospedado + store persistente
+- <span class="s">[note]</span> Doc: seção 'Lines' + Tree-of-Thoughts</pre>
+      <p class="body muted reveal d3">The site you're reading dogfoods itself. <a href="https://github.com/lifeline-context/lifeline/blob/main/LIFELINE.md" target="_blank" rel="noopener">See the live ledger → LIFELINE.md</a></p>
     </div>
   </section>
 
@@ -224,6 +245,17 @@
     </div>
   </section>
 
+  <!-- 7.5 · DISTRIBUTION -->
+  <section class="panel" id="p-distribution" aria-label="It travels with your repo">
+    <span class="node"></span>
+    <div class="panel-inner">
+      <p class="eyebrow reveal"><span class="hash">[distribution]</span> <span class="bar"></span> no MCP required for the read</p>
+      <h2 class="title reveal d1">Your AI already reads it.<br>It lives in the repo.</h2>
+      <p class="lead reveal d2">The ledger projects to a plain <code>LIFELINE.md</code> committed in your repo. So <strong>any AI that can read the repo already inherits your <em>why</em></strong> — Gemini, ChatGPT, Claude, Copilot, Cursor — with no MCP, no OAuth, no per-vendor setup.</p>
+      <p class="body reveal d3">MCP is the <em>live</em> surface — relevance recall, propose-to-approve, always current. But the floor is zero-friction: the file travels with the clone. Point any model at the repo and ask it <em>why</em>. That's the whole onboarding.</p>
+    </div>
+  </section>
+
   <!-- 8 · DOCS HUB + FOOTER -->
   <section class="panel" id="p-docs" aria-label="Documentation">
     <span class="node"></span>
@@ -237,10 +269,12 @@
         <a class="doclink reveal d2" href="docs/integration.html"><span class="t">Integration <span class="arrow">→</span></span><span class="d">Wire it into Claude, Cursor, Gemini.</span></a>
         <a class="doclink reveal d3" href="docs/mcp.html"><span class="t">MCP &amp; remote <span class="arrow">→</span></span><span class="d">stdio, HTTP/SSE, OAuth resource server.</span></a>
         <a class="doclink reveal d3" href="docs/cli.html"><span class="t">CLI reference <span class="arrow">→</span></span><span class="d">Every command, end to end.</span></a>
+        <a class="doclink reveal d3" href="docs/compare.html"><span class="t">vs alternatives <span class="arrow">→</span></span><span class="d">ADRs, RAG, memory MCPs — and when not to.</span></a>
+        <a class="doclink reveal d3" href="docs/curate.html"><span class="t">Curate well <span class="arrow">→</span></span><span class="d">Keep the ledger signal; avoid rot.</span></a>
       </div>
       <footer class="foot reveal d3">
-        <div>MIT licensed · open-source core · cloud is open-core. Built by dogfooding from entry #0001.</div>
-        <div><a href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub</a> · <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a> · <a href="llms.txt">llms.txt</a></div>
+        <div>Open-core: <strong>FSL-1.1-MIT</strong> core (converts to MIT in 2 years) · <a href="docs/teams.html">hosted hub for teams</a>. Dogfooded from entry #0001.</div>
+        <div><a href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub</a> · <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a> · <a href="docs/teams.html">Teams</a> · <a href="llms.txt">llms.txt</a></div>
       </footer>
     </div>
   </section>
