@@ -53,13 +53,18 @@
 <li><strong>Write while working</strong> → MCP tools <code>lifeline_append</code> / <code>lifeline_recontextualize</code> (or <code>python -m lifeline log</code>).</li>
 </ul>
 <h2>MCP client (any of them)</h2>
-<p>Point the client at the stdio server:</p>
-<pre><code>LIFELINE_DB=.lifeline/ledger.db python -m lifeline.mcp_server
+<p>Point the client at the stdio server. The server command is <strong><code>lifeline-mcp</code></strong> (installed by
+<code>pip install lifeline-context</code>); it reads the DB from <code>LIFELINE_DB</code> (default <code>.lifeline/ledger.db</code>).
+Set the env var the way your client config does — e.g. an <code>"env"</code> block in the JSON snippets below.
+At a shell directly:</p>
+<pre><code class="language-bash">LIFELINE_DB=.lifeline/ledger.db lifeline-mcp        # bash/zsh
+</code></pre>
+<pre><code class="language-powershell">$env:LIFELINE_DB=&quot;.lifeline/ledger.db&quot;; lifeline-mcp    # PowerShell
 </code></pre>
 <ul>
 <li><strong>Resource:</strong> <code>lifeline://project/context</code> — read it when opening the session.</li>
-<li><strong>Tools:</strong> <code>lifeline_append(kind, summary, body, …)</code>, <code>lifeline_recontextualize(parent_id, summary, body, …)</code>.</li>
-<li><strong>Server command:</strong> <code>lifeline-mcp</code> (after <code>pip install -e .</code>) or <code>python -m lifeline.mcp_server</code> (from the repo root).</li>
+<li><strong>Tools:</strong> <code>lifeline_append(kind, summary, body, …)</code>, <code>lifeline_recontextualize(parent_id, summary, body, …)</code>, <code>lifeline_recall(query, …)</code>.</li>
+<li><strong>Server command:</strong> <code>lifeline-mcp</code> (or <code>python -m lifeline.mcp_server</code> from the repo root).</li>
 </ul>
 <h2>Per-client snippets (copy-and-paste)</h2>
 <p><strong>Claude Code</strong> — already reads the project's <code>.mcp.json</code> <strong>automatically</strong>. Without it: <code>claude mcp add lifeline -- lifeline-mcp</code>.</p>

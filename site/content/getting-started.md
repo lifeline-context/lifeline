@@ -14,7 +14,9 @@ pip install -e ".[embeddings]"      # optional: dense semantic recall
 ```
 
 Dependencies: `pydantic`, `aiosqlite`, `mcp`, `httpx`. **Python ≥ 3.10.** The core is local,
-single-user, and zero-dependency for recall by default.
+single-user, and needs **no extra dependencies for recall** by default (lexical) — the dense
+semantic embedder is the only opt-in extra. Licensed **FSL-1.1-MIT** (source-available; converts to
+MIT after two years).
 
 ## Quickstart (CLI)
 

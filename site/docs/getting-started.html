@@ -57,7 +57,9 @@ pip install -e &quot;.[cloud]&quot;           # optional: cloud mode (Supabase)
 pip install -e &quot;.[embeddings]&quot;      # optional: dense semantic recall
 </code></pre>
 <p>Dependencies: <code>pydantic</code>, <code>aiosqlite</code>, <code>mcp</code>, <code>httpx</code>. <strong>Python ≥ 3.10.</strong> The core is local,
-single-user, and zero-dependency for recall by default.</p>
+single-user, and needs <strong>no extra dependencies for recall</strong> by default (lexical) — the dense
+semantic embedder is the only opt-in extra. Licensed <strong>FSL-1.1-MIT</strong> (source-available; converts to
+MIT after two years).</p>
 <h2>Quickstart (CLI)</h2>
 <p>Each project gets its own <code>.lifeline/ledger.db</code>:</p>
 <pre><code class="language-bash">lifeline log --kind bootstrap --summary &quot;Bootstrap project X&quot; --body &quot;Multi-tenant billing API.&quot;

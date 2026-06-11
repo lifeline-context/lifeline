@@ -1626,3 +1626,19 @@ O 0.3.0 carrega o fechamento dos 9 gaps do audit + a seam _REQUEST_STORE_FACTORY
 A projeção store->LIFELINE.md->store nao era ponto-fixo NO DISCO (so em memoria). Em modo-texto, _write_view traduzia \n->os.linesep (CRLF no Windows) e ingest_markdown fazia universal-newlines: um body com \r\n dobrava p/ \r\r\n no arquivo e voltava como \n\n, mudando os BYTES do body e portanto o id content-addressed (Lei #3). Um filho que citava o id antigo virava pai-fantasma e o verify do rebuild dava BROKEN (foi o #0042, id 45bfc3...). Fix: abrir write e read com newline="" (inversa exata um do outro) + .gitattributes pina LIFELINE.* como -text p/ o git nao re-normalizar EOL no add/checkout. Teste novo (TestG6File) exercita o caminho de disco com body CRLF + multi-pai + supersessao e prova ids estaveis + verify OK + DAG preservado.
 
 <!-- lifeline:end -->
+
+### #0085 — 2026-06-11T01:25:14.378818+00:00 — note
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: note
+- **summary**: Revisão completa da doc do site: alinhada ao comportamento que de fato shipou
+- **parents**: ec02eeb620dab89eb4fce2460f5791f45be1ae1bb09d32635a5f2838d0431586
+- **id**: 360d5418ec7731a879a4ff4b76520958ab74727a0435adc14cadafceeb8ff56b
+
+**Body**:
+Auditoria das 6 docs publicadas (getting-started, concepts, architecture, integration, mcp, cli) por agentes revisores independentes. Correcoes de FATO, nao de estilo: (1) concepts: hash usa body.strip(), nao body. (2) architecture: documentado o portao de integridade (reduce() chama verify() e descarta entrada adulterada p/ integrity_broken), supersessao e PONTO-FIXO do grafo de correcoes (nao set que so cresce), e o piso de abstencao do recall (min_score; dense=0.3); .db reconciliado como runtime-store gitignored (nao 'cache') vs store-is-source; cloud store marcado como shipado; header de versao/licenca; \n final na forma canonica. (3) integration: comando lider vira lifeline-mcp (a forma LIFELINE_DB=... era bash-only num projeto PowerShell-first) + lifeline_recall listado. (4) mcp_remote: ref do Supabase trocado por <your-ref> (nao vazar nosso ref em doc publica), nota PowerShell p/ os blocos export, heading RS/AS desambiguado (LIFELINE_OAUTH=1 e Resource-Server, Supabase e o AS). (5) cli: --budget default 8000, restricoes do --store supabase (push/pull/clone/lines local-only), flags de identidade, LIFELINE_DB, dense recall. (6) getting-started: 'zero-dependency for recall' reescrito + nota de licenca FSL.
+
+<!-- lifeline:end -->

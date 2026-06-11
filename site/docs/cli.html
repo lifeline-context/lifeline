@@ -47,8 +47,10 @@
   <main class="docs-main">
     <h1>CLI reference</h1>
     <p class="docs-lead">Every Lifeline command: log, propose/review/approve, context, verify, migrate, init, push/pull/clone.</p>
-<p>Globals: <code>--db</code> (default <code>.lifeline/ledger.db</code>) · <code>--line &lt;name&gt;</code> maps a named line (ledger <strong>and</strong>
-view together: <code>.lifeline/&lt;name&gt;.db</code> + <code>LIFELINE.&lt;name&gt;.md</code>) · <code>--store {sqlite,supabase}</code>.</p>
+<p>Globals: <code>--db</code> (default <code>.lifeline/ledger.db</code>, or <code>LIFELINE_DB</code> env) · <code>--line &lt;name&gt;</code> maps a named
+line (ledger <strong>and</strong> view together: <code>.lifeline/&lt;name&gt;.db</code> + <code>LIFELINE.&lt;name&gt;.md</code>) ·
+<code>--store {sqlite,supabase}</code> (default <code>sqlite</code>). Identity on a write is set with <code>--author</code> /
+<code>--agent</code> / <code>--provider</code> / <code>--model</code> (who/what is proposing).</p>
 <table>
 <thead>
 <tr>
@@ -75,7 +77,7 @@ view together: <code>.lifeline/&lt;name&gt;.db</code> + <code>LIFELINE.&lt;name&
 </tr>
 <tr>
 <td><code>lifeline context [--query "…"] [--budget N]</code></td>
-<td>print the assembled current truth (relevance if <code>--query</code>)</td>
+<td>print the assembled current truth (relevance if <code>--query</code>); <code>--budget</code> defaults to <strong>8000</strong> chars</td>
 </tr>
 <tr>
 <td><code>lifeline verify</code></td>
@@ -99,6 +101,12 @@ view together: <code>.lifeline/&lt;name&gt;.db</code> + <code>LIFELINE.&lt;name&
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>With <code>--store supabase</code>, the cloud is the source — <code>push</code> / <code>pull</code> / <code>clone</code> / <code>lines</code> are
+<strong>local-only</strong> and not available there; use <code>log</code>, <code>context</code>, <code>verify</code>, <code>rebuild</code>, <code>migrate</code>.
+<code>lifeline init</code> is <strong>idempotent</strong> (re-running won't clobber an existing line). Dense recall is
+opt-in: <code>pip install "lifeline-context[embeddings]"</code> + <code>LIFELINE_EMBEDDER=dense</code>.</p>
+</blockquote>
 <h2>Write tiering (like approving a shell command)</h2>
 <p>The human's <code>log</code> commits directly — they're the approver. The <strong>AI via MCP <code>propose</code></strong> enters as a
 <strong>pending</strong> proposal (HITL); a human <strong>approves</strong> before it becomes truth. Write-time anti-junk

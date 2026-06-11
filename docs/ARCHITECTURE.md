@@ -1,6 +1,8 @@
 # Lifeline Architecture
 
-Technical document. For *the why* behind each decision, the source is `LIFELINE.md` (the `decision` entries cited in brackets, e.g.: `#0002`).
+`lifeline-context` **0.3.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
+years). Technical document. For *the why* behind each decision, the source is `LIFELINE.md` (the
+`decision` entries cited in brackets, e.g.: `#0002`).
 
 ## 10,000-foot view
 
@@ -37,7 +39,7 @@ Module map (`lifeline/`):
 
 ```
 id = sha256( kind \n author \n agent \n provider \n model \n summary \n body.strip()
-             \n "|".join(sorted(parents)) )
+             \n "|".join(sorted(parents)) \n )   # canonical form ends in a trailing \n
 ```
 
 - `ts` (timestamp) and `dedup_key` stay **out** of the hash. Consequence: the same content +
@@ -58,7 +60,8 @@ trivially). `stream()` returns in causal insertion order (single-writer). It is 
 **runtime source of truth**.
 
 `EventStore` is an **abstract port** — the `SQLiteEventStore` is the local adapter; the
-`SupabaseEventStore` (M3) implements the same interface without touching the core. It is the cloud seam.
+`SupabaseEventStore` (shipped in `cloud.py`) implements the same interface without touching the
+core. It is the cloud seam, selected with `--store supabase` / `LIFELINE_STORE=supabase`.
 
 ## 3. Layer 2 — the State (`StateEngine` + reducers)
 
@@ -66,12 +69,21 @@ Folds the stream into "current truth" via pure reducers `(state, entry) -> state
 reducer `ledger_projection` produces: identity (`project`), `decisions` in effect, `open_items`,
 `latest`, `contributors` (authorship aggregated by provider/model), `kinds`, and `superseded`.
 
+**Integrity gate** [gap #G3]: `reduce()` calls `entry.verify()` on **every** entry before folding it.
+If the stored `id` doesn't match its content (a tampered `.db`), the entry is **dropped from the
+truth** (never served as a decision) and its id is collected in `integrity_broken`, which the
+assembler surfaces as an explicit warning. (`ts` stays out of the hash by Law #3, so clock tampering
+is *not* covered here — a declared product limit; use git as the external notary.)
+
 **Status is a projection, not an FSM** [#0002]: no execution state machine; the "state" is
 what the reducers compute. Custom reducers can be registered.
 
-**Supersession** [#0018]: when a `correction` is encountered, its `parents` enter the `superseded`
-set; decisions and open threads with that id leave the current truth. Append-only:
-closing/reverting is a *new* entry, never an edit.
+**Supersession** [#0018, gap #G8]: a `correction` supersedes its `parents` — they leave the current
+truth. Crucially, `superseded` is **not** a monotonically-growing set; it's the **fixpoint** of the
+correction graph (`_effective_superseded`). A correction only supersedes *while it is itself active*;
+if a later correction supersedes *it*, its parents come back. The reducer iterates to a stable set,
+so reverting a reversal restores the original. Append-only throughout: closing/reverting is a *new*
+entry, never an edit.
 
 ## 4. Layer 3 — Recall (`SemanticRecall` + `Embedder`)
 
@@ -83,6 +95,11 @@ event (Law #1) — the vector is only an index; getting the match wrong does not
 hallucination. A dense semantic embedder (`SentenceTransformerEmbedder`, #0029) plugs in behind
 the same interface — **opt-in** via the `[embeddings]` extra; select it with `LIFELINE_EMBEDDER=dense`
 (or `make_embedder(...)`). The default stays lexical (zero-dependency).
+
+**Abstention floor** [gap #G5]: `search()` drops any hit below `embedder.min_score`, so a weak match
+returns *nothing* rather than noise. The lexical embedder uses an exact `0.0` floor (no shared token →
+exactly 0, which already abstains honestly); the dense embedder defaults to `0.3`
+(`LIFELINE_RECALL_MIN_SCORE` overrides). Recall would rather say nothing than anchor to a coincidence.
 
 ## 5. Assembly (`ContextAssembler`)
 
@@ -99,10 +116,12 @@ does the reverse path. The two form a **fixed point** (proven): store → markdo
 reproduces the same `id`s, and the 2nd render is byte-identical.
 
 This unified the two hashing schemes that coexisted (markdown chain vs `Entry` id) into the
-content-addressed `id`. **Git artifact decision** [#0022]: what gets committed is the **text**
-(`LIFELINE.md`, diffable/mergeable in PRs); the `.lifeline/*.db` is a **local cache** (gitignored),
-rebuildable with `lifeline migrate`. Since text↔store are losslessly interconvertible, the
-source of truth is *the set of content-addressed entries*, materialized as both.
+content-addressed `id`. **Git artifact decision** [#0022]: what gets *committed* is the **text**
+(`LIFELINE.md`, diffable/mergeable in PRs); the `.lifeline/*.db` is the **runtime store** but is
+**gitignored and rebuildable** (`lifeline migrate`). No contradiction with §2: the `.db` is the
+local *runtime* source of truth, while the committed text is the durable, shareable form — text↔store
+are losslessly interconvertible, so the real source of truth is *the set of content-addressed
+entries*, materialized as both. (In cloud mode the Supabase store is the source; the text follows.)
 
 ## 7. MCP surface (`mcp_server.py`)  [Law #7]
 

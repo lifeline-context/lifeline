@@ -7,15 +7,21 @@ Lifeline has two sides, and the AI drives both:
 
 ## MCP client (any of them)
 
-Point the client at the stdio server:
+Point the client at the stdio server. The server command is **`lifeline-mcp`** (installed by
+`pip install lifeline-context`); it reads the DB from `LIFELINE_DB` (default `.lifeline/ledger.db`).
+Set the env var the way your client config does — e.g. an `"env"` block in the JSON snippets below.
+At a shell directly:
 
+```bash
+LIFELINE_DB=.lifeline/ledger.db lifeline-mcp        # bash/zsh
 ```
-LIFELINE_DB=.lifeline/ledger.db python -m lifeline.mcp_server
+```powershell
+$env:LIFELINE_DB=".lifeline/ledger.db"; lifeline-mcp    # PowerShell
 ```
 
 - **Resource:** `lifeline://project/context` — read it when opening the session.
-- **Tools:** `lifeline_append(kind, summary, body, …)`, `lifeline_recontextualize(parent_id, summary, body, …)`.
-- **Server command:** `lifeline-mcp` (after `pip install -e .`) or `python -m lifeline.mcp_server` (from the repo root).
+- **Tools:** `lifeline_append(kind, summary, body, …)`, `lifeline_recontextualize(parent_id, summary, body, …)`, `lifeline_recall(query, …)`.
+- **Server command:** `lifeline-mcp` (or `python -m lifeline.mcp_server` from the repo root).
 
 ## Per-client snippets (copy-and-paste)
 

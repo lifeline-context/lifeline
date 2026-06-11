@@ -14,12 +14,15 @@ Backend chosen by env (same factory as the CLI): local SQLite **or** Supabase (c
 ```bash
 # cloud (multi-tenant via RLS) — requires the schema applied (run: lifeline schema)
 export LIFELINE_STORE=supabase
-export SUPABASE_URL=https://rzphncyjrilhwpuemrcl.supabase.co
+export SUPABASE_URL=https://<your-ref>.supabase.co   # your project ref
 export SUPABASE_KEY=<project apikey>      # don't commit — use .env
 export SUPABASE_TOKEN=<JWT access token>  # write under RLS
 export LIFELINE_MCP_HOST=0.0.0.0 LIFELINE_MCP_PORT=8000
 lifeline-mcp-remote
 ```
+
+> **PowerShell:** the `export FOO=bar` blocks below are bash. In PowerShell set each as
+> `$env:FOO="bar"` (one per line), then run `lifeline-mcp-remote`.
 
 - Transport: `LIFELINE_MCP_TRANSPORT=sse` (default) → endpoints `GET /sse` + `POST /messages`;
   or `streamable-http` → `/mcp`.
@@ -67,7 +70,7 @@ accept a token by header — e.g.: `claude mcp add --transport http lifeline htt
 ⚠️ **claude.ai web and ChatGPT do NOT accept a static Bearer** (`static_bearer` not supported);
 on the hosted apps it's **authless** or **OAuth** — see below.
 
-## Recommended (hosted connectors): Supabase's native **OAuth 2.1 Server** — `LIFELINE_OAUTH=1`
+## Recommended (hosted connectors): our RS (`LIFELINE_OAUTH=1`) + Supabase's native **OAuth 2.1 Server** as the AS
 
 Supabase shipped a native **OAuth 2.1 Server** (beta) — DCR (RFC 7591) + authorization-code with
 **PKCE (S256)** + discovery metadata, MCP-aware. So Supabase **is** the Authorization Server; our

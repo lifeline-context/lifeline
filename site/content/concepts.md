@@ -8,7 +8,7 @@ projection* of an immutable, content-addressed event log — never the source it
 Everything is an `Entry`, content-addressed:
 
 ```
-id = sha256(kind, author, agent, provider, model, summary, body, sorted-parents)
+id = sha256(kind, author, agent, provider, model, summary, body.strip(), sorted-parents)
 ```
 
 `ts` (timestamp) and `dedup_key` stay **outside** the hash. Consequence: the **same content +

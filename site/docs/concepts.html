@@ -51,7 +51,7 @@
 projection</em> of an immutable, content-addressed event log — never the source itself.</p>
 <h2>Entry — the atomic unit</h2>
 <p>Everything is an <code>Entry</code>, content-addressed:</p>
-<pre><code>id = sha256(kind, author, agent, provider, model, summary, body, sorted-parents)
+<pre><code>id = sha256(kind, author, agent, provider, model, summary, body.strip(), sorted-parents)
 </code></pre>
 <p><code>ts</code> (timestamp) and <code>dedup_key</code> stay <strong>outside</strong> the hash. Consequence: the <strong>same content +
 parents produce the same id on any machine, at any time</strong> — the basis for dedup and sync (more

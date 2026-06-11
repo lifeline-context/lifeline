@@ -58,12 +58,16 @@
 <h2>Run</h2>
 <pre><code class="language-bash"># cloud (multi-tenant via RLS) — requires the schema applied (run: lifeline schema)
 export LIFELINE_STORE=supabase
-export SUPABASE_URL=https://rzphncyjrilhwpuemrcl.supabase.co
+export SUPABASE_URL=https://&lt;your-ref&gt;.supabase.co   # your project ref
 export SUPABASE_KEY=&lt;project apikey&gt;      # don't commit — use .env
 export SUPABASE_TOKEN=&lt;JWT access token&gt;  # write under RLS
 export LIFELINE_MCP_HOST=0.0.0.0 LIFELINE_MCP_PORT=8000
 lifeline-mcp-remote
 </code></pre>
+<blockquote>
+<p><strong>PowerShell:</strong> the <code>export FOO=bar</code> blocks below are bash. In PowerShell set each as
+<code>$env:FOO="bar"</code> (one per line), then run <code>lifeline-mcp-remote</code>.</p>
+</blockquote>
 <ul>
 <li>Transport: <code>LIFELINE_MCP_TRANSPORT=sse</code> (default) → endpoints <code>GET /sse</code> + <code>POST /messages</code>;
   or <code>streamable-http</code> → <code>/mcp</code>.</li>
@@ -105,7 +109,7 @@ lifeline-mcp-remote
 accept a token by header — e.g.: <code>claude mcp add --transport http lifeline https://your-host/mcp --header "Authorization: Bearer &lt;jwt&gt;"</code>.
 ⚠️ <strong>claude.ai web and ChatGPT do NOT accept a static Bearer</strong> (<code>static_bearer</code> not supported);
 on the hosted apps it's <strong>authless</strong> or <strong>OAuth</strong> — see below.</p>
-<h2>Recommended (hosted connectors): Supabase's native <strong>OAuth 2.1 Server</strong> — <code>LIFELINE_OAUTH=1</code></h2>
+<h2>Recommended (hosted connectors): our RS (<code>LIFELINE_OAUTH=1</code>) + Supabase's native <strong>OAuth 2.1 Server</strong> as the AS</h2>
 <p>Supabase shipped a native <strong>OAuth 2.1 Server</strong> (beta) — DCR (RFC 7591) + authorization-code with
 <strong>PKCE (S256)</strong> + discovery metadata, MCP-aware. So Supabase <strong>is</strong> the Authorization Server; our
 remote MCP stays a thin <strong>Resource Server</strong> (above) and validates the issued JWT by JWKS. This is
