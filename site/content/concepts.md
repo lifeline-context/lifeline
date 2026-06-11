@@ -58,6 +58,33 @@ Inside one line, reasoning isn't flat: every entry carries `parents`. A **merge*
 **correction** *prunes* a branch: it supersedes its parents, so a rejected direction leaves the
 current truth while staying in history — **anchored and visibly reverted**, never deleted.
 
+<figure class="diagram-fig">
+<svg class="diagram" viewBox="0 0 800 280" role="img" aria-label="A reasoning DAG inside one line: a branch is pruned by a correction; two branches merge">
+<defs>
+<marker id="dA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#7c89ff"/></marker>
+<marker id="dM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#41d6c3"/></marker>
+<marker id="dP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#5b606b"/></marker>
+</defs>
+<line x1="100" y1="143" x2="270" y2="68" stroke="#7c89ff" stroke-width="2" marker-end="url(#dA)"/>
+<line x1="100" y1="145" x2="270" y2="145" stroke="#5b606b" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#dP)"/>
+<line x1="100" y1="147" x2="270" y2="222" stroke="#7c89ff" stroke-width="2" marker-end="url(#dA)"/>
+<line x1="308" y1="66" x2="556" y2="136" stroke="#41d6c3" stroke-width="2" marker-end="url(#dM)"/>
+<line x1="308" y1="224" x2="556" y2="154" stroke="#41d6c3" stroke-width="2" marker-end="url(#dM)"/>
+<circle cx="80" cy="145" r="18" fill="#0d0e10" stroke="#7c89ff" stroke-width="2"/>
+<circle cx="290" cy="62" r="18" fill="#0d0e10" stroke="#7c89ff" stroke-width="2"/>
+<circle cx="290" cy="145" r="18" fill="#131417" stroke="#5b606b" stroke-width="2" stroke-dasharray="4 4"/>
+<circle cx="290" cy="228" r="18" fill="#0d0e10" stroke="#7c89ff" stroke-width="2"/>
+<circle cx="580" cy="145" r="22" fill="#0d0e10" stroke="#41d6c3" stroke-width="2.5"/>
+<path d="M283 138 l14 14 M297 138 l-14 14" stroke="#5b606b" stroke-width="2"/>
+<text x="80" y="184" text-anchor="middle" fill="#8a8f98" font-size="12.5" font-family="'JetBrains Mono',monospace">bootstrap</text>
+<text x="290" y="34" text-anchor="middle" fill="#b7bdc6" font-size="12.5" font-family="'JetBrains Mono',monospace">decision A</text>
+<text x="320" y="149" text-anchor="start" fill="#5b606b" font-size="12.5" font-family="'JetBrains Mono',monospace">B · superseded</text>
+<text x="290" y="262" text-anchor="middle" fill="#b7bdc6" font-size="12.5" font-family="'JetBrains Mono',monospace">decision C</text>
+<text x="580" y="190" text-anchor="middle" fill="#41d6c3" font-size="12.5" font-family="'JetBrains Mono',monospace">merge · parents [A,C]</text>
+</svg>
+<figcaption>Inside one line: a <strong>correction</strong> prunes decision B — superseded, gone from the current truth but still in history; A and C <strong>merge</strong>, and because parents are sorted, A+C ≡ C+A. Solid = in force · dashed = reverted.</figcaption>
+</figure>
+
 ### Lines and Tree-of-Thoughts (ToT)
 
 Lifeline is the **memory** a Tree-of-Thoughts writes to and reads from — it *records* the tree; it
