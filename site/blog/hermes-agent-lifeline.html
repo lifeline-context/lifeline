@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Give Hermes Agent a memory it can trust: Lifeline over MCP</title>
+<meta name="description" content="Hermes Agent recalls what happened; it doesn't anchor why. Here's how Lifeline plugs in over MCP to give a self-improving agent a verifiable why layer.">
+<meta name="keywords" content="Hermes Agent, Nous Research, agent memory, MCP, Model Context Protocol, self-improving agent, anchored memory, AI agent context, decision amnesia">
+<link rel="canonical" href="https://lifelinecontext.com/blog/hermes-agent-lifeline.html">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="jessianmart">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lifeline">
+<meta property="og:title" content="Give Hermes Agent a memory it can trust: Lifeline over MCP">
+<meta property="og:description" content="Hermes Agent recalls what happened; it doesn't anchor why. Here's how Lifeline plugs in over MCP to give a self-improving agent a verifiable why layer.">
+<meta property="og:url" content="https://lifelinecontext.com/blog/hermes-agent-lifeline.html">
+<meta property="og:image" content="https://lifelinecontext.com/assets/og.svg">
+<meta property="article:published_time" content="2026-06-10">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Give Hermes Agent a memory it can trust: Lifeline over MCP">
+<meta name="twitter:description" content="Hermes Agent recalls what happened; it doesn't anchor why. Here's how Lifeline plugs in over MCP to give a self-improving agent a verifiable why layer.">
+<meta name="theme-color" content="#08090a">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/logo/lifeline-tile-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [{"@type": "BlogPosting", "headline": "Give Hermes Agent a memory it can trust: Lifeline over MCP", "description": "Hermes Agent recalls what happened; it doesn't anchor why. Here's how Lifeline plugs in over MCP to give a self-improving agent a verifiable why layer.", "url": "https://lifelinecontext.com/blog/hermes-agent-lifeline.html", "mainEntityOfPage": "https://lifelinecontext.com/blog/hermes-agent-lifeline.html", "datePublished": "2026-06-10", "author": {"@type": "Person", "name": "jessianmart"}, "publisher": {"@type": "Organization", "name": "Lifeline", "url": "https://lifelinecontext.com/"}, "keywords": "Hermes Agent, Nous Research, agent memory, MCP, Model Context Protocol, self-improving agent, anchored memory, AI agent context, decision amnesia", "inLanguage": "en", "license": "https://opensource.org/licenses/MIT"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Hermes Agent?", "acceptedAnswer": {"@type": "Answer", "text": "Hermes Agent by Nous Research is an open-source, self-improving AI agent that runs in the terminal, IDEs, and chat platforms. It builds skills from experience, calls 70+ tools, is model-agnostic, and is MCP-native — positioned alongside Claude Code and Codex."}}, {"@type": "Question", "name": "Does Lifeline replace Hermes Agent's memory?", "acceptedAnswer": {"@type": "Answer", "text": "No. Hermes's native memory (curated MEMORY.md, FTS5 session search, LLM-summarized recall, Honcho user modeling) handles recall of what happened. Lifeline adds a different layer: an anchored, append-only record of why — decisions, rejected alternatives, and constraints — that the recall layer doesn't provide. They are complementary; Hermes executes, Lifeline remembers why."}}, {"@type": "Question", "name": "How do you connect Lifeline to Hermes Agent?", "acceptedAnswer": {"@type": "Answer", "text": "Because Hermes is MCP-native, you register Lifeline as an MCP server — interactively with `hermes mcp`, or in `~/.hermes/config.yaml` under `mcp_servers` (a `command:` entry for the local stdio server, or a `url:` for a hosted endpoint). Lifeline then appears as a toolset the agent reads its anchored context from and proposes entries to."}}, {"@type": "Question", "name": "Why does a self-improving agent need anchored memory?", "acceptedAnswer": {"@type": "Answer", "text": "A self-improving agent turns experience into skills and refines them. If its memory surfaces a reverted decision as current, or a summary distorts the original reasoning, the agent can crystallize the mistake into a skill and then improve that skill — amplifying a wrong lesson. Anchoring and supersession prevent that by marking what is current versus reverted, tied to immutable source events."}}]}]}
+</script>
+</head>
+<body class="docs">
+<div class="bg-fx"></div>
+<header class="topbar">
+  <a class="brand" href="../"><svg class="brandmark" viewBox="0 0 1024 1024" aria-hidden="true"><g fill="currentColor"><path d="M120 120 L270 120 L270 754 L660 754 L660 904 L210 904 Q120 904 120 814 L120 120 Z"/><path d="M364 120 L814 120 Q904 120 904 210 L904 904 L754 904 L754 270 L364 270 Z"/><rect x="412" y="330" width="72" height="364"/><rect x="540" y="330" width="72" height="364"/><rect x="330" y="412" width="364" height="72"/><rect x="330" y="540" width="364" height="72"/></g></svg> Lifeline <span class="ver">v0.3.0</span></a>
+  <nav class="topnav">
+    <a href="../docs/">Docs</a>
+    <a href="index.html">Blog</a>
+    <a href="https://pypi.org/project/lifeline-context/" target="_blank" rel="noopener">PyPI</a>
+    <a class="pill" href="https://github.com/lifeline-context/lifeline" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+<div class="docs-shell">
+  <aside class="docs-side"><div class="group">Articles</div>
+      <a href="ai-context-handoff.html">How one AI inherits another's context: solving the handoff problem</a>
+      <a href="context-engineering.html">Context engineering: the discipline beyond prompt engineering</a>
+      <a href="hermes-agent-lifeline.html" class="current">Give Hermes Agent a memory it can trust: Lifeline over MCP</a>
+      <a href="share-of-context.html">Share of context: the metric behind Lifeline</a>
+      <a href="time-to-context.html">Time-to-context: the hidden tax on AI-assisted development</a></aside>
+  <main class="docs-main">
+    <h1>Give Hermes Agent a memory it can trust: Lifeline over MCP</h1>
+    <p class="docs-lead">Hermes Agent recalls what happened; it doesn't anchor why. Here's how Lifeline plugs in over MCP to give a self-improving agent a verifiable why layer.</p>
+<p><strong><a href="https://github.com/nousresearch/hermes-agent">Hermes Agent</a> by Nous Research is a self-improving AI agent — it builds skills from experience, runs across terminal, IDE, and chat, and connects to any model and any MCP server. What it recalls well, it doesn't yet <em>anchor</em>.</strong> Lifeline plugs into Hermes over MCP to add exactly that: a verifiable, append-only memory of <em>why</em>.</p>
+<p>This isn't a pitch to replace anything in Hermes. It's about the one layer a self-improving agent needs most and is hardest to build well — and why it belongs <em>outside</em> the agent.</p>
+<h2>What Hermes Agent is — and what its memory does</h2>
+<p>Hermes is an <em>execution</em> runtime in the lineage of Claude Code and Codex: a central registry of 70+ tools across ~28 toolsets, programmatic tool calling that can collapse multi-step pipelines into a single inference, isolated subagents for parallel work, a cron scheduler, and delivery across Telegram, Discord, Slack, and more. It is <strong>model-agnostic</strong> by design — <code>hermes model</code> switches between Nous Portal, OpenRouter, OpenAI, or a custom endpoint with "no code changes, no lock-in" — and it is <strong>MCP-native</strong>, so any Model Context Protocol server becomes a toolset.</p>
+<p>Its memory is multi-layered and built for <strong>recall</strong>: agent-curated <code>MEMORY.md</code>, FTS5 full-text session search, LLM summarization for cross-session recall, and Honcho-backed user modeling. For a conversational, multi-platform assistant, that is the right design — find what was said, summarize what happened, surface the relevant past.</p>
+<h2>The gap: recall is not a trustworthy <em>why</em></h2>
+<p>Recall and <em>anchored reasoning</em> are different problems. Call the gap <strong>decision amnesia</strong>: the agent can recall the <em>text</em> of a past decision and still lose its <em>why</em> — and whether it still holds. Three properties Hermes's native memory does not aim to provide:</p>
+<ul>
+<li><strong>Provenance.</strong> FTS5 and LLM summaries surface <em>text</em>, not claims tied to the immutable event that produced them. A summary can drift from what actually happened, and the recall layer isn't designed to flag the drift.</li>
+<li><strong>Supersession.</strong> <code>MEMORY.md</code> and session recall <em>accumulate</em>. They don't mark a decision as <strong>reverted</strong> — a rejected approach stays searchable as if it were still in force.</li>
+<li><strong>Currency over similarity.</strong> Full-text search ranks by match, not by what is true <em>now</em>.</li>
+</ul>
+<p>For most assistants this is tolerable. For a <strong>self-improving</strong> agent, it is the dangerous part.</p>
+<h2>The self-improving trap</h2>
+<p>Here is the non-obvious risk, and it is specific to agents like Hermes. Hermes turns experience into skills and <strong>improves them in use</strong>. Now compound that with un-anchored memory.</p>
+<p>If the agent's recall surfaces a <em>reverted</em> decision as relevant — or an LLM summary subtly rewrites <em>why</em> something was done — the agent doesn't merely repeat the mistake once. It can <strong>crystallize it into a skill, and then improve that skill</strong>, amplifying a wrong lesson with every cycle. A self-improving loop without anchored truth doesn't just forget; it <strong>learns the wrong thing, confidently, and gets better at it.</strong></p>
+<p>There's a second edge to this. Hermes is built to be <em>efficient</em> about reasoning: programmatic tool calling collapses multi-step pipelines into single inferences, and complex tasks crystallize into reusable skills. That efficiency is exactly what buries the <em>why</em> — the rationale gets compiled into a skill or a code path, not written where the next cycle (or the next model) can read it. <strong>The better an agent gets at <em>doing</em>, the more invisible <em>why it did it</em> becomes.</strong> The cure is not a smarter summarizer; it is an anchor — a record where every claim is tied to its source, and where a correction <em>supersedes</em> rather than blends into the past.</p>
+<h2>How Lifeline plugs in — over MCP, no fork</h2>
+<p>Because Hermes is MCP-native, you register Lifeline the way you register any MCP server — interactively with <code>hermes mcp</code>, or directly in <code>~/.hermes/config.yaml</code>:</p>
+<pre><code class="language-yaml">mcp_servers:
+  lifeline:
+    command: lifeline-mcp        # local stdio server (pip install lifeline-context)
+    # or, for a hosted endpoint (use instead of command):
+    # url: https://&lt;your-lifeline-host&gt;/mcp
+    # auth: oauth
+</code></pre>
+<p>Now, <em>alongside</em> Hermes's recall, the agent has a second memory surface that is:</p>
+<ul>
+<li><strong>Append-only and content-addressed</strong> — the same reasoning yields the same identifier anywhere, so the record is deterministic and portable.</li>
+<li><strong>Anchored</strong> — every entry carries the immutable identifier of the event that produced it, so claims are <em>checkable against their source</em>: the agent can verify rather than guess.</li>
+<li><strong>Superseding, not overwriting</strong> — a correction references what it replaces, so a reverted decision is <em>visibly dead</em>, not silently searchable.</li>
+<li><strong>Human-in-the-loop</strong> — the agent <strong>proposes</strong> entries; a person approves them, so the record stays signal instead of accumulating machine-generated drift.</li>
+</ul>
+<p>The division is clean: Lifeline records the <strong>why</strong> — the decision, the alternative you rejected, the constraint that forced it. Hermes already has the <strong>what</strong> — the code, the tool calls, the trajectory. They don't overlap, and Lifeline deliberately does <em>not</em> try to be an agent runtime. Hermes executes; Lifeline remembers why.</p>
+<h2>Why the <em>why</em> belongs outside the agent</h2>
+<p>Three of Hermes's strengths are exactly the ones that fragment an in-agent memory — and exactly where an external, anchored, provider-neutral record pays off:</p>
+<ul>
+<li><strong>Model switches.</strong> Run <code>hermes model</code> to move from Nous Portal to OpenRouter mid-project and Hermes's <code>MEMORY.md</code> follows — but an LLM-summarized note was written in the prior model's voice and judgment. A content-addressed entry is byte-identical no matter which model writes or reads it, so the <em>why</em> doesn't quietly re-interpret when you switch.</li>
+<li><strong>Isolated subagents.</strong> Hermes spins up isolated subagents for parallel work; each keeping its own scratch memory is exactly how two of them end up undoing each other. One shared anchored ledger gives every subagent the same source of truth to read and propose into.</li>
+<li><strong>Multi-platform.</strong> A decision made in Hermes's terminal is the same one its Telegram or Discord session inherits, because it lives in a record both connect to over MCP — not in either session's scrollback.</li>
+</ul>
+<p>Put in one line: this raises the agent's <strong>share of context</strong> — the portion of what Hermes reasons from that is your verified record rather than similarity-ranked guesswork.</p>
+<h2>The community is already asking for this</h2>
+<p>An open issue on Nous's tracker <a href="https://github.com/nousresearch/hermes-agent/issues/10835">requests exposing Hermes memory (<code>MEMORY.md</code>/<code>USER.md</code>) via an MCP server</a>. The instinct is right: memory should be addressable over MCP, not trapped in a file. Lifeline is that surface — but anchored and curated, rather than a markdown log served raw. It is the same idea, taken to where a self-improving agent actually needs it.</p>
+<h2>Before and after</h2>
+<p><strong>Before.</strong> A week into a project, Hermes re-proposes an integration it had abandoned — the abandonment lived in a session summary that ranked low against the current query. It may scaffold a skill around the dead path.</p>
+<p><strong>After.</strong> Hermes reads Lifeline, sees the integration was chosen <em>and superseded and why</em>, routes around it, and proposes the newer rationale as an entry for you to approve. The reverted path stays dead; the agent's next cycle starts from what is actually true.</p>
+<h2>Key takeaways</h2>
+<ul>
+<li>Hermes Agent's native memory is built for <strong>recall</strong> (MEMORY.md, FTS5 search, LLM summaries, Honcho). It is not built for <strong>anchored, superseding provenance</strong> — and doesn't claim to be.</li>
+<li>For a <strong>self-improving</strong> agent, un-anchored memory is uniquely risky: it can turn a reverted decision into a refined skill, and the agent's own efficiency (programmatic tool calls, skills) buries the <em>why</em>.</li>
+<li>Lifeline plugs in over MCP (<code>hermes mcp</code> / <code>~/.hermes/config.yaml</code>) as a complementary <strong>why layer</strong>: append-only, content-addressed, anchored, superseding, human-curated.</li>
+<li>Because both are provider-neutral, the <em>why</em> survives model switches, subagents, and platforms — raising the agent's share of context.</li>
+</ul>
+<h2>Frequently asked questions</h2>
+<p><strong>What is Hermes Agent?</strong>
+Hermes Agent by Nous Research is an open-source, self-improving AI agent that runs in the terminal, IDEs, and chat platforms. It builds skills from experience, calls 70+ tools, is model-agnostic, and is MCP-native — positioned alongside Claude Code and Codex.</p>
+<p><strong>Does Lifeline replace Hermes Agent's memory?</strong>
+No. Hermes's native memory (curated MEMORY.md, FTS5 session search, LLM-summarized recall, Honcho user modeling) handles recall of what happened. Lifeline adds a different layer: an anchored, append-only record of why — decisions, rejected alternatives, and constraints — that the recall layer doesn't provide. They are complementary; Hermes executes, Lifeline remembers why.</p>
+<p><strong>How do you connect Lifeline to Hermes Agent?</strong>
+Because Hermes is MCP-native, you register Lifeline as an MCP server — interactively with <code>hermes mcp</code>, or in <code>~/.hermes/config.yaml</code> under <code>mcp_servers</code> (a <code>command:</code> entry for the local stdio server, or a <code>url:</code> for a hosted endpoint). Lifeline then appears as a toolset the agent reads its anchored context from and proposes entries to.</p>
+<p><strong>Why does a self-improving agent need anchored memory?</strong>
+A self-improving agent turns experience into skills and refines them. If its memory surfaces a reverted decision as current, or a summary distorts the original reasoning, the agent can crystallize the mistake into a skill and then improve that skill — amplifying a wrong lesson. Anchoring and supersession prevent that by marking what is current versus reverted, tied to immutable source events.</p>
+<blockquote>
+<p><strong>Give your agent a memory it can verify</strong> — open source, no signup:</p>
+<p>```
+pip install lifeline-context</p>
+<h1>then register <code>lifeline-mcp</code> under mcp_servers in ~/.hermes/config.yaml</h1>
+<p>```</p>
+</blockquote>
+<hr />
+<p><em>Related reading: <a href="/blog/share-of-context.html">Share of context</a> · <a href="/blog/ai-context-handoff.html">How AIs inherit each other's context</a> · <a href="/blog/context-engineering.html">Context engineering</a>. <a href="https://github.com/lifeline-context/lifeline">Lifeline</a> is an open-source context runtime — git for reasoning, MCP-native and provider-agnostic. Hermes Agent is a trademark of Nous Research; this is an independent integration write-up.</em></p>
+    <div class="docs-foot">
+      <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/blog/hermes-agent-lifeline.md">Edit on GitHub</a></span>
+      <span><a href="../">← Back to the lifeline</a></span>
+    </div>
+  </main>
+</div>
+</body>
+</html>
