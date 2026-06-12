@@ -154,16 +154,16 @@
     <div class="panel-inner">
       <p class="eyebrow reveal"><span class="hash">[proof]</span> <span class="bar"></span> not a mockup · this repo is its own ledger</p>
       <h2 class="title reveal d1">A fresh AI connects.<br>This is what it reads.</h2>
-      <p class="body reveal d2">Real output of <code>python -m lifeline context</code> on <strong>this very repo</strong> — what / why / decided / next, to a budget. Every line anchored to its event id; built by AIs + a human from #0001.</p>
-      <pre class="code reveal d3"><span class="c"># Lifeline — contexto do projeto · 87 entradas · head 65e9ebef</span>
+      <p class="body reveal d2">The context a fresh AI reads from <strong>this very repo</strong> — what / why / decided / next, assembled to a budget. Every line anchored to its event id; built by AIs + a human from #0001.</p>
+      <pre class="code reveal d3"><span class="c"># Lifeline — project context · 87 entries · head 65e9ebef</span>
 <span class="c"># claude-opus (39) · claude-fable (10) · human (38)</span>
-<span class="c">## Decisões em vigor (o porquê)</span>
-- Adota o OAuth Server nativo do Supabase como AS; nosso vira RS <span class="hash">[04ac751c]</span>
-- Relicencia 0.3.0+ para FSL-1.1-MIT (source-available) <span class="hash">[f450ab42]</span>
-<span class="c">## Recente (o que vem a seguir)</span>
-- <span class="s">[release]</span> 0.3.0 no PyPI · org + domínio próprio
-- <span class="s">[feature]</span> AS endurecido — login hospedado + store persistente
-- <span class="s">[note]</span> Doc: seção 'Lines' + Tree-of-Thoughts</pre>
+<span class="c">## Decisions in force (the why)</span>
+- Adopt Supabase's native OAuth Server as the AS; we become the RS <span class="hash">[04ac751c]</span>
+- Relicense 0.3.0+ to FSL-1.1-MIT (source-available) <span class="hash">[f450ab42]</span>
+<span class="c">## Recent (what's next)</span>
+- <span class="s">[release]</span> 0.3.0 on PyPI · org + own domain
+- <span class="s">[feature]</span> AS hardened — hosted login + persistent client store
+- <span class="s">[note]</span> Docs: 'Lines' section + Tree-of-Thoughts</pre>
       <p class="body muted reveal d3">The site you're reading dogfoods itself. <a href="https://github.com/lifeline-context/lifeline/blob/main/LIFELINE.md" target="_blank" rel="noopener">See the live ledger → LIFELINE.md</a></p>
     </div>
   </section>
@@ -206,21 +206,6 @@
     <div class="panel-inner">
       <p class="eyebrow reveal"><span class="hash">[the-loop]</span> <span class="bar"></span> read on connect · append on work</p>
       <h2 class="title reveal d1">Do both sides.</h2>
-      <svg class="diagram reveal d2" viewBox="0 0 760 196" role="img" aria-label="The loop: read the assembled context on connect, propose entries on work">
-        <defs>
-          <linearGradient id="loopg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c89ff"/><stop offset="1" stop-color="#41d6c3"/></linearGradient>
-          <marker id="lA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#7c89ff"/></marker>
-          <marker id="lB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#41d6c3"/></marker>
-        </defs>
-        <path d="M598 80 C 472 24, 290 24, 168 76" fill="none" stroke="url(#loopg)" stroke-width="2.5" marker-end="url(#lA)"/>
-        <text x="383" y="22" text-anchor="middle" fill="#8a8f98" font-size="13" font-family="'JetBrains Mono',monospace">① CONNECT — read the assembled context</text>
-        <path d="M168 120 C 290 174, 472 174, 598 118" fill="none" stroke="url(#loopg)" stroke-width="2.5" marker-end="url(#lB)"/>
-        <text x="383" y="190" text-anchor="middle" fill="#8a8f98" font-size="13" font-family="'JetBrains Mono',monospace">② WORK — propose · a human approves (HITL)</text>
-        <rect x="58" y="70" width="190" height="56" rx="13" fill="#0d0e10" stroke="#7c89ff" stroke-opacity=".5"/>
-        <text x="153" y="103" text-anchor="middle" fill="#f7f8f8" font-size="17" font-family="Inter,sans-serif" font-weight="600">Your AI</text>
-        <rect x="512" y="70" width="200" height="56" rx="13" fill="#0d0e10" stroke="#41d6c3" stroke-opacity=".5"/>
-        <text x="612" y="103" text-anchor="middle" fill="#f7f8f8" font-size="17" font-family="Inter,sans-serif" font-weight="600">Lifeline ledger</text>
-      </svg>
       <div class="steps">
         <div class="step reveal d1"><span class="badge">CONNECT</span><h3>Load the context before acting</h3><p>Run <code>lifeline context</code> or read the MCP resource <code>lifeline://project/context</code>. It's the assembled current truth.</p></div>
         <div class="step reveal d2"><span class="badge">WORK</span><h3>Append on each meaningful decision</h3><p><code>lifeline log</code> or <code>lifeline_append</code>. Reversed something? <code>lifeline_recontextualize</code> supersedes it by id.</p></div>

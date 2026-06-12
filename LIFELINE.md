@@ -1738,3 +1738,19 @@ Endpoint /mcp (streamable-http) agora exige Bearer JWT do Supabase, validado por
 O servidor MCP agora anuncia o logo do Lifeline via serverInfo.icons (SEP-973, suportado pelo SDK instalado: Implementation tem icons/title/websiteUrl e FastMCP aceita icons=/website_url=). Adicionado em TODOS os 4 FastMCP (stdio default + remoto AS/RS/authless): icons = PNG 512/1024 + favicon.svg (URLs PUBLICAS no lifelinecontext.com, alcançaveis sem auth) + website_url=https://lifelinecontext.com. Verificado local: create_initialization_options carrega icons+website_url. HONESTO: o claude.ai HOJE ainda mostra icone generico (gap do cliente, rastreado em anthropics/claude-ai-mcp#152 e claude-code#44675/#49040) — nao e bug nosso; clientes que suportam SEP-973 ja renderizam, e o claude.ai acende sozinho quando shipar. 50 testes passam.
 
 <!-- lifeline:end -->
+
+### #0092 — 2026-06-12T00:58:08.084860+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: Site: bugs das adições SVG — pt-BR no painel Proof (site é EN) + headline fora de vista no loop (overflow lateral)
+- **parents**: e98471cb60c461fc85fccbad8b0fc2c8b7e79a43438eec664d8a88924dd9524b
+- **id**: a889d1def3efc06cea1569c2a5fe13736368a3c9c8e81f4ecf7757c361341a2e
+
+**Body**:
+Dois bugs introduzidos nas adições recentes: (1) o painel 'Proof' mostrava a saida REAL do lifeline context em portugues, num site nativo EN — traduzido pra ingles (entradas reais, hashes preservados; reframe de 'real output' p/ 'the context a fresh AI reads' ja que e renderizacao EN, com link pro LIFELINE.md real). (2) O diagrama SVG do loop deixou o painel da landing alto demais (707px); como os paineis sao altura-da-viewport com conteudo centralizado, em telas baixas (~640-700px) o titulo saia de vista. Fix: removi o SVG do loop da landing (painel volta a 467px) e MOVI o diagrama pro getting-started (pagina de scroll vertical, sem esse problema), em ingles. Verificado no preview: todos os paineis da landing cabem ate 640px de altura (over=0); o diagrama do loop renderiza no getting-started (720x189, labels EN). O DAG em concepts continua (EN, scroll vertical, ok).
+
+<!-- lifeline:end -->
