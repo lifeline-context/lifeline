@@ -254,8 +254,13 @@ async def cmd_init(db, out):
     return bootstrapped, st.get("entry_count", 0)
 
 
-async def cmd_context(db, budget, query=None):
+async def cmd_context(db, budget, query=None, output_format="markdown"):
     store = await _open(db)
+    if output_format == "json":
+        state = await StateEngine(store).reduce()
+        if "latest" in state and "recent" not in state:
+            state = {**state, "recent": state["latest"]}
+        return json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True)
     recall = None
     if query:
         from lifeline.recall import SemanticRecall, make_embedder
@@ -356,6 +361,8 @@ def main(argv=None) -> int:
     pc = sub.add_parser("context", help="print the assembled context")
     pc.add_argument("--budget", type=int, default=8000)
     pc.add_argument("--query", default=None, help="prioritize what's relevant to the task (Layer 3)")
+    pc.add_argument("--format", choices=["markdown", "json"], default="markdown",
+                    help="output format: markdown for reading, json for automation")
     sub.add_parser("lines", help="list the project's lines (.lifeline/*.db)")
     sub.add_parser("schema", help="print the cloud SQL schema (Supabase) — paste it into the SQL Editor")
 
@@ -474,7 +481,7 @@ def _dispatch(args, db, out) -> int:
         return 0
 
     if args.cmd == "context":
-        print(asyncio.run(cmd_context(db, args.budget, args.query)))
+        print(asyncio.run(cmd_context(db, args.budget, args.query, args.format)))
         return 0
 
     if args.cmd == "lines":

@@ -59,6 +59,7 @@ lifeline log --kind open      --summary "Queue: SQS vs RabbitMQ" --body "Decide 
 
 lifeline context                       # prints the assembled current truth (what an AI reads)
 lifeline context --query "database"    # prioritizes what's relevant to the task (Layer 3)
+lifeline context --format json         # emits reduced state for scripts and tooling
 lifeline verify                        # checks the chain's integrity
 ```
 
@@ -172,7 +173,7 @@ Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | `lifeline log --kind … --summary … [--body … --parents id,…]` | **human:** append directly to the line (you're the approver) + regenerate the view |
 | `lifeline propose --kind … --summary … --body …` | propose an entry (**HITL**) — stays pending, not in the line |
 | `lifeline review` · `approve <pid\|all>` · `reject <pid\|all>` | HITL curation: list / seal / discard |
-| `lifeline context [--query "…"] [--budget N]` | print the assembled current truth (relevance if `--query`) |
+| `lifeline context [--query "…"] [--budget N] [--format json]` | print the assembled current truth; use JSON for scripts/tooling |
 | `lifeline verify` | check that every `id` matches its content |
 | `lifeline rebuild` · `migrate --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown |
 | `lifeline lines` | list the project's lines (`.lifeline/*.db`) |

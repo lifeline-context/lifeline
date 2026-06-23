@@ -11,7 +11,7 @@ line (ledger **and** view together: `.lifeline/<name>.db` + `LIFELINE.<name>.md`
 | `lifeline log --kind … --summary … [--body … --parents id,…]` | **human:** append directly to the line (you're the approver) + regenerate the view |
 | `lifeline propose --kind … --summary … --body …` | propose an entry (**HITL**) — stays pending, not in the line |
 | `lifeline review` · `approve <pid\|all>` · `reject <pid\|all>` | HITL curation: list / seal / discard |
-| `lifeline context [--query "…"] [--budget N]` | print the assembled current truth (relevance if `--query`); `--budget` defaults to **8000** chars |
+| `lifeline context [--query "…"] [--budget N] [--format json]` | print the assembled current truth; use JSON for scripts/tooling; `--budget` defaults to **8000** chars |
 | `lifeline verify` | check that every id matches its content |
 | `lifeline rebuild` · `migrate --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown |
 | `lifeline schema` | print the bundled Supabase schema (cloud) |

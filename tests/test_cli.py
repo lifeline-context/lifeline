@@ -1,6 +1,7 @@
 """Prova a CLI (o caminho de append do novo fluxo): log encadeia, regenera, e verifica."""
 import contextlib
 import io
+import json
 import os
 import shutil
 import sys
@@ -140,6 +141,26 @@ class TestCLIMain(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("already has context", out)
         self.assertNotIn("GRANULAR", out)
+
+    def test_main_context_json_prints_reduced_state(self):
+        self._run(["--db", self.db, "log", "--out", self.out,
+                   "--kind", "bootstrap", "--summary", "Funda X", "--body", "porquê"])
+        self._run(["--db", self.db, "log", "--out", self.out,
+                   "--kind", "decision", "--summary", "usar Y", "--body", "porque Y"])
+        self._run(["--db", self.db, "log", "--out", self.out,
+                   "--kind", "open", "--summary", "investigar Z", "--body", "porque Z"])
+
+        rc, out = self._run(["--db", self.db, "context", "--format", "json"])
+
+        self.assertEqual(rc, 0)
+        state = json.loads(out)
+        self.assertEqual(state["project"], "Funda X")
+        self.assertEqual(state["head"], state["latest"][-1]["id"])
+        self.assertEqual(state["contributors"], {"none/human": 3})
+        self.assertEqual([d["summary"] for d in state["decisions"]], ["usar Y"])
+        self.assertEqual([o["summary"] for o in state["open_items"]], ["investigar Z"])
+        self.assertEqual(state["recent"], state["latest"])
+        self.assertIn("latest", state)
 
     def test_main_error_net_returns_1(self):
         # erro inesperado (migrate de arquivo inexistente) → mensagem amigavel + exit 1, sem traceback
