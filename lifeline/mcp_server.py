@@ -246,12 +246,18 @@ class SupabaseJWKSVerifier(TokenVerifier):
     para escopar a RLS por usuário no PostgREST. Vale tanto p/ token do OAuth Server quanto p/
     token de sessão (mesma chave/issuer). `_jwk_client` injetável p/ teste."""
 
-    def __init__(self, url: Optional[str] = None, jwks_uri: Optional[str] = None, _jwk_client=None):
+    def __init__(self, url: Optional[str] = None, jwks_uri: Optional[str] = None, _jwk_client=None,
+                 audience: Optional[str] = None):
         from lifeline.cloud import clean_url
         self.url = clean_url(url or os.environ.get("SUPABASE_URL", ""))
         self.issuer = f"{self.url}/auth/v1"
         self.jwks_uri = jwks_uri or f"{self.issuer}/.well-known/jwks.json"
         self._jwk_client = _jwk_client
+        # Opt-in audience pinning (S2): when LIFELINE_OAUTH_AUDIENCE is set we ALSO require the
+        # token's `aud` to match — so a JWT minted for a different resource in the same Supabase
+        # project is rejected here. Default stays OFF (issuer alone), to not break existing tokens
+        # whose aud isn't fixed yet. Set it once you pin the OAuth Server's audience.
+        self.audience = audience or os.environ.get("LIFELINE_OAUTH_AUDIENCE") or None
 
     def _client(self):
         if self._jwk_client is None:
@@ -268,7 +274,8 @@ class SupabaseJWKSVerifier(TokenVerifier):
             signing_key = await asyncio.to_thread(self._client().get_signing_key_from_jwt, token)
             claims = jwt.decode(
                 token, signing_key.key, algorithms=["ES256"], issuer=self.issuer,
-                options={"verify_aud": False},  # aud do OAuth Server ainda não fixado — issuer já garante a origem
+                audience=self.audience,                       # None unless LIFELINE_OAUTH_AUDIENCE is set (S2)
+                options={"verify_aud": bool(self.audience)},  # off by default — issuer guarantees the origin
             )
         except Exception:
             logging.getLogger("lifeline.mcp").info("JWKS verify falhou (token inválido/expirado)", exc_info=True)
@@ -345,6 +352,19 @@ def _build_remote() -> FastMCP:
         from lifeline.oauth import SupabaseAuthServer, SupabaseClientStore
         # Login HOSPEDADO (sem ROPC) quando há provider social configurado; senão, form de senha (dev).
         login_provider = os.environ.get("LIFELINE_OAUTH_PROVIDER")
+        # S3: the password form (ROPC) is a DEV-only path — it must not be silently exposed on a
+        # public deploy. On a non-local public URL with no social provider, REFUSE unless explicitly
+        # allowed, so production is hosted-login by default (a deliberate choice, never an accident).
+        is_local = public.startswith(("http://localhost", "http://127.0.0.1", "http://0.0.0.0"))
+        allow_pw = os.environ.get("LIFELINE_OAUTH_ALLOW_PASSWORD") == "1"
+        if not login_provider and not is_local and not allow_pw:
+            raise SystemExit(
+                f"[lifeline] REFUSING to expose the dev-only password form (ROPC) on a public AS "
+                f"deploy ({public}). Set LIFELINE_OAUTH_PROVIDER=github|google for hosted login "
+                f"(recommended), or LIFELINE_OAUTH_ALLOW_PASSWORD=1 to override (NOT for production).")
+        if not login_provider and not is_local:   # allowed by override → still say it out loud
+            print("[lifeline] WARNING: exposing the dev-only password form (ROPC) on a public "
+                  "deploy — LIFELINE_OAUTH_ALLOW_PASSWORD=1 is set. Prefer a social provider.", flush=True)
         # Persistência dos clients DCR: com a chave de serviço → tabela (sobrevive a restart/réplicas);
         # senão, em memória (instância única). É infra do AS, não dado de tenant (schema.sql:84-98).
         svc = os.environ.get("SUPABASE_SERVICE_ROLE")

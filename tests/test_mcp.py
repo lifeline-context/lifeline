@@ -198,6 +198,76 @@ class TestOAuthResourceServer(unittest.IsolatedAsyncioTestCase):
             server = srv._build_remote()
         self.assertIsNone(server.settings.auth)       # sem OAuth → authless
 
+    async def test_jwks_audience_pinning_is_opt_in(self):
+        # S2: with no LIFELINE_OAUTH_AUDIENCE the verifier accepts any aud (issuer guards origin);
+        # once an audience is pinned, a token minted for a different resource is rejected here.
+        import time
+        import jwt
+        from cryptography.hazmat.primitives.asymmetric import ec
+        priv = ec.generate_private_key(ec.SECP256R1())
+        ISS = "https://proj.supabase.co/auth/v1"
+
+        class _FakeJWK:
+            def get_signing_key_from_jwt(self, token):
+                return type("K", (), {"key": priv.public_key()})()
+
+        def tok(aud=None):
+            claims = {"iss": ISS, "sub": "u", "exp": int(time.time()) + 3600}
+            if aud is not None:
+                claims["aud"] = aud
+            return jwt.encode(claims, priv, algorithm="ES256")
+
+        off = srv.SupabaseJWKSVerifier(url="https://proj.supabase.co", _jwk_client=_FakeJWK())
+        self.assertIsNotNone(await off.verify_token(tok(aud="anything")))   # default: aud ignored
+        self.assertIsNotNone(await off.verify_token(tok()))                 # no aud claim → fine
+
+        pinned = srv.SupabaseJWKSVerifier(url="https://proj.supabase.co", _jwk_client=_FakeJWK(),
+                                          audience="authenticated")
+        self.assertIsNotNone(await pinned.verify_token(tok(aud="authenticated")))  # match → ok
+        self.assertIsNone(await pinned.verify_token(tok(aud="other-resource")))    # mismatch → 401
+        self.assertIsNone(await pinned.verify_token(tok()))                        # missing aud → 401
+
+    def test_as_refuses_password_form_on_public_deploy(self):
+        # S3: a public AS deploy with no social provider must REFUSE to expose the dev-only ROPC form
+        self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
+        env = {"LIFELINE_OAUTH_AS": "1", "LIFELINE_STORE": "supabase",
+               "SUPABASE_URL": "https://proj.supabase.co", "SUPABASE_KEY": "anon",
+               "LIFELINE_MCP_PUBLIC_URL": "https://mcp.example"}   # public, no provider, no override
+        with mock.patch.dict(os.environ, env, clear=True):
+            srv._configure()
+            with self.assertRaises(SystemExit):
+                srv._build_remote()
+
+    def test_as_password_form_allowed_with_explicit_override(self):
+        # S3: the override turns ROPC back on (with a warning), for a deliberate dev/self-host choice
+        self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
+        env = {"LIFELINE_OAUTH_AS": "1", "LIFELINE_STORE": "supabase",
+               "SUPABASE_URL": "https://proj.supabase.co", "SUPABASE_KEY": "anon",
+               "LIFELINE_MCP_PUBLIC_URL": "https://mcp.example", "LIFELINE_OAUTH_ALLOW_PASSWORD": "1"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            srv._configure()
+            server = srv._build_remote()
+        self.assertIsNotNone(server.settings.auth)        # built as an AS
+
+    def test_as_hosted_provider_needs_no_override(self):
+        # S3: a social provider IS the production path — no refusal, no override needed
+        self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
+        env = {"LIFELINE_OAUTH_AS": "1", "LIFELINE_STORE": "supabase",
+               "SUPABASE_URL": "https://proj.supabase.co", "SUPABASE_KEY": "anon",
+               "LIFELINE_MCP_PUBLIC_URL": "https://mcp.example", "LIFELINE_OAUTH_PROVIDER": "github"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            srv._configure()
+            server = srv._build_remote()
+        self.assertIsNotNone(server.settings.auth)
+
+    def test_build_remote_oauth_requested_but_unconfigured_falls_back_authless(self):
+        # C4: OAuth requested but no Supabase env → must degrade to AUTHLESS (loudly), never crash
+        self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
+        with mock.patch.dict(os.environ, {"LIFELINE_OAUTH": "1"}, clear=True):
+            srv._configure()
+            server = srv._build_remote()
+        self.assertIsNone(server.settings.auth)           # fell back to authless (anti-silent gap)
+
     def test_transport_security_allows_configured_host(self):
         with mock.patch.dict(os.environ, {"LIFELINE_MCP_ALLOWED_HOSTS": "x.trycloudflare.com,meu.app"}):
             ts = srv._transport_security()

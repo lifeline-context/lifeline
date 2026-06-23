@@ -293,6 +293,32 @@ class TestRefreshAndIntrospect(unittest.IsolatedAsyncioTestCase):
         await a.revoke_token(rt)                               # não levanta (logout best-effort)
 
 
+class TestClientStoreAndDegrade(unittest.IsolatedAsyncioTestCase):
+    """C6: the persistent DCR client store and best-effort calls must degrade gracefully — a
+    network failure returns None / does nothing, never a raw exception in the auth path."""
+
+    def _down(self):
+        def boom(req):
+            raise httpx.ConnectError("network down")
+        return httpx.MockTransport(boom)
+
+    async def test_client_store_get_put_survive_network_failure(self):
+        store = SupabaseClientStore(url="https://x.supabase.co", service_key="svc", transport=self._down())
+        self.assertIsNone(await store.get("c-1"))      # network error → None (not a raise)
+        await store.put(_client())                     # must not raise
+
+    async def test_client_store_get_handles_non_200(self):
+        store = SupabaseClientStore(url="https://x.supabase.co", service_key="svc",
+                                    transport=httpx.MockTransport(lambda req: httpx.Response(404, json={"m": "no"})))
+        self.assertIsNone(await store.get("missing"))  # 404 → None
+
+    async def test_revoke_swallows_network_failure(self):
+        a = SupabaseAuthServer(supabase_url="https://x.supabase.co", supabase_key="k",
+                               public_url="https://mcp.example", transport=self._down())
+        rt = await a.load_refresh_token(_client(), "RT-1")
+        await a.revoke_token(rt)                        # logout fails → swallowed, no raise
+
+
 class TestEndToEndASGI(unittest.IsolatedAsyncioTestCase):
     """O baile OAuth COMPLETO pelas rotas HTTP reais (DCR→authorize→login→token), Supabase
     mockado. É o mais perto do handshake do claude.ai sem um conector ao vivo — prova o fio
@@ -528,7 +554,8 @@ class TestBuildRemoteAS(unittest.TestCase):
         self.addCleanup(lambda: cli._STORE.update(kind="sqlite", line="ledger"))
         env = {"LIFELINE_OAUTH_AS": "1", "LIFELINE_STORE": "supabase",
                "SUPABASE_URL": "https://proj.supabase.co", "SUPABASE_KEY": "anon",
-               "LIFELINE_MCP_PUBLIC_URL": "https://mcp.example"}
+               "LIFELINE_MCP_PUBLIC_URL": "https://mcp.example",
+               "LIFELINE_OAUTH_PROVIDER": "github"}   # hosted login (production-correct; S3 guard passes)
         with mock.patch.dict(os.environ, env):
             srv._configure()
             server = srv._build_remote()
