@@ -39,6 +39,21 @@ class TestMCPContract(unittest.IsolatedAsyncioTestCase):
         self.assertIn("granular", text.lower())          # entradas granulares (não bloco único)
         self.assertIn("never infer", text.lower())        # guardrail: não inferir do código
 
+    def test_instructions_pin_append_only_loop_and_hitl(self):
+        # THE responsible surface: every connecting AI must be TOLD, deterministically (FastMCP
+        # ships this in `initialize`), that (a) the ledger is append-only, (b) it PROPOSES on each
+        # meaningful unit of work, and (c) writes are HITL — a human gates them, the AI never writes
+        # truth. Regression-lock the wording so a future edit can't silently drop the contract.
+        t = srv._INSTRUCTIONS.lower()
+        self.assertIn("append-only", t)                   # the model itself (Law #2)
+        self.assertIn("propose", t)                       # the verb — never "write the truth"
+        self.assertIn("each meaningful", t)               # the per-decision/feature/fix/incident loop
+        self.assertIn("human approves", t)                # HITL: a human gates every write
+        # the tools repeat the contract at point-of-use (what the AI reads when about to write)
+        self.assertIn("PENDING", srv.lifeline_append.__doc__)
+        self.assertIn("HITL", srv.lifeline_append.__doc__)
+        self.assertIn("Law #2", srv.lifeline_recontextualize.__doc__)   # append-only, never an edit
+
 
 class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
