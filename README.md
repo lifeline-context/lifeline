@@ -175,6 +175,7 @@ Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | `lifeline context [--query "…"] [--budget N]` | print the assembled current truth (relevance if `--query`) |
 | `lifeline verify` | check that every `id` matches its content |
 | `lifeline rebuild` · `migrate --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown |
+| `lifeline schema` | print the bundled Supabase SQL schema (paste into the SQL Editor for cloud mode) |
 | `lifeline lines` | list the project's lines (`.lifeline/*.db`) |
 | `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
 
@@ -182,9 +183,32 @@ Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 the approver); the **AI via MCP `propose`** enters as a **pending** proposal (HITL), and a human
 **approves** before it becomes truth. Write-time anti-junk requires the *why*; junk never enters.
 
-Globals: `--db` (default `.lifeline/ledger.db`) · **`--line <name>`** maps a named *line* —
-ledger **and** view together (`.lifeline/<name>.db` + `LIFELINE.<name>.md`), no collisions.
-A **line** = one reasoning ledger (code *or* conversation); a project has 1 by default, supports N.
+**Globals:** `--db` (default `.lifeline/ledger.db`) · **`--line <name>`** · `--store {sqlite,supabase}`
+· identity on a write (`--author` / `--agent` / `--provider` / `--model`).
+
+### Lines — parallel ledgers
+
+A **line** is one independent reasoning ledger (its own DAG + view). A project has **one by default**
+— `ledger` → `LIFELINE.md` — and adds as many as you want with `--line <name>`: each is a fully
+separate ledger **and** view (`.lifeline/<name>.db` + `LIFELINE.<name>.md`), with no collisions.
+**Every** command takes `--line`, and a line is **created on its first write** (no setup step).
+
+```bash
+# Your project's MAIN line (code reasoning) → LIFELINE.md
+lifeline log --kind decision --summary "Auth: JWT over sessions" --body "Stateless; scales out."
+
+# A PARALLEL line for a different context (business plan) → LIFELINE.businessplan.md
+lifeline --line businessplan log --kind decision \
+  --summary 'Pricing: $20/seat/mo' --body "Covers infra at ~50 seats; undercuts incumbents."
+
+lifeline --line businessplan context   # assembles ONLY the businessplan reasoning
+lifeline --line businessplan verify     # each line verifies independently
+lifeline lines                          # ledger → LIFELINE.md · businessplan → LIFELINE.businessplan.md
+```
+
+Keep separate **contexts** in separate lines — code vs. business plan vs. a subsystem or an
+experiment — so each *why* lives where it belongs and stays diff-able on its own. To point your
+**AI at a specific line over MCP**, set `LIFELINE_LINE=businessplan` in the server's env.
 
 ## Local → cloud (graduation)
 

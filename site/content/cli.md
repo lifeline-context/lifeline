@@ -38,6 +38,20 @@ requires the *why* (the `--body`), so junk never enters the line.
 
 One **independent, content-addressed reasoning ledger** (its own DAG + view). A project has 1 by
 default (`ledger` → `LIFELINE.md`) and supports N via `--line <name>` (`.lifeline/<name>.db` +
-`LIFELINE.<name>.md`) — no collisions; the MCP server picks one via `LIFELINE_LINE`. Use separate
-lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
+`LIFELINE.<name>.md`) — no collisions. **Every** command takes `--line`, and a line is **created on
+its first write** (no setup step); the MCP server picks one via `LIFELINE_LINE`.
+
+```bash
+# MAIN line (code reasoning) → LIFELINE.md
+lifeline log --kind decision --summary "Auth: JWT over sessions" --body "Stateless; scales out."
+
+# PARALLEL line (business plan) → LIFELINE.businessplan.md
+lifeline --line businessplan log --kind decision \
+  --summary 'Pricing: $20/seat/mo' --body "Covers infra at ~50 seats."
+
+lifeline --line businessplan context   # ONLY the businessplan reasoning
+lifeline lines                         # ledger → LIFELINE.md · businessplan → LIFELINE.businessplan.md
+```
+
+Use separate lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
 [Concepts → Lines](concepts.html).

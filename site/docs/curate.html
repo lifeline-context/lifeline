@@ -66,9 +66,9 @@ is the practice that keeps it worth reading.</p>
    needs cross-row ACID and we'll outgrow a single writer" is signal.</li>
 <li><strong>Capture the decision <em>and its rejected alternative.</em></strong> The gold is "we chose X over Y because Z."
    The road not taken is what stops the next agent from re-proposing Y next week.</li>
-<li><strong>Supersede, never edit.</strong> Reversed a decision? <code>lifeline recontextualize</code> (or the
-   <code>lifeline_recontextualize</code> tool) writes a <em>correction</em> that supersedes the old entry by id. The past
-   stays in history, marked reverted — never silently rewritten (Laws 2 &amp; 3).</li>
+<li><strong>Supersede, never edit.</strong> Reversed a decision? <code>lifeline log --kind correction --parents &lt;id&gt;</code>
+   (or the <code>lifeline_recontextualize</code> tool) writes a <em>correction</em> that supersedes the old entry by id.
+   The past stays in history, marked reverted — never silently rewritten (Laws 2 &amp; 3).</li>
 <li><strong>Be ruthless at approval.</strong> The AI will over-propose. Reject the changelog-y ones. The ledger is a
    record of <em>reasoning</em>, not a diff of <em>activity</em> — git already has the activity.</li>
 </ol>

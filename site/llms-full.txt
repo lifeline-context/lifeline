@@ -250,7 +250,7 @@ the costume off before evaluating it.
 
 # Lifeline Architecture
 
-`lifeline-context` **0.3.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
+`lifeline-context` **0.4.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
 years). Technical document. For *the why* behind each decision, the source is `LIFELINE.md` (the
 `decision` entries cited in brackets, e.g.: `#0002`).
 
@@ -547,9 +547,11 @@ Setup:
 
 1. **Supabase dashboard → Authentication → OAuth Server:** enable it + **Dynamic Client
    Registration**. Enable Google/GitHub providers if you want social login.
-2. **Consent screen (you host it):** Supabase does *not* host the consent/login UI — you build a
-   small page (`supabase-js`: `getAuthorizationDetails` → login → `approveAuthorization`) at your
-   Site URL + the configured authorization path. A ready page ships in `site/oauth/consent/`.
+2. **Consent screen (the server hosts it):** Supabase does *not* host the consent/login UI — a
+   ready page (`supabase-js`: `getAuthorizationDetails` → login → `approveAuthorization`) ships
+   inside the package at `lifeline/templates/consent.html` and is served by the Resource Server at
+   `/oauth/consent` (it injects `SUPABASE_URL`/`SUPABASE_KEY` from the env). Point the OAuth Server's
+   authorization path at `https://<your-host>/oauth/consent`.
 3. **Run the Resource Server** pointed at Supabase's issuer:
 
 ```bash
@@ -685,8 +687,22 @@ requires the *why* (the `--body`), so junk never enters the line.
 
 One **independent, content-addressed reasoning ledger** (its own DAG + view). A project has 1 by
 default (`ledger` → `LIFELINE.md`) and supports N via `--line <name>` (`.lifeline/<name>.db` +
-`LIFELINE.<name>.md`) — no collisions; the MCP server picks one via `LIFELINE_LINE`. Use separate
-lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
+`LIFELINE.<name>.md`) — no collisions. **Every** command takes `--line`, and a line is **created on
+its first write** (no setup step); the MCP server picks one via `LIFELINE_LINE`.
+
+```bash
+# MAIN line (code reasoning) → LIFELINE.md
+lifeline log --kind decision --summary "Auth: JWT over sessions" --body "Stateless; scales out."
+
+# PARALLEL line (business plan) → LIFELINE.businessplan.md
+lifeline --line businessplan log --kind decision \
+  --summary 'Pricing: $20/seat/mo' --body "Covers infra at ~50 seats."
+
+lifeline --line businessplan context   # ONLY the businessplan reasoning
+lifeline lines                         # ledger → LIFELINE.md · businessplan → LIFELINE.businessplan.md
+```
+
+Use separate lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
 [Concepts → Lines](concepts.html).
 
 
@@ -768,9 +784,9 @@ is the practice that keeps it worth reading.
    needs cross-row ACID and we'll outgrow a single writer" is signal.
 3. **Capture the decision *and its rejected alternative.*** The gold is "we chose X over Y because Z."
    The road not taken is what stops the next agent from re-proposing Y next week.
-4. **Supersede, never edit.** Reversed a decision? `lifeline recontextualize` (or the
-   `lifeline_recontextualize` tool) writes a *correction* that supersedes the old entry by id. The past
-   stays in history, marked reverted — never silently rewritten (Laws 2 & 3).
+4. **Supersede, never edit.** Reversed a decision? `lifeline log --kind correction --parents <id>`
+   (or the `lifeline_recontextualize` tool) writes a *correction* that supersedes the old entry by id.
+   The past stays in history, marked reverted — never silently rewritten (Laws 2 & 3).
 5. **Be ruthless at approval.** The AI will over-propose. Reject the changelog-y ones. The ledger is a
    record of *reasoning*, not a diff of *activity* — git already has the activity.
 

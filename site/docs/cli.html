@@ -122,8 +122,19 @@ requires the <em>why</em> (the <code>--body</code>), so junk never enters the li
 <h2>A line</h2>
 <p>One <strong>independent, content-addressed reasoning ledger</strong> (its own DAG + view). A project has 1 by
 default (<code>ledger</code> → <code>LIFELINE.md</code>) and supports N via <code>--line &lt;name&gt;</code> (<code>.lifeline/&lt;name&gt;.db</code> +
-<code>LIFELINE.&lt;name&gt;.md</code>) — no collisions; the MCP server picks one via <code>LIFELINE_LINE</code>. Use separate
-lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
+<code>LIFELINE.&lt;name&gt;.md</code>) — no collisions. <strong>Every</strong> command takes <code>--line</code>, and a line is <strong>created on
+its first write</strong> (no setup step); the MCP server picks one via <code>LIFELINE_LINE</code>.</p>
+<pre><code class="language-bash"># MAIN line (code reasoning) → LIFELINE.md
+lifeline log --kind decision --summary &quot;Auth: JWT over sessions&quot; --body &quot;Stateless; scales out.&quot;
+
+# PARALLEL line (business plan) → LIFELINE.businessplan.md
+lifeline --line businessplan log --kind decision \
+  --summary 'Pricing: $20/seat/mo' --body &quot;Covers infra at ~50 seats.&quot;
+
+lifeline --line businessplan context   # ONLY the businessplan reasoning
+lifeline lines                         # ledger → LIFELINE.md · businessplan → LIFELINE.businessplan.md
+</code></pre>
+<p>Use separate lines for separate contexts / reasoning threads (and Tree-of-Thoughts) — see
 <a href="concepts.html">Concepts → Lines</a>.</p>
     <div class="docs-foot">
       <span>Lifeline — MIT licensed · <a href="https://github.com/lifeline-context/lifeline/blob/main/site/content/cli.md">Edit on GitHub</a></span>

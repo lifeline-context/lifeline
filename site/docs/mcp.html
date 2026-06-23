@@ -124,9 +124,11 @@ providers (Google/GitHub).</p>
 <ol>
 <li><strong>Supabase dashboard → Authentication → OAuth Server:</strong> enable it + <strong>Dynamic Client
    Registration</strong>. Enable Google/GitHub providers if you want social login.</li>
-<li><strong>Consent screen (you host it):</strong> Supabase does <em>not</em> host the consent/login UI — you build a
-   small page (<code>supabase-js</code>: <code>getAuthorizationDetails</code> → login → <code>approveAuthorization</code>) at your
-   Site URL + the configured authorization path. A ready page ships in <code>site/oauth/consent/</code>.</li>
+<li><strong>Consent screen (the server hosts it):</strong> Supabase does <em>not</em> host the consent/login UI — a
+   ready page (<code>supabase-js</code>: <code>getAuthorizationDetails</code> → login → <code>approveAuthorization</code>) ships
+   inside the package at <code>lifeline/templates/consent.html</code> and is served by the Resource Server at
+   <code>/oauth/consent</code> (it injects <code>SUPABASE_URL</code>/<code>SUPABASE_KEY</code> from the env). Point the OAuth Server's
+   authorization path at <code>https://&lt;your-host&gt;/oauth/consent</code>.</li>
 <li><strong>Run the Resource Server</strong> pointed at Supabase's issuer:</li>
 </ol>
 <pre><code class="language-bash">export LIFELINE_OAUTH=1 LIFELINE_STORE=supabase
