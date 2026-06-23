@@ -4,6 +4,22 @@ All notable changes are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/); this project is **alpha** (pre-1.0), so minor
 versions may break.
 
+## [Unreleased]
+
+### Fixed
+- **Lossless round-trip through disk** (#0084): `_write_view`/`ingest_markdown` are byte-faithful
+  (`newline=""`), and `.gitattributes` pins `LIFELINE.*` as `-text` so git never re-normalizes the
+  content-addressed view (a CRLF body no longer breaks `verify` after `migrate`).
+
+### Changed
+- **Authorization Server hardened** (#0086): hosted social login via Supabase (drops the dev-only
+  password grant from the production path) + an optional **persistent DCR client store**
+  (`lifeline_oauth_clients`) so registered connectors survive restarts/replicas.
+
+### Added
+- **Server branding over MCP** (#0091, SEP-973): the server advertises its icon + website via
+  `serverInfo.icons`/`websiteUrl` on `initialize`, so compliant clients show the Lifeline mark.
+
 ## [0.3.0] — 2026-06-10
 
 ### Changed

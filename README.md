@@ -12,6 +12,11 @@ Lifeline versions *why* — decisions, reversals, incidents, the current state �
 append-only, content-addressed ledger that lives inside the project. Any model (Claude, GPT,
 Gemini), in any session, reconstructs the context the moment it connects via MCP.
 
+> **Use Claude Code?** It reads `.mcp.json` **automatically** — `pip install lifeline-context`, drop
+> the [snippet below](#connect-it-to-your-ai-zero-config-in-claude-code) into your repo, and your AI
+> connects to the project's full *why* with **zero config**. (Cursor, Claude Desktop, Gemini CLI, and
+> web chat work too — see below.)
+
 ---
 
 ## The problem
@@ -37,8 +42,8 @@ compressible, and anchored** — so it never overflows the window and never hall
 ## Install
 
 ```bash
-pip install lifeline-context        # once published to PyPI
-pip install -e .                    # or, from the repo root (dev) → installs lifeline, lifeline-mcp, lifeline-mcp-remote
+pip install lifeline-context        # installs lifeline, lifeline-mcp, lifeline-mcp-remote
+pip install -e .                    # or, from the repo root (dev)
 pip install -e ".[cloud]"           # optional: cloud mode (Supabase) — pulls httpx explicitly
 ```
 
