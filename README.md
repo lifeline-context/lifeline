@@ -5,7 +5,7 @@
 
 🌐 **English** · [Português](README.pt-BR.md)
 
-[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-alpha-orange) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-125%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
+[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-beta-blue) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-153%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
 
 In one line, it's **"git for reasoning"**: just as git versions *what* changed in the code,
 Lifeline versions *why* — decisions, reversals, incidents, the current state — in an
@@ -212,9 +212,10 @@ reasoning, not execution.**
 
 ## Status & roadmap
 
-**Alpha.** Solid, proven **local single-user** core — correctness locked by tests (determinism,
+**Beta.** Solid, proven **local single-user** core — correctness locked by tests (determinism,
 anti-tamper, omission detection, supersession + un-supersession, round-trip fixed-point, recall
-abstention). **Cloud (M3) functional and live-validated.** 125 tests green; CI on GitHub Actions.
+abstention, concurrent-append idempotency). **Cloud (M3) functional and live-validated.** 153
+tests green (147 offline + 6 live-gated); CI on GitHub Actions.
 
 | Milestone | State |
 |---|---|
@@ -230,8 +231,9 @@ abstention). **Cloud (M3) functional and live-validated.** 125 tests green; CI o
 **Honest limits today:** recall defaults to lexical (keywords); a **dense semantic** embedder is
 opt-in (`pip install lifeline-context[embeddings]`, then `LIFELINE_EMBEDDER=dense`, #0029).
 Hosted web-chat connectors work via Supabase's native OAuth Server (the remote MCP is a Resource
-Server) — the path is wired and unit-tested, with live end-to-end validation in progress (#0049,
-#0079). A turnkey **paid** cloud still needs billing; today it's **source-available core +
+Server) — the path is wired, unit-tested, and **validated live** end-to-end (a real connector
+gets `401` without a token and `200` with a valid Supabase JWT; #0049, #0079, #0090). A turnkey
+**paid** cloud still needs billing wired into a hosted plan; today the core is **source-available +
 bring-your-own-Supabase**. No retry/backoff in the cloud adapter yet (log+raise only).
 
 ## Built by dogfooding

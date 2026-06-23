@@ -148,9 +148,9 @@ async def resolve_parents(store: "EventStore", parents: List[str]) -> List[str]:
         if len(matches) == 1:
             resolved.append(matches[0])
         elif not matches:
-            raise ValueError(f"parent inexistente: '{p[:12]}…' — nenhuma entrada casa "
-                             "(prefixo errado ou entrada não existe nesta line).")
+            raise ValueError(f"no such parent: '{p[:12]}…' — no entry matches "
+                             "(wrong prefix, or the entry doesn't exist on this line).")
         else:
-            raise ValueError(f"parent ambíguo: '{p[:12]}…' casa com {len(matches)} entradas; "
-                             "use mais caracteres do id.")
+            raise ValueError(f"ambiguous parent: '{p[:12]}…' matches {len(matches)} entries; "
+                             "use more characters of the id.")
     return resolved

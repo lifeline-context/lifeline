@@ -1770,3 +1770,19 @@ Dois bugs introduzidos nas adições recentes: (1) o painel 'Proof' mostrava a s
 The user-facing output of the tool is now English: the assembled context (context.py — what every AI reads), the CLI messages (cli.py), the LIFELINE.md preamble, and the MCP instructions + tool descriptions (mcp_server.py). Why: the product is English-first (README, site, org, domain), but the tool was hardcoded Portuguese — an English user's AI received PT-headed context, and the README could not show real output without reintroducing the pt-BR-on-EN-site bug. Entry content stays whatever language it is written in; only the structural strings changed. Tests updated to assert the EN strings (142 pass). The README quickstart now shows the real EN 'lifeline context' output.
 
 <!-- lifeline:end -->
+
+### #0094 — 2026-06-23T20:43:29.423518+00:00 — milestone
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: milestone
+- **summary**: Harden for 0.4.0 (beta): close pre-release gaps + finish English output
+- **parents**: cf75ca4e8c92c7d16e4c93539ba9cecaf39845f1d6bc5d7be59166ba0695d97e
+- **id**: debdd809e02fc0581e6bec7e23d2180dc5e92f3577e164810fc53824878d0bbe
+
+**Body**:
+Deep gap analysis before publishing flagged blockers that would ship a broken/inconsistent pip install; fixed the ones that matter. (1) Packaging: pin mcp>=1.20 — Icon/website_url + the JWKS/multipart transitive deps the server imports crash below 1.15; made the [remote] extra self-sufficient (PyJWT[crypto], python-multipart, starlette). (2) The OAuth consent page lived OUTSIDE the package (read from ../site) so a pip install 404'd; moved it into lifeline/templates/consent.html, served via importlib.resources, shipped via package-data. (3) Finished the EN switch the prior pass missed — oauth login form + error strings, the consent page, cli _validate, store resolve_parents, cloud credentials, recall dense (the *why* an AI reads must be English). (4) Budget bug: the assembler under-reserved the decisions header/omit-marker, so a tight budget could mid-cut the always-include 'Recent' block; the reservation is now exact and the safety net is provably unreachable (Law #6). (5) Security: authorize() allow-lists redirect_uri (open-redirect/code-exfiltration), and schema.sql enables RLS on lifeline_oauth_clients (was exposed to anon). (6) Proved content-addressing under races: concurrent identical appends -> exactly 1 entry; two divergent views merge as a union with no dupes. Version 0.2.0->0.4.0 (was 2 releases stale); posture alpha->beta — cloud + OAuth + GitHub App are validated live, 'alpha' undersold it. 153 tests green. Tag/publish stays pending owner authorization (public action).
+
+<!-- lifeline:end -->

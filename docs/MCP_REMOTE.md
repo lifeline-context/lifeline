@@ -82,9 +82,11 @@ Setup:
 
 1. **Supabase dashboard → Authentication → OAuth Server:** enable it + **Dynamic Client
    Registration**. Enable Google/GitHub providers if you want social login.
-2. **Consent screen (you host it):** Supabase does *not* host the consent/login UI — you build a
-   small page (`supabase-js`: `getAuthorizationDetails` → login → `approveAuthorization`) at your
-   Site URL + the configured authorization path. A ready page ships in `site/oauth/consent/`.
+2. **Consent screen (the server hosts it):** Supabase does *not* host the consent/login UI — a
+   ready page (`supabase-js`: `getAuthorizationDetails` → login → `approveAuthorization`) ships
+   inside the package at `lifeline/templates/consent.html` and is served by the Resource Server at
+   `/oauth/consent` (it injects `SUPABASE_URL`/`SUPABASE_KEY` from the env). Point the OAuth Server's
+   authorization path at `https://<your-host>/oauth/consent`.
 3. **Run the Resource Server** pointed at Supabase's issuer:
 
 ```bash

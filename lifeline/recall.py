@@ -86,7 +86,7 @@ class SentenceTransformerEmbedder(Embedder):
                 from sentence_transformers import SentenceTransformer
             except ImportError as e:
                 raise ImportError(
-                    "embedder denso precisa do extra: pip install 'lifeline-context[embeddings]'"
+                    "the dense embedder needs the extra: pip install 'lifeline-context[embeddings]'"
                 ) from e
             self._m = SentenceTransformer(self._model_name)
         return self._m

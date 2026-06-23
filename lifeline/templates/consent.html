@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Autorizar — Lifeline</title>
+<title>Authorize — Lifeline</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4' fill='%237c89ff'/%3E%3C/svg%3E">
 <style>
-  /* tokens do site (style.css) — auto-contido p/ não herdar o layout da landing */
+  /* site tokens (style.css) — self-contained so it doesn't inherit the landing layout */
   :root{
     --bg:#08090a; --bg-elev:#0d0e10; --bg-elev-2:#131417;
     --ink:#f7f8f8; --ink-dim:#b7bdc6; --ink-mute:#8a8f98; --ink-faint:#5b606b;
@@ -75,56 +75,56 @@
 <div class="card">
   <div class="brand"><span class="dot"></span>Lifeline<span class="ver">oauth</span></div>
 
-  <!-- estado: carregando -->
-  <div id="loading"><div class="spin"></div><p class="sub" style="text-align:center">Carregando o pedido…</p></div>
+  <!-- state: loading -->
+  <div id="loading"><div class="spin"></div><p class="sub" style="text-align:center">Loading the request…</p></div>
 
-  <!-- estado: login (sem sessão) -->
+  <!-- state: login (no session) -->
   <div id="login" class="hide">
-    <h1>Entre para <span class="grad">autorizar</span></h1>
-    <p class="sub"><span id="login-app" class="who">Um aplicativo</span> quer conectar à sua Lifeline.</p>
+    <h1>Sign in to <span class="grad">authorize</span></h1>
+    <p class="sub"><span id="login-app" class="who">An application</span> wants to connect to your Lifeline.</p>
     <div class="err" id="login-err"></div>
     <button class="btn btn-ghost" data-prov="google">
       <svg class="ic" viewBox="0 0 24 24"><path fill="#fff" d="M12 11v3.2h4.5c-.2 1.2-1.4 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-5s2.2-5 4.9-5c1.5 0 2.6.7 3.2 1.2l2.2-2.1C16.1 3.7 14.2 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.6 8.6-8.7 0-.6-.1-1-.2-1.5z"/></svg>
-      Continuar com Google
+      Continue with Google
     </button>
     <button class="btn btn-ghost" data-prov="github">
       <svg class="ic" viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.300-4.6-1.1-4.6-4.9 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.8-2.4 4.6-4.6 4.9.3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
-      Continuar com GitHub
+      Continue with GitHub
     </button>
-    <div class="or">ou com email</div>
+    <div class="or">or with email</div>
     <input id="email" class="field" type="email" placeholder="email" autocomplete="username">
-    <input id="password" class="field" type="password" placeholder="senha" autocomplete="current-password">
-    <button class="btn btn-primary" id="email-go">Continuar</button>
-    <p class="muted">Primeiro acesso? <span class="link" id="signup-link">Criar conta</span></p>
+    <input id="password" class="field" type="password" placeholder="password" autocomplete="current-password">
+    <button class="btn btn-primary" id="email-go">Continue</button>
+    <p class="muted">First time? <span class="link" id="signup-link">Create account</span></p>
   </div>
 
-  <!-- estado: consentimento (com sessão) -->
+  <!-- state: consent (with session) -->
   <div id="consent" class="hide">
-    <h1><span id="consent-app" class="grad">Um aplicativo</span> quer acesso</h1>
-    <p class="sub">Conectado como <span id="who-email" class="who"></span>.</p>
+    <h1><span id="consent-app" class="grad">An application</span> wants access</h1>
+    <p class="sub">Signed in as <span id="who-email" class="who"></span>.</p>
     <div class="scopes" id="scopes-box">
-      <div class="k">Vai poder</div>
-      <ul id="scopes-list"><li>Ler e propor no contexto da sua Lifeline (com sua curadoria)</li></ul>
+      <div class="k">It will be able to</div>
+      <ul id="scopes-list"><li>Read and propose in your Lifeline context (you curate)</li></ul>
     </div>
     <div class="err" id="consent-err"></div>
-    <button class="btn btn-primary" id="approve">Autorizar</button>
-    <button class="btn btn-ghost" id="deny">Negar</button>
-    <p class="muted"><span class="link" id="switch">Entrar com outra conta</span></p>
+    <button class="btn btn-primary" id="approve">Authorize</button>
+    <button class="btn btn-ghost" id="deny">Deny</button>
+    <p class="muted"><span class="link" id="switch">Sign in with another account</span></p>
   </div>
 
-  <!-- estado: erro -->
+  <!-- state: error -->
   <div id="error" class="hide">
-    <h1>Algo deu errado</h1>
-    <p class="sub" id="error-msg">Erro desconhecido.</p>
-    <button class="btn btn-ghost" onclick="location.reload()">Tentar de novo</button>
+    <h1>Something went wrong</h1>
+    <p class="sub" id="error-msg">Unknown error.</p>
+    <button class="btn btn-ghost" onclick="location.reload()">Try again</button>
   </div>
 </div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// Injetado pelo servidor (a rota /oauth/consent substitui pelos valores do ambiente) — mantém o
-// core genérico (sem projeto hardcoded). A anon key é pública por design (client-side, RLS protege).
+// Injected by the server (the /oauth/consent route substitutes the env values) — keeps the
+// core generic (no hardcoded project). The anon key is public by design (client-side, RLS protects).
 const SUPABASE_URL = '__LIFELINE_SUPABASE_URL__'
 const SUPABASE_ANON = '__LIFELINE_SUPABASE_ANON__'
 
@@ -137,8 +137,8 @@ function show(state){ for(const s of ['loading','login','consent','error']) $(s)
 function fail(msg){ $('error-msg').textContent = msg; show('error') }
 
 async function main(){
-  if (!sb.auth.oauth){ return fail('supabase-js sem suporte ao OAuth Server (versão antiga em cache). Recarregue.') }
-  if (!authId){ return fail('Faltou o authorization_id na URL — recomece a conexão pelo cliente (claude.ai).') }
+  if (!sb.auth.oauth){ return fail('supabase-js has no OAuth Server support (stale version cached). Reload.') }
+  if (!authId){ return fail('Missing authorization_id in the URL — restart the connection from the client (claude.ai).') }
   const { data:{ session } } = await sb.auth.getSession()
   if (!session){ show('login'); return }
 
@@ -147,17 +147,17 @@ async function main(){
     const res = await sb.auth.oauth.getAuthorizationDetails(authId)
     if (res.error) throw res.error
     details = res.data || res
-  } catch (e){ return fail('Não foi possível carregar o pedido: ' + (e.message||e)) }
+  } catch (e){ return fail('Could not load the request: ' + (e.message||e)) }
 
   const client = details.client || details
-  $('consent-app').textContent = client.name || client.client_name || 'Um aplicativo'
+  $('consent-app').textContent = client.name || client.client_name || 'An application'
   $('who-email').textContent = session.user?.email || session.user?.id || '—'
-  // a API devolve `scope` como string separada por espaço (fallback: array `scopes`)
+  // the API returns `scope` as a space-separated string (fallback: array `scopes`)
   const raw = details.scope ?? details.scopes ?? client.scope
   const scopeArr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(/\s+/).filter(Boolean) : [])
   if (scopeArr.length){
     const ul = $('scopes-list'); ul.innerHTML = ''
-    for (const s of scopeArr){ const li = document.createElement('li'); li.textContent = s; ul.appendChild(li) }  // textContent = sem injeção
+    for (const s of scopeArr){ const li = document.createElement('li'); li.textContent = s; ul.appendChild(li) }  // textContent = no injection
   }
   show('consent')
 }
@@ -167,29 +167,29 @@ for (const btn of document.querySelectorAll('[data-prov]')){
   btn.addEventListener('click', async () => {
     const provider = btn.dataset.prov
     const { error } = await sb.auth.signInWithOAuth({ provider, options:{ redirectTo: location.href } })
-    if (error) $('login-err').textContent = error.message  // ex.: provider não habilitado no Supabase
+    if (error) $('login-err').textContent = error.message  // e.g. provider not enabled on Supabase
   })
 }
-// ----- login: email/senha (+ criar conta) -----
+// ----- login: email/password (+ create account) -----
 let signupMode = false
 $('signup-link').addEventListener('click', () => {
   signupMode = !signupMode
-  $('email-go').textContent = signupMode ? 'Criar conta e continuar' : 'Continuar'
-  $('signup-link').textContent = signupMode ? 'Já tenho conta' : 'Criar conta'
+  $('email-go').textContent = signupMode ? 'Create account and continue' : 'Continue'
+  $('signup-link').textContent = signupMode ? 'I already have an account' : 'Create account'
 })
 $('email-go').addEventListener('click', async () => {
   $('login-err').textContent = ''
   const email = $('email').value.trim(), password = $('password').value
-  if (!email || !password){ $('login-err').textContent = 'Preencha email e senha.'; return }
+  if (!email || !password){ $('login-err').textContent = 'Enter email and password.'; return }
   const fn = signupMode ? sb.auth.signUp({ email, password })
                         : sb.auth.signInWithPassword({ email, password })
   const { data, error } = await fn
   if (error){ $('login-err').textContent = error.message; return }
-  if (signupMode && !data.session){ $('login-err').textContent = 'Conta criada — confirme pelo email e volte para entrar.'; return }
-  location.reload()  // tem sessão → vira a tela de consentimento
+  if (signupMode && !data.session){ $('login-err').textContent = 'Account created — confirm via the email we sent, then come back to sign in.'; return }
+  location.reload()  // has a session → switches to the consent screen
 })
 
-// ----- consentimento: aprovar / negar -----
+// ----- consent: approve / deny -----
 $('approve').addEventListener('click', () => finish('approve'))
 $('deny').addEventListener('click', () => finish('deny'))
 async function finish(kind){
@@ -200,9 +200,9 @@ async function finish(kind){
     const res = await call
     if (res.error) throw res.error
     const url = (res.data && (res.data.redirect_url || res.data.url)) || res.redirect_url
-    if (!url) throw new Error('o Supabase não devolveu o redirect_url')
+    if (!url) throw new Error('Supabase did not return a redirect_url')
     location.href = url
-  } catch (e){ $('consent-err').textContent = 'Falha ao ' + (kind==='approve'?'autorizar':'negar') + ': ' + (e.message||e) }
+  } catch (e){ $('consent-err').textContent = 'Failed to ' + (kind==='approve'?'authorize':'deny') + ': ' + (e.message||e) }
 }
 $('switch').addEventListener('click', async () => { await sb.auth.signOut(); location.reload() })
 

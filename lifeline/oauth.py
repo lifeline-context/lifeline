@@ -55,9 +55,9 @@ from starlette.responses import HTMLResponse, RedirectResponse
 
 _log = logging.getLogger("lifeline.oauth")
 
-_LOGIN_HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+_LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lifeline — entrar</title><style>
+<title>Lifeline — sign in</title><style>
  body{{font:15px system-ui,sans-serif;background:#0b0c0f;color:#e7e9ee;display:grid;
  place-items:center;height:100vh;margin:0}}
  form{{background:#15171c;padding:28px;border-radius:12px;width:320px;box-shadow:0 8px 30px #0008}}
@@ -69,13 +69,13 @@ _LOGIN_HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
  label.cb{{display:flex;align-items:center;gap:8px;color:#9aa0ab;font-size:13px;margin-top:10px}}
  label.cb input{{width:auto;margin:0}}
 </style></head><body><form method="post" action="/oauth/login">
- <h1>Lifeline</h1><p>Entre (ou crie sua conta) no Supabase para autorizar o conector.</p>
+ <h1>Lifeline</h1><p>Sign in (or create your account) on Supabase to authorize the connector.</p>
  <div class="err">{error}</div>
  <input type="hidden" name="ticket" value="{ticket}">
  <input name="email" type="email" placeholder="email" autocomplete="username" required autofocus>
- <input name="password" type="password" placeholder="senha" autocomplete="current-password" required>
- <label class="cb"><input type="checkbox" name="signup" value="1"> Criar conta (primeiro acesso)</label>
- <button type="submit">Continuar</button>
+ <input name="password" type="password" placeholder="password" autocomplete="current-password" required>
+ <label class="cb"><input type="checkbox" name="signup" value="1"> Create account (first time)</label>
+ <button type="submit">Continue</button>
 </form></body></html>"""
 
 
@@ -123,7 +123,7 @@ class SupabaseClientStore(ClientStore):
                                 params={"client_id": f"eq.{client_id}", "select": "client_info"},
                                 headers=self._headers())
         except Exception:
-            _log.exception("client store get: falha de rede/URL")
+            _log.exception("client store get: network/URL failure")
             return None
         if r.status_code != 200:
             _log.info("client store get -> %s", r.status_code)
@@ -134,7 +134,7 @@ class SupabaseClientStore(ClientStore):
         try:
             return OAuthClientInformationFull.model_validate(rows[0]["client_info"])
         except Exception:
-            _log.exception("client store: client_info inválido na tabela")
+            _log.exception("client store: invalid client_info in the table")
             return None
 
     async def put(self, client):
@@ -150,7 +150,7 @@ class SupabaseClientStore(ClientStore):
             if r.status_code >= 300:
                 _log.error("client store put -> %s: %s", r.status_code, r.text[:200])
         except Exception:
-            _log.exception("client store put: falha de rede/URL")
+            _log.exception("client store put: network/URL failure")
 
 
 class SupabaseAuthServer(
@@ -191,7 +191,7 @@ class SupabaseAuthServer(
                                  json=payload, headers={"apikey": self.key,
                                                         "Content-Type": "application/json"})
         except Exception:
-            _log.exception("Supabase token grant=%s: falha de rede/URL", grant)
+            _log.exception("Supabase token grant=%s: network/URL failure", grant)
             return None
         if r.status_code != 200:
             _log.info("Supabase token grant=%s -> %s", grant, r.status_code)
@@ -199,7 +199,7 @@ class SupabaseAuthServer(
         try:
             return r.json()
         except Exception:
-            _log.exception("Supabase token: resposta não-JSON")
+            _log.exception("Supabase token: non-JSON response")
             return None
 
     async def _supabase_signup(self, email: str, password: str) -> Tuple[Optional[Dict], Optional[str]]:
@@ -213,20 +213,20 @@ class SupabaseAuthServer(
                                  json={"email": email, "password": password},
                                  headers={"apikey": self.key, "Content-Type": "application/json"})
         except Exception:
-            _log.exception("Supabase signup: falha de rede/URL")
-            return None, "serviço de autenticação indisponível — tente de novo em instantes."
+            _log.exception("Supabase signup: network/URL failure")
+            return None, "authentication service unavailable — please try again in a moment."
         if r.status_code not in (200, 201):
             _log.info("Supabase signup -> %s", r.status_code)
-            return None, "não foi possível criar a conta (talvez já exista — tente entrar)."
+            return None, "could not create the account (it may already exist — try signing in)."
         try:
             data = r.json() or {}
         except Exception:
-            return None, "resposta inválida do serviço de autenticação."
+            return None, "invalid response from the authentication service."
         sess = data if data.get("access_token") else (data.get("session") or {})
         if sess.get("access_token"):
             return sess, None
-        # 200 sem token → confirmação por email ligada no projeto Supabase
-        return None, "conta criada — confirme pelo email e volte para entrar."
+        # 200 without a token → email confirmation is enabled on the Supabase project
+        return None, "account created — confirm via the email we sent, then come back to sign in."
 
     # ---- DCR (RFC 7591) — via ClientStore (cache em frente) -----------------------------
     async def get_client(self, client_id: str) -> Optional[OAuthClientInformationFull]:
@@ -245,6 +245,10 @@ class SupabaseAuthServer(
     # ---- authorize → manda o usuário pro nosso login (que delega ao Supabase) -----------
     async def authorize(self, client: OAuthClientInformationFull,
                         params: AuthorizationParams) -> str:
+        # Defense in depth (S1): only ever redirect to a URI this client registered via DCR.
+        # The SDK's handler validates too, but the AS must not depend on that — an
+        # unregistered redirect_uri is an open-redirect / auth-code exfiltration vector.
+        client.validate_redirect_uri(params.redirect_uri)   # raises InvalidRedirectUriError
         ticket = secrets.token_urlsafe(32)
         self._tickets[ticket] = (client.client_id, params)
         return f"{self.public_url}/oauth/login?ticket={ticket}"
@@ -264,7 +268,7 @@ class SupabaseAuthServer(
             return HTMLResponse(_LOGIN_HTML.format(ticket=ticket, error=""))
         # modo HOSPEDADO: manda o navegador ao login social do Supabase (a senha não nos toca).
         if ticket not in self._tickets:
-            return HTMLResponse(_LOGIN_HTML.format(ticket="", error="sessão expirada — recomece"),
+            return HTMLResponse(_LOGIN_HTML.format(ticket="", error="session expired — start over"),
                                 status_code=400)
         verifier, challenge = self._new_pkce()
         self._pkce[ticket] = verifier                # guardamos o verifier p/ o /oauth/callback
@@ -277,29 +281,29 @@ class SupabaseAuthServer(
     async def login_post(self, request: Request):
         try:
             return await self._login_post(request)
-        except Exception:   # rede-de-segurança: nunca 500 cru no login (loga o porquê)
-            _log.exception("login_post: erro inesperado")
+        except Exception:   # safety net: never a raw 500 on login (logs the why)
+            _log.exception("login_post: unexpected error")
             return HTMLResponse(_LOGIN_HTML.format(
-                ticket="", error="erro interno ao autorizar — recomece a conexão"), status_code=500)
+                ticket="", error="internal error while authorizing — restart the connection"), status_code=500)
 
     async def _login_post(self, request: Request):
         form = await request.form()
         ticket = str(form.get("ticket", ""))
         entry = self._tickets.get(ticket)
         if not entry:
-            return HTMLResponse(_LOGIN_HTML.format(ticket="", error="sessão expirada — recomece"),
+            return HTMLResponse(_LOGIN_HTML.format(ticket="", error="session expired — start over"),
                                 status_code=400)
         client_id, params = entry
         email, password = str(form.get("email", "")), str(form.get("password", ""))
-        if form.get("signup"):                         # primeiro acesso: cria a conta no Supabase
+        if form.get("signup"):                         # first time: create the account on Supabase
             session, msg = await self._supabase_signup(email, password)
             if not session:
-                return HTMLResponse(_LOGIN_HTML.format(ticket=ticket, error=msg or "falha no cadastro"),
+                return HTMLResponse(_LOGIN_HTML.format(ticket=ticket, error=msg or "sign-up failed"),
                                     status_code=400)
         else:
             session = await self._supabase_token("password", {"email": email, "password": password})
             if not session or "access_token" not in session:
-                return HTMLResponse(_LOGIN_HTML.format(ticket=ticket, error="credenciais inválidas"),
+                return HTMLResponse(_LOGIN_HTML.format(ticket=ticket, error="invalid credentials"),
                                     status_code=401)
         return self._mint_and_redirect(ticket, client_id, params, session)
 
@@ -313,20 +317,20 @@ class SupabaseAuthServer(
         entry = self._tickets.get(ticket)
         verifier = self._pkce.get(ticket)
         if not entry or not verifier:
-            return HTMLResponse(_LOGIN_HTML.format(ticket="", error="sessão expirada — recomece"),
+            return HTMLResponse(_LOGIN_HTML.format(ticket="", error="session expired — start over"),
                                 status_code=400)
-        if err or not code:                            # login negado/cancelado no provedor
+        if err or not code:                            # login denied/cancelled at the provider
             self._tickets.pop(ticket, None)
             self._pkce.pop(ticket, None)
             return HTMLResponse(_LOGIN_HTML.format(
-                ticket="", error="login não concluído — recomece a conexão"), status_code=400)
+                ticket="", error="login was not completed — restart the connection"), status_code=400)
         client_id, params = entry
         session = await self._supabase_token("pkce", {"auth_code": code, "code_verifier": verifier})
         self._pkce.pop(ticket, None)
         if not session or "access_token" not in session:
             self._tickets.pop(ticket, None)
             return HTMLResponse(_LOGIN_HTML.format(
-                ticket="", error="não foi possível concluir o login — recomece"), status_code=401)
+                ticket="", error="could not complete sign-in — start over"), status_code=401)
         return self._mint_and_redirect(ticket, client_id, params, session)
 
     def _mint_and_redirect(self, ticket: str, client_id: str,
@@ -357,9 +361,9 @@ class SupabaseAuthServer(
 
     async def exchange_authorization_code(self, client: OAuthClientInformationFull,
                                           authorization_code: AuthorizationCode) -> OAuthToken:
-        rec = self._codes.pop(authorization_code.code, None)  # one-time: consome o code
+        rec = self._codes.pop(authorization_code.code, None)  # one-time: consumes the code
         if not rec:
-            raise TokenError("invalid_grant", "authorization code inválido ou já usado")
+            raise TokenError("invalid_grant", "authorization code invalid or already used")
         _ac, session = rec
         return OAuthToken(
             access_token=session["access_token"], token_type="Bearer",
@@ -378,7 +382,7 @@ class SupabaseAuthServer(
                                      refresh_token: RefreshToken, scopes: list) -> OAuthToken:
         session = await self._supabase_token("refresh_token", {"refresh_token": refresh_token.token})
         if not session or "access_token" not in session:
-            raise TokenError("invalid_grant", "refresh token inválido/expirado no Supabase")
+            raise TokenError("invalid_grant", "refresh token invalid/expired on Supabase")
         return OAuthToken(
             access_token=session["access_token"], token_type="Bearer",
             expires_in=session.get("expires_in", 3600),
@@ -394,7 +398,7 @@ class SupabaseAuthServer(
                 r = await c.get(f"{self.url}/auth/v1/user",
                                 headers={"apikey": self.key, "Authorization": f"Bearer {token}"})
         except Exception:
-            _log.exception("Supabase /user: falha de rede/URL")
+            _log.exception("Supabase /user: network/URL failure")
             return None
         if r.status_code != 200:
             return None

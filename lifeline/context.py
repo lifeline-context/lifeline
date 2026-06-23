@@ -57,10 +57,11 @@ class ContextAssembler:
         what = f"**What:** {st.get('project', '(no bootstrap entry yet)')}"
         if st.get("project_by"):
             what += f"  _(founded by {st['project_by']})_"
+        n_entries = st.get("entry_count", 0)
         header = [
             "# Lifeline — project context",
             what,
-            f"_{st.get('entry_count', 0)} entries · head {head}_",
+            f"_{n_entries} entr{'y' if n_entries == 1 else 'ies'} · head {head}_",
         ]
         contributors = st.get("contributors", {})
         if contributors:
@@ -119,42 +120,54 @@ class ContextAssembler:
                 b.append(_fence(why))
             dec_blocks.append("\n".join(b))
 
-        # prioridade de orçamento: tudo "fixo" entra; decisões preenchem o resto (mais recentes).
+        # budget priority: every "fixed" block goes in; decisions fill the rest (most recent first).
         def join(parts):
             return "\n".join(parts)
 
-        fixed = list(header) + [""]
-        if bootstrap_block:
-            fixed += bootstrap_block + [""]
-        if relevant_block:
-            fixed += relevant_block + [""]
-        if open_block:
-            fixed += open_block + [""]
-        fixed += recent_block
-        remaining = self.budget - len(join(fixed)) - 96
+        DEC_HEADER = "## Why / what's decided (decisions in force)"
+        def omit_marker(n):
+            return f"_[… {n} older decision(s) omitted — budget, Law #6]_"
 
-        kept_rev, omit = [], 0
-        for blk in reversed(dec_blocks):
-            if len(blk) + 1 <= remaining:
-                kept_rev.append(blk)
-                remaining -= len(blk) + 1
-            else:
-                omit += 1
-        dec_lines = ["## Why / what's decided (decisions in force)"]
+        # The always-present prefix (everything before the decisions section).
+        head_blocks = list(header) + [""]
+        if bootstrap_block:
+            head_blocks += bootstrap_block + [""]
+        if relevant_block:
+            head_blocks += relevant_block + [""]
+        if open_block:
+            head_blocks += open_block + [""]
+
+        # The full skeleton minus the decision BODIES — it already includes the decisions header,
+        # the blank separator and the always-include "Recent" block, so what's left for decisions
+        # is measured against what actually renders. Reserving the header (+ the omit marker, below)
+        # is what keeps the safety net from mid-cutting the always-include Open/Recent blocks
+        # (Law #6: truncation is explicit, and never silently eats a guaranteed section).
+        skeleton = head_blocks + [DEC_HEADER, "", *recent_block]
+        skeleton_len = len(join(skeleton))
+
+        def pack(reserve):
+            rem = self.budget - skeleton_len - reserve
+            kept, dropped = [], 0
+            for blk in reversed(dec_blocks):
+                if len(blk) + 1 <= rem:
+                    kept.append(blk)
+                    rem -= len(blk) + 1
+                else:
+                    dropped += 1
+            return list(reversed(kept)), dropped
+
+        kept, omit = pack(0)
+        if omit:  # the omit marker will render → reserve its (worst-case) length and repack
+            kept, omit = pack(len(omit_marker(len(dec_blocks))) + 1)
+
+        dec_lines = [DEC_HEADER]
         if omit:
-            dec_lines.append(f"_[… {omit} older decision(s) omitted — budget, Law #6]_")
-        dec_lines += list(reversed(kept_rev))
+            dec_lines.append(omit_marker(omit))
+        dec_lines += kept
 
-        out = list(header) + [""]
-        if bootstrap_block:
-            out += bootstrap_block + [""]
-        if relevant_block:
-            out += relevant_block + [""]
-        if open_block:
-            out += open_block + [""]
-        out += dec_lines + [""] + recent_block
+        out = head_blocks + dec_lines + [""] + recent_block
 
         text = join(out)
-        if len(text) > self.budget:  # rede de segurança
+        if len(text) > self.budget:  # safety net — the reservation above makes this unreachable
             text = text[:max(0, self.budget - 48)].rstrip() + "\n[… truncated — budget, Law #6]"
         return text

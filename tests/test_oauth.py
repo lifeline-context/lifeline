@@ -138,6 +138,19 @@ class TestAuthorizeFlow(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(url.startswith("https://mcp.example/oauth/login?ticket="))
         self.assertEqual(len(a._tickets), 1)               # guardou os params sob o ticket
 
+    async def test_authorize_rejects_unregistered_redirect_uri(self):
+        # S1: an attacker-supplied redirect_uri the client never registered must be refused
+        # (open-redirect / auth-code exfiltration) — and no ticket is minted.
+        from mcp.shared.auth import InvalidRedirectUriError
+        a = _as()
+        _v, challenge = _pkce()
+        params = AuthorizationParams(state="x", scopes=[], code_challenge=challenge,
+                                     redirect_uri="https://evil.example/steal",
+                                     redirect_uri_provided_explicitly=True, resource=None)
+        with self.assertRaises(InvalidRedirectUriError):
+            await a.authorize(_client(redirect="https://conector.example/callback"), params)
+        self.assertEqual(a._tickets, {})                   # nothing staged for the rogue URI
+
     async def test_login_mints_code_and_redirects_to_connector(self):
         a = _as()
         _v, challenge = _pkce()
@@ -200,7 +213,7 @@ class TestSignup(unittest.IsolatedAsyncioTestCase):
         resp = await a.login_post(_Form({"ticket": ticket, "email": "needsconfirm@b.c",
                                          "password": "x", "signup": "1"}))
         self.assertEqual(resp.status_code, 400)
-        self.assertIn("confirme pelo email", resp.body.decode())
+        self.assertIn("confirm via the email", resp.body.decode())
         self.assertEqual(a._codes, {})                        # sem sessão → sem code
 
     async def test_signup_existing_user_errors(self):
@@ -209,7 +222,7 @@ class TestSignup(unittest.IsolatedAsyncioTestCase):
         resp = await a.login_post(_Form({"ticket": ticket, "email": "exists@b.c",
                                          "password": "x", "signup": "1"}))
         self.assertEqual(resp.status_code, 400)
-        self.assertIn("já exista", resp.body.decode())
+        self.assertIn("may already exist", resp.body.decode())
 
 
 class TestTokenExchange(unittest.IsolatedAsyncioTestCase):
@@ -387,7 +400,7 @@ class TestRobustness(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(await a._supabase_token("password", {"email": "a", "password": "b"}))  # None, não estoura
         sess, msg = await a._supabase_signup("a@b.c", "x")
         self.assertIsNone(sess)
-        self.assertIn("indisponível", msg)                          # mensagem clara
+        self.assertIn("unavailable", msg)                           # mensagem clara
         self.assertIsNone(await a.load_access_token("tok"))         # introspecção também graciosa
 
     async def test_login_post_never_raises_bare_500(self):

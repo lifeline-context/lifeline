@@ -3,12 +3,13 @@
 Plugs Lifeline into the cloud for sync across devices/users and (later) the web chats.
 **No Redis** (decision #0038): Postgres = store, Auth = OAuth, RLS = tenant, Realtime = push.
 
-> Status: **adapter promoted to the package (`lifeline/cloud.py`) and covered by mocked
-> transport tests** (`tests/test_supabase.py`). The **real contract** (schema/RLS/PostgREST)
-> is proven by the **skip-gated live test** — which runs when `SUPABASE_URL`/`KEY` are in the
-> environment. Until that test passes against a project, treat it as *"wired, not validated live"*.
+> Status: **live-validated.** The adapter (`lifeline/cloud.py`) is covered by mocked-transport
+> tests (`tests/test_supabase.py`), and the **real contract** (schema/RLS/PostgREST) is proven by
+> the **skip-gated live test** (#0042) plus the remote MCP Resource Server verified end-to-end
+> (`401` without a token, `200` with a valid Supabase JWT; #0090). Self-hosters: the live test
+> runs automatically whenever `SUPABASE_URL`/`KEY` are in the environment.
 
-Project: `https://rzphncyjrilhwpuemrcl.supabase.co` (ref `rzphncyjrilhwpuemrcl`).
+Project: `https://<your-project-ref>.supabase.co` (use **your** project's ref — Dashboard → Settings → API).
 
 ## Security (read first)
 
@@ -32,7 +33,7 @@ service_role). **Do not** use `service_role` for multi-tenant write: it bypasses
 
 ## Steps
 
-1. **Create project** — done (the URL above).
+1. **Create a project** — note its URL and ref (Dashboard → Settings → API).
 2. **Run the schema** — Dashboard → **SQL Editor → New query** → paste
    the schema (generate it with **`lifeline schema`**, or see [`lifeline/schema.sql`](../lifeline/schema.sql))
    → **Run** (or run it via Supabase MCP). It creates:
@@ -44,7 +45,7 @@ service_role). **Do not** use `service_role` for multi-tenant write: it bypasses
    (see the decision above).
 4. **Wire the runtime:**
    ```bash
-   export SUPABASE_URL=https://rzphncyjrilhwpuemrcl.supabase.co
+   export SUPABASE_URL=https://<your-project-ref>.supabase.co
    export SUPABASE_KEY=<project apikey: anon/publishable>   # don't commit — use .env
    export SUPABASE_TOKEN=<user access token (JWT)>          # required for WRITES under RLS
    ```

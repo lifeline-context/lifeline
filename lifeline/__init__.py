@@ -1,4 +1,4 @@
-"""Lifeline — runtime de contexto. O projeto guarda *por que* ele é o que é."""
+"""Lifeline — a context runtime. The project records *why* it is what it is."""
 from lifeline.entry import Entry, GENESIS
 from lifeline.store import EventStore, SQLiteEventStore
 from lifeline.state import StateEngine, ledger_projection
@@ -8,7 +8,7 @@ from lifeline.recall import (
 )
 from lifeline.staging import StagingStore, SQLiteStagingStore
 
-__version__ = "0.2.0"
+__version__ = "0.4.0"
 __all__ = [
     "Entry", "GENESIS",
     "EventStore", "SQLiteEventStore",

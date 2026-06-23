@@ -95,4 +95,8 @@ create table if not exists lifeline_oauth_clients (
   client_info  jsonb not null,                            -- OAuthClientInformationFull (DCR)
   created_at   timestamptz not null default now()
 );
--- Sem RLS de tenant aqui (registro é pré-login). Proteja por service-role/network, não por uid.
+-- Não é multi-tenant por uid (registro é pré-login), mas a tabela NÃO pode ficar exposta ao
+-- anon/authenticated: sem RLS o PostgREST a serviria pela anon key (qualquer um leria os
+-- client_info ou inseriria clients falsos). Ligamos RLS SEM nenhuma policy → anon/authenticated
+-- ficam negados por padrão (deny-all), e o `service_role` (que o client store usa) IGNORA RLS.
+alter table lifeline_oauth_clients enable row level security;

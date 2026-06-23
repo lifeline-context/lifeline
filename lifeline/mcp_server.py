@@ -183,15 +183,16 @@ async def _healthz(_request):
 
 
 async def _oauth_consent(_request):
-    """Serve a página de consentimento do caminho OAuth Server do Supabase, injetando
-    SUPABASE_URL/KEY do ambiente. Hospeda no próprio servidor (repo pode ficar PRIVADO — sem
-    GitHub Pages) e mantém o core GENÉRICO (sem projeto hardcoded)."""
+    """Serves the consent page for the Supabase OAuth-Server path, injecting SUPABASE_URL/KEY
+    from the environment. Hosted by the server itself (the repo can stay PRIVATE — no GitHub
+    Pages) and keeps the core GENERIC (no hardcoded project). The page ships INSIDE the wheel
+    (`lifeline/templates/consent.html`), loaded via importlib.resources — so a `pip install`
+    serves it without cloning the repo."""
+    from importlib import resources
     from starlette.responses import HTMLResponse, PlainTextResponse
-    path = os.path.join(os.path.dirname(__file__), "..", "site", "oauth", "consent", "index.html")
     try:
-        with open(path, encoding="utf-8") as f:
-            html = f.read()
-    except FileNotFoundError:
+        html = (resources.files("lifeline") / "templates" / "consent.html").read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError):
         return PlainTextResponse("consent page not bundled in this deploy", status_code=404)
     from lifeline.cloud import clean_url
     html = (html.replace("__LIFELINE_SUPABASE_URL__", clean_url(os.environ.get("SUPABASE_URL", "")))
@@ -206,7 +207,7 @@ def _register(server: FastMCP) -> FastMCP:
     server.tool()(lifeline_recontextualize)
     server.tool()(lifeline_recall)
     server.custom_route("/healthz", methods=["GET"])(_healthz)
-    server.custom_route("/oauth/consent", methods=["GET"])(_oauth_consent)  # OAuth Server do Supabase
+    server.custom_route("/oauth/consent", methods=["GET"])(_oauth_consent)  # Supabase OAuth Server
     return server
 
 

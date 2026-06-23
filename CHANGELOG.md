@@ -1,24 +1,41 @@
 # Changelog
 
 All notable changes are documented here. Format based on
-[Keep a Changelog](https://keepachangelog.com/); this project is **alpha** (pre-1.0), so minor
-versions may break.
+[Keep a Changelog](https://keepachangelog.com/); this project is **beta** (pre-1.0), so minor
+versions may still break.
 
 ## [Unreleased]
+
+## [0.4.0] — 2026-06-23
 
 ### Fixed
 - **Lossless round-trip through disk** (#0084): `_write_view`/`ingest_markdown` are byte-faithful
   (`newline=""`), and `.gitattributes` pins `LIFELINE.*` as `-text` so git never re-normalizes the
   content-addressed view (a CRLF body no longer breaks `verify` after `migrate`).
+- **Budget no longer truncates the "Recent" block**: the assembler now reserves the decisions
+  header + omission marker in its budget math, so the always-include "Open / next" and "Recent"
+  sections survive small budgets instead of being cut by the safety net (Law #6).
 
 ### Changed
+- **Tool & server output is now English** across the assembled context, the CLI, and the MCP
+  surface (the *why* an AI reads). Portuguese docs remain bilingual.
 - **Authorization Server hardened** (#0086): hosted social login via Supabase (drops the dev-only
-  password grant from the production path) + an optional **persistent DCR client store**
-  (`lifeline_oauth_clients`) so registered connectors survive restarts/replicas.
+  password grant from the production path), an optional **persistent DCR client store**
+  (`lifeline_oauth_clients`) so registered connectors survive restarts/replicas, and a
+  `redirect_uri` allow-list check at `/authorize` (rejects URIs the client never registered).
 
 ### Added
 - **Server branding over MCP** (#0091, SEP-973): the server advertises its icon + website via
   `serverInfo.icons`/`websiteUrl` on `initialize`, so compliant clients show the Lifeline mark.
+- **Concurrency proof**: tests assert idempotency under concurrent identical appends (exactly one
+  entry inserted) and union-without-duplicates when two divergent views merge into one store.
+
+### Packaging
+- Pin `mcp>=1.20` (the `Icon`/`website_url` API and the JWKS/multipart transitive deps the server
+  imports). The `[remote]` extra is now self-sufficient — `PyJWT[crypto]`, `python-multipart`, and
+  `starlette` are declared, so `pip install lifeline-context[remote]` runs the hosted server as-is.
+- The OAuth **consent page ships inside the wheel** (`lifeline/templates/consent.html`), loaded via
+  `importlib.resources` — the hosted AS no longer 404s on a `pip install`.
 
 ## [0.3.0] — 2026-06-10
 
@@ -99,4 +116,8 @@ First public release. 🧬
 
 The full *why* behind every decision lives in [`LIFELINE.md`](LIFELINE.md), starting at #0001.
 
+[0.4.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.4.0
+[0.3.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.3.0
+[0.2.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.2.0
+[0.1.1]: https://github.com/lifeline-context/lifeline/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.1.0

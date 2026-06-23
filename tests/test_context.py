@@ -76,6 +76,44 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         self.assertLessEqual(len(text), 120)
         self.assertIn("truncated", text)
 
+    async def test_budget_drops_decisions_not_recent_or_open(self):
+        # Regression: a tight (but not degenerate) budget must drop OLD DECISIONS with an explicit
+        # marker — never mid-cut the always-include Open/Recent blocks (Law #6). Build several
+        # long-bodied decisions so they cannot all fit, then assert the guaranteed sections survive
+        # whole and the safety-net truncation never fires.
+        store = SQLiteEventStore(os.path.join(self.dir, "budget.db"))
+        await store.initialize()
+        await store.append(Entry(author="a", agent="x", provider="p", model="m",
+                                 kind="bootstrap", summary="Founds the budget line"))
+        for i in range(8):
+            await store.append(Entry(
+                author="a", agent="x", provider="p", model="m", kind="decision",
+                summary=f"decision number {i}", body=("why " * 60).strip()))  # ~240-char body each
+        await store.append(Entry(author="a", agent="x", provider="p", model="m",
+                                 kind="open", summary="OPENTHREADMARKER stays whole"))
+        await store.append(Entry(author="a", agent="x", provider="p", model="m",
+                                 kind="feature", summary="RECENTTAILMARKER stays whole"))
+        budget = 700
+        text = await ContextAssembler(StateEngine(store), budget_chars=budget).assemble()
+
+        self.assertLessEqual(len(text), budget)               # honors the budget
+        self.assertNotIn("truncated", text)                   # safety net did NOT fire…
+        self.assertIn("older decision(s) omitted", text)      # …decisions were dropped explicitly
+        # the always-include blocks are present AND whole (not mid-cut):
+        self.assertIn("## Open / next", text)
+        self.assertIn("OPENTHREADMARKER stays whole", text)
+        self.assertIn("## Recent (what's next)", text)
+        self.assertIn("RECENTTAILMARKER stays whole", text)
+
+    async def test_singular_entry_count_pluralization(self):
+        one = SQLiteEventStore(os.path.join(self.dir, "one.db"))
+        await one.initialize()
+        await one.append(Entry(author="a", agent="x", provider="p", model="m",
+                               kind="note", summary="only one"))
+        text = await ContextAssembler(StateEngine(one)).assemble()
+        self.assertIn("1 entry ·", text)        # singular, not "1 entries"
+        self.assertNotIn("1 entries", text)
+
     async def test_empty_ledger_is_graceful(self):
         # primeira execução (ledger vazio) → payload válido com placeholder, sem crash
         empty = SQLiteEventStore(os.path.join(self.dir, "empty.db"))

@@ -136,7 +136,7 @@ def _validate(kind, body):
     if kind not in KINDS:
         raise ValueError(f"invalid kind '{kind}'. Use one of: {', '.join(KINDS)}")
     if not (body and body.strip()):
-        raise ValueError("falta o *porquê* em --body (Lei #5: o porquê pesa mais que o quê).")
+        raise ValueError("missing the *why* in --body (Law #5: the why weighs more than the what).")
 
 
 async def cmd_log(db, out, kind, summary, body, author, agent, provider, model, parents):

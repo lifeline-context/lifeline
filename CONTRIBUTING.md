@@ -3,6 +3,13 @@
 The rule is the project's constitution: **if you made a significant change, append it to the line.**
 Humans and agents obey alike.
 
+## Just trying it? (the lowest-friction contribution)
+
+You don't need to write code to help. If you connected Lifeline to your AI and it **worked** —
+or it **didn't** — that's a signal worth an issue. [Open one](https://github.com/lifeline-context/lifeline/issues/new)
+with: your client (Claude Code / Cursor / claude.ai / …), what you ran, and what happened. A
+"it just worked in Claude Code" is as useful as a bug report — both tell us where the rough edges are.
+
 ## The flow
 
 1. **Connect:** `lifeline context` (or read `LIFELINE.md`, starting from #0001).

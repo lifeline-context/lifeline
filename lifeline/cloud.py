@@ -66,10 +66,10 @@ class _SupabaseBase:
         token = token or key
         if not url or not key:
             raise ValueError(
-                "defina SUPABASE_URL e SUPABASE_KEY (apikey do projeto = anon/publishable; "
-                "use um .env, NUNCA comite). Para ESCRITA autenticada sob RLS defina também "
-                "SUPABASE_TOKEN = access token de usuário (JWT): o gateway exige o apikey do "
-                "projeto no header `apikey` e o JWT no `Authorization: Bearer` (dois valores)."
+                "set SUPABASE_URL and SUPABASE_KEY (the project apikey = anon/publishable; "
+                "use a .env, NEVER commit it). For authenticated WRITES under RLS also set "
+                "SUPABASE_TOKEN = a user access token (JWT): the gateway requires the project "
+                "apikey in the `apikey` header and the JWT in `Authorization: Bearer` (two values)."
             )
         self.line = line
         self.url = clean_url(url)

@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lifeline-context"
-version = "0.3.0"
-description = "Runtime de contexto para desenvolvimento com IA — o projeto guarda por que ele é o que é; qualquer IA conecta e já sabe."
+version = "0.4.0"
+description = "A context runtime for AI development — the project records why it is what it is; any AI connects and already knows."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "FSL-1.1-MIT" }   # source-available; converte p/ MIT em 2 anos. Versões <= 0.2.0 seguem MIT.
 authors = [{ name = "jessianmart" }]
 keywords = ["mcp", "ai", "llm", "context", "memory", "ledger", "agents", "claude", "provenance"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
@@ -26,20 +26,31 @@ classifiers = [
 dependencies = [
     "pydantic>=2.0",
     "aiosqlite>=0.19",
-    "mcp>=1.0",
-    "httpx>=0.27",   # adapter de nuvem (lifeline/cloud.py); já vinha via mcp, agora explícito
+    # mcp>=1.15 ships mcp.types.Icon + FastMCP(icons=, website_url=) (SEP-973, used by
+    # mcp_server.py on every server); below that the import crashes. Pin >=1.20 so the
+    # transitive starlette/uvicorn surface the remote server relies on is also present.
+    "mcp>=1.20",
+    "httpx>=0.27",   # cloud adapter (lifeline/cloud.py); came via mcp before, now explicit
 ]
 
 [project.optional-dependencies]
-cloud = ["httpx>=0.27"]  # alias explícito p/ quem só quer o store Supabase
-embeddings = ["sentence-transformers>=2"]  # recall semântico DENSO (#0029) — opt-in; default é lexical
-remote = ["python-multipart>=0.0.9"]  # AS OAuth hospedado: parse do form de /oauth/login e do /token
-dev = ["pytest>=8"]       # ferramentas de teste (NÃO é dep de runtime) — usado no CI
+cloud = ["httpx>=0.27"]  # explicit alias for the Supabase store alone
+embeddings = ["sentence-transformers>=2"]  # DENSE semantic recall (#0029) — opt-in; default is lexical
+# Hosted remote MCP server (HTTP/SSE + OAuth). Self-sufficient: every import the remote
+# path needs is declared here, so `pip install lifeline-context[remote]` just works.
+remote = [
+    "python-multipart>=0.0.9",  # parses the /oauth/login + /token forms (AS mode)
+    "PyJWT[crypto]>=2.10.1",    # JWKS/ES256 verification in RS mode (SupabaseJWKSVerifier)
+    "starlette>=0.27",          # custom_route / Request / responses (oauth.py, mcp_server.py)
+]
+dev = ["pytest>=8"]       # test tooling (NOT a runtime dep) — used in CI
 
 [project.urls]
 Homepage = "https://lifelinecontext.com"
 Repository = "https://github.com/lifeline-context/lifeline"
 Issues = "https://github.com/lifeline-context/lifeline/issues"
+Changelog = "https://github.com/lifeline-context/lifeline/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/lifeline-context/lifeline/blob/main/docs/INTEGRATION.md"
 
 [project.scripts]
 lifeline = "lifeline.cli:main"
@@ -51,9 +62,10 @@ lifeline-mcp-remote = "lifeline.mcp_server:main_remote"
 [tool.setuptools.packages.find]
 include = ["lifeline*"]
 
-# empacota o schema da nuvem junto → `lifeline schema` funciona após pip install
+# ships the cloud schema (so `lifeline schema` works after pip install) and the OAuth consent
+# page (so the hosted AS `/oauth/consent` route serves it from the wheel — no repo clone)
 [tool.setuptools.package-data]
-lifeline = ["schema.sql"]
+lifeline = ["schema.sql", "templates/*.html"]
 
 # `_legacy/` é a rev0 arquivada (importa a API antiga). Nunca coletar como teste.
 [tool.pytest.ini_options]
