@@ -28,17 +28,17 @@ def _fence(text: str) -> str:
 # entrega um CALL-TO-ACTION de bootstrap — o gatilho que a IA lê no connect para fazer um
 # checkpoint inicial via HITL. O *porquê* NUNCA é inferido do código (Leis #1/#5); vem dos
 # artefatos de raciocínio do humano + uma entrevista curta, e entra como PROPOSTA (o humano aprova).
-BOOTSTRAP_HEADER = "## Bootstrap necessário — line vazia (checkpoint de contexto)"
+BOOTSTRAP_HEADER = "## Bootstrap needed — empty line (context checkpoint)"
 BOOTSTRAP_PROTOCOL = [
-    "Este projeto ainda não registrou contexto. Para cumprir o Time-to-Context → 0, faça AGORA "
-    "um checkpoint inicial — via HITL (você PROPÕE, o humano aprova):",
-    "1. LEIA os artefatos de raciocínio já escritos pelo humano (README, ADRs, descrições de PR, "
-    "design docs). NÃO infira o *porquê* a partir do código/diff (Leis #1 e #5).",
-    "2. PERGUNTE ao humano de 3 a 7 perguntas curtas, só sobre o *porquê* tácito que não está "
-    "escrito (por que esta stack? qual decisão está em vigor? qual thread está aberta?).",
-    "3. PROPONHA o checkpoint como entradas GRANULARES (não um bloco único): 1 `bootstrap` "
-    "(identidade do projeto) + N `decision` (cada uma superseível depois) + M `open` (threads). "
-    "O humano aprova o lote — nada entra sem aprovação.",
+    "This project hasn't recorded any context yet. To honor Time-to-Context → 0, do an initial "
+    "checkpoint NOW — human-in-the-loop (HITL; you PROPOSE, a human approves):",
+    "1. READ the reasoning artifacts the human already wrote (README, ADRs, PR descriptions, "
+    "design docs). Do NOT infer the *why* from code/diffs (Laws #1 and #5).",
+    "2. ASK the human 3-7 short questions, only about the tacit *why* that isn't written down "
+    "(why this stack? which decision is in force? which thread is open?).",
+    "3. PROPOSE the checkpoint as GRANULAR entries (not one block): 1 `bootstrap` (project "
+    "identity) + N `decision` (each supersedable later) + M `open` (threads). The human approves "
+    "the batch — nothing enters without approval.",
 ]
 
 
@@ -54,17 +54,17 @@ class ContextAssembler:
 
         # --- header (sempre) ---
         head = str(st.get("head", ""))[:8]
-        what = f"**O quê:** {st.get('project', '(sem entrada bootstrap ainda)')}"
+        what = f"**What:** {st.get('project', '(no bootstrap entry yet)')}"
         if st.get("project_by"):
-            what += f"  _(fundado por {st['project_by']})_"
+            what += f"  _(founded by {st['project_by']})_"
         header = [
-            "# Lifeline — contexto do projeto",
+            "# Lifeline — project context",
             what,
-            f"_{st.get('entry_count', 0)} entradas · head {head}_",
+            f"_{st.get('entry_count', 0)} entries · head {head}_",
         ]
         contributors = st.get("contributors", {})
         if contributors:
-            header.append("_Contribuíram: "
+            header.append("_Contributors: "
                           + ", ".join(f"{k} ({v})" for k, v in sorted(contributors.items())) + "_")
 
         # --- integridade (gap #G3): se alguma entrada não bate com sua âncora, AVISA alto e
@@ -72,9 +72,9 @@ class ContextAssembler:
         broken = st.get("integrity_broken", [])
         if broken:
             header.append("")
-            header.append(f"> ⚠️ **INTEGRIDADE: {len(broken)} entrada(s) adulterada(s)** "
-                          f"(id não bate com o conteúdo) — DESCARTADA(S) da verdade. "
-                          f"Rode `lifeline verify`. ids: " + ", ".join(b[:8] for b in broken))
+            header.append(f"> ⚠️ **INTEGRITY: {len(broken)} tampered entr{'y' if len(broken)==1 else 'ies'}** "
+                          f"(id doesn't match content) — DROPPED from the truth. "
+                          f"Run `lifeline verify`. ids: " + ", ".join(b[:8] for b in broken))
 
         # --- bootstrap (line vazia: nem identidade nem decisões) — CTA do checkpoint inicial ---
         bootstrap_block = []
@@ -86,25 +86,25 @@ class ContextAssembler:
         if query and recall is not None:
             hits = await recall.search(query, k=5, superseded=superseded)  # marca revertidos (#G2)
             if hits:
-                relevant_block = [f'## Relevante para: "{_oneline(query)}"']
+                relevant_block = [f'## Relevant to: "{_oneline(query)}"']
                 for h in hits:
-                    mark = " _[revertido/fechado]_" if h.get("superseded") else ""
+                    mark = " _[reverted/closed]_" if h.get("superseded") else ""
                     relevant_block.append(
                         f"- [{h['kind']}] {_oneline(h['summary'])} `[{h['id'][:8]}]`{mark}")
 
         # --- em aberto / próximo (sempre) ---
         opens = st.get("open_items", [])
-        open_block = (["## Em aberto / próximo"]
+        open_block = (["## Open / next"]
                       + [f"- `[{o['id'][:8]}]` {_oneline(o['summary'])}" for o in opens]) if opens else []
 
         # --- recente (marca superseded) ---
-        recent_block = ["## Recente (o que vem a seguir)"]
+        recent_block = ["## Recent (what's next)"]
         for l in st.get("latest", []):
             tag = ""
             if l.get("model") and l["model"] != "human":
                 tag += f" — _{l['model']}_"
             if l["id"] in superseded:
-                tag += " _[fechado/revertido]_"
+                tag += " _[closed/reverted]_"
             recent_block.append(f"- [{l['kind']}] {_oneline(l['summary'])}{tag}")
 
         # --- decisões (blocos) — summary em uma linha, body CERCADO como citação (#G10) ---
@@ -140,9 +140,9 @@ class ContextAssembler:
                 remaining -= len(blk) + 1
             else:
                 omit += 1
-        dec_lines = ["## Por quê / o que está decidido (decisões em vigor)"]
+        dec_lines = ["## Why / what's decided (decisions in force)"]
         if omit:
-            dec_lines.append(f"_[… {omit} decisão(ões) mais antiga(s) omitida(s) — budget, Lei #6]_")
+            dec_lines.append(f"_[… {omit} older decision(s) omitted — budget, Law #6]_")
         dec_lines += list(reversed(kept_rev))
 
         out = list(header) + [""]
@@ -156,5 +156,5 @@ class ContextAssembler:
 
         text = join(out)
         if len(text) > self.budget:  # rede de segurança
-            text = text[:max(0, self.budget - 48)].rstrip() + "\n[… truncado — budget, Lei #6]"
+            text = text[:max(0, self.budget - 48)].rstrip() + "\n[… truncated — budget, Law #6]"
         return text

@@ -36,8 +36,8 @@ class TestMCPContract(unittest.IsolatedAsyncioTestCase):
         # AI-first: a IA que conecta a uma line vazia precisa saber fazer o checkpoint HITL
         text = srv._INSTRUCTIONS
         self.assertIn("BOOTSTRAP", text.upper())
-        self.assertIn("granulares", text.lower())          # entradas granulares (não bloco único)
-        self.assertIn("nunca infira", text.lower())        # guardrail: não inferir do código
+        self.assertIn("granular", text.lower())          # entradas granulares (não bloco único)
+        self.assertIn("never infer", text.lower())        # guardrail: não inferir do código
 
 
 class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
@@ -64,7 +64,7 @@ class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
         db = os.path.join(d, ".lifeline", "ledger.db")
         srv._DB = db
         msg = await srv.lifeline_append("decision", "usar gRPC", "porque escala")
-        self.assertIn("PENDENTE", msg)
+        self.assertIn("PENDING", msg)
         self.assertEqual(len(await cli.cmd_review(db)), 1)   # entrou na fila…
         _, n, _t, _d = await cli.cmd_verify(db)
         self.assertEqual(n, 0)                                # …e NÃO na line (0 entradas seladas)
@@ -89,7 +89,7 @@ class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Funda Z", ctx)
         self.assertIn("use SQLite", ctx)
         self.assertIn("use SQLite", await srv.lifeline_recall("sqlite"))         # recall acha
-        self.assertIn("Nada relevante", await srv.lifeline_recall("zzqxyznada"))  # sem match → mensagem vazia
+        self.assertIn("Nothing relevant", await srv.lifeline_recall("zzqxyznada"))  # sem match → mensagem vazia
 
     async def test_request_store_factory_seam(self):
         # costura p/ o hub injetar tenancy (team-line) SEM forkar: o factory tem prioridade

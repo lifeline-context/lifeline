@@ -39,42 +39,42 @@ _LOCAL_ONLY = {"push", "pull", "clone", "lines"}
 
 PREAMBLE = """# LIFELINE — lifeline
 
-> Cadeia append-only de *porquês*. O projeto guarda *por que* ele é o que é, e qualquer
-> mente que conecta herda esse porquê na hora — sem ninguém reexplicar.
+> An append-only chain of *whys*. The project records *why* it is what it is, and any mind that
+> connects inherits that why instantly — with no one re-explaining.
 >
-> **Este arquivo é GERADO** a partir do ledger (em `.lifeline/`), que é a fonte de verdade.
-> NÃO edite à mão — anexe com `lifeline log` e ele se regenera.
+> **This file is GENERATED** from the ledger (in `.lifeline/`), which is the source of truth.
+> Do NOT hand-edit — append with `lifeline log` and it regenerates.
 >
-> **Comece pela #0001.** Ela é o projeto inteiro em linguagem humana.
+> **Start at #0001.** It's the whole project in human language.
 
-## Protocolo
+## Protocol
 
-1. **Append-only.** Nunca edite entradas; uma correção é uma entrada nova (`kind: correction`)
-   que referencia em `parents` o `id` que corrige — e o supersede na verdade atual.
-2. **Uma entrada por unidade de trabalho com significado.** Não por arquivo, não por tool
-   call. O *porquê* pesa mais que o *quê* (Lei #5).
-3. **Identidade content-addressed (Lei #3):** `id = sha256(kind, author, agent, provider,
-   model, summary, body, parents-ordenados)`. `ts` e `dedup_key` ficam FORA do hash — o
-   mesmo conteúdo gera o mesmo `id` em qualquer máquina. `parents` formam o DAG causal;
-   não há prev_hash (o ledger é um grafo, não uma lista).
-4. **Integridade:** `lifeline verify` confere que todo `id` bate com seu conteúdo.
-5. **Anexar:** `lifeline log --kind … --summary … --body …`. Ver o contexto montado que uma
-   IA receberia: `lifeline context`.
+1. **Append-only.** Never edit entries; a correction is a new entry (`kind: correction`) that
+   references in `parents` the `id` it corrects — superseding it in the current truth.
+2. **One entry per unit of work with meaning.** Not per file, not per tool call. The *why*
+   outweighs the *what* (Law #5).
+3. **Content-addressed identity (Law #3):** `id = sha256(kind, author, agent, provider, model,
+   summary, body, sorted-parents)`. `ts` and `dedup_key` stay OUT of the hash — the same content
+   yields the same `id` on any machine. `parents` form the causal DAG; there is no prev_hash (the
+   ledger is a graph, not a list).
+4. **Integrity:** `lifeline verify` checks that every `id` matches its content.
+5. **Append:** `lifeline log --kind … --summary … --body …`. To see the assembled context an AI
+   would receive: `lifeline context`.
 
-## Leis do projeto (a constituição)
+## Project laws (the constitution)
 
-1. **Nenhuma memória sem âncora imutável.** Todo item de contexto carrega o hash do evento
-   de origem. Espinha anti-alucinação.
-2. **Append-only.** Correções são entradas novas referenciando o id anterior.
-3. **Content-addressing determinístico.** Mesmo conteúdo+pais → mesmo id, em qualquer nó.
-4. **Storage agnóstico de provider; entrega no formato do provider.**
-5. **O *porquê* pesa mais que o *quê*.**
-6. **Budget é first-class.** Contexto cabe na janela; truncamento é explícito, nunca silencioso.
-7. **MCP-native.** A interface da IA é a superfície do produto, não um apêndice.
+1. **No memory without an immutable anchor.** Every context item carries the hash of its source
+   event. The anti-hallucination spine.
+2. **Append-only.** Corrections are new entries referencing the prior id.
+3. **Deterministic content-addressing.** Same content + parents → same id, on any node.
+4. **Provider-agnostic storage; deliver in the provider's format.**
+5. **The *why* outweighs the *what*.**
+6. **Budget is first-class.** Context fits the window; truncation is explicit, never silent.
+7. **MCP-native.** The AI's interface is the product surface, not an appendix.
 
-**Non-goals (lei por omissão):** Lifeline NÃO é sistema operacional cognitivo, NÃO é MMU,
-NÃO é orquestrador/sandbox de agentes, NÃO é workflow engine, NÃO substitui git, NÃO é
-executor/curador (self-healing) nem treinador (fine-tuning/DL). Registra raciocínio.
+**Non-goals (law by omission):** Lifeline is NOT a cognitive OS, NOT an MMU, NOT an agent
+orchestrator/sandbox, NOT a workflow engine, does NOT replace git, is NOT an executor/curator
+(self-healing) or a trainer (fine-tuning/DL). It records reasoning.
 
 ---"""
 
@@ -134,7 +134,7 @@ async def _write_view(store, out):
 def _validate(kind, body):
     """Anti-sujeira no write-time: kind válido + o *porquê* presente (Lei #5)."""
     if kind not in KINDS:
-        raise ValueError(f"kind inválido '{kind}'. Use um de: {', '.join(KINDS)}")
+        raise ValueError(f"invalid kind '{kind}'. Use one of: {', '.join(KINDS)}")
     if not (body and body.strip()):
         raise ValueError("falta o *porquê* em --body (Lei #5: o porquê pesa mais que o quê).")
 
@@ -278,7 +278,7 @@ async def cmd_lines(root=LINES_DIR):
 
 async def cmd_push(db, out, message="lifeline: sync"):
     if not sync.is_repo():
-        raise ValueError("não é um repositório git aqui. Faça: git init && git remote add origin <url>")
+        raise ValueError("not a git repository here. Run: git init && git remote add origin <url>")
     await cmd_rebuild(db, out)                  # garante a view textual atual
     sync.add_commit(".", message)               # ok se não houver nada a commitar
     r = sync.push(".")
@@ -287,10 +287,10 @@ async def cmd_push(db, out, message="lifeline: sync"):
 
 async def cmd_pull(db, out):
     if not sync.is_repo():
-        raise ValueError("não é um repositório git aqui.")
+        raise ValueError("not a git repository here.")
     r = sync.pull(".")
     if sync.has_conflict():
-        return False, "CONFLITO de merge na view — resolva no LIFELINE.md (é legível) e rode pull de novo."
+        return False, "merge CONFLICT in the view — resolve it in LIFELINE.md (it's readable) and run pull again."
     await cmd_migrate(out, db)                   # ingere o markdown mergeado (dedup por id)
     await cmd_rebuild(db, out)                   # normaliza a view a partir do .db unido
     return r.returncode == 0, (r.stderr or r.stdout).strip()
@@ -305,7 +305,7 @@ async def cmd_clone(url, dest):
         db = os.path.join(dest, LINES_DIR, "ledger.db")
         await cmd_migrate(src, db)
         await cmd_rebuild(db, src)
-    return True, f"clonado em {dest} (.db reconstruído da view)"
+    return True, f"cloned into {dest} (.db rebuilt from the view)"
 
 
 def _parents_arg(s):
@@ -318,11 +318,11 @@ def main(argv=None) -> int:
     except Exception:
         pass
 
-    p = argparse.ArgumentParser(prog="lifeline", description="Lifeline — runtime de contexto")
+    p = argparse.ArgumentParser(prog="lifeline", description="Lifeline — a context runtime")
     p.add_argument("--db", default=DEFAULT_DB)
-    p.add_argument("--line", default=None, help="nome da line (sugar: .lifeline/<line>.db + LIFELINE.<line>.md)")
+    p.add_argument("--line", default=None, help="line name (sugar: .lifeline/<line>.db + LIFELINE.<line>.md)")
     p.add_argument("--store", choices=["sqlite", "supabase"], default="sqlite",
-                   help="backend do ledger (M3 Tier 1: supabase lê SUPABASE_URL/KEY do ambiente)")
+                   help="ledger backend (M3 Tier 1: supabase reads SUPABASE_URL/KEY from the env)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def _entry_args(sp, with_out=False):
@@ -333,37 +333,37 @@ def main(argv=None) -> int:
         sp.add_argument("--agent", default="human")
         sp.add_argument("--provider", default="none")
         sp.add_argument("--model", default="human")
-        sp.add_argument("--parents", default=None, help="ids separados por vírgula")
+        sp.add_argument("--parents", default=None, help="comma-separated ids")
         if with_out:
             sp.add_argument("--out", default=DEFAULT_OUT)
 
-    pini = sub.add_parser("init", help="inicializa a line e mostra o protocolo de bootstrap (checkpoint HITL)")
+    pini = sub.add_parser("init", help="initialize the line and print the bootstrap protocol (HITL checkpoint)")
     pini.add_argument("--out", default=DEFAULT_OUT)
-    _entry_args(sub.add_parser("log", help="humano: anexa direto na line (você é o aprovador)"), with_out=True)
-    _entry_args(sub.add_parser("propose", help="propõe uma entrada (HITL) — fica pendente até aprovar"))
+    _entry_args(sub.add_parser("log", help="human: append directly to the line (you're the approver)"), with_out=True)
+    _entry_args(sub.add_parser("propose", help="propose an entry (HITL) — stays pending until approved"))
 
-    sub.add_parser("review", help="lista as propostas pendentes (curadoria HITL)")
-    pa = sub.add_parser("approve", help="sela proposta(s) pendente(s) na line")
-    pa.add_argument("pids", nargs="+", help="pids a aprovar, ou 'all'")
-    prj = sub.add_parser("reject", help="descarta proposta(s) pendente(s)")
-    prj.add_argument("pids", nargs="+", help="pids a rejeitar, ou 'all'")
+    sub.add_parser("review", help="list pending proposals (HITL curation)")
+    pa = sub.add_parser("approve", help="seal pending proposal(s) into the line")
+    pa.add_argument("pids", nargs="+", help="pids to approve, or 'all'")
+    prj = sub.add_parser("reject", help="discard pending proposal(s)")
+    prj.add_argument("pids", nargs="+", help="pids to reject, or 'all'")
 
-    pr = sub.add_parser("rebuild", help="regenera a view a partir do store")
+    pr = sub.add_parser("rebuild", help="regenerate the view from the store")
     pr.add_argument("--out", default=DEFAULT_OUT)
-    sub.add_parser("verify", help="confere a integridade do ledger")
-    pm = sub.add_parser("migrate", help="ingere uma markdown antiga no store")
+    sub.add_parser("verify", help="check the ledger's integrity")
+    pm = sub.add_parser("migrate", help="ingest an existing markdown into the store")
     pm.add_argument("--from", dest="src", required=True)
-    pc = sub.add_parser("context", help="imprime o contexto montado")
+    pc = sub.add_parser("context", help="print the assembled context")
     pc.add_argument("--budget", type=int, default=8000)
-    pc.add_argument("--query", default=None, help="prioriza o que é relevante à tarefa (Camada 3)")
-    sub.add_parser("lines", help="lista as lines do projeto (.lifeline/*.db)")
-    sub.add_parser("schema", help="imprime o schema SQL da nuvem (Supabase) — cole no SQL Editor")
+    pc.add_argument("--query", default=None, help="prioritize what's relevant to the task (Layer 3)")
+    sub.add_parser("lines", help="list the project's lines (.lifeline/*.db)")
+    sub.add_parser("schema", help="print the cloud SQL schema (Supabase) — paste it into the SQL Editor")
 
-    ppush = sub.add_parser("push", help="sync via git: rebuild + commit + push da view")
+    ppush = sub.add_parser("push", help="git sync: rebuild + commit + push the view")
     ppush.add_argument("--out", default=DEFAULT_OUT)
-    ppull = sub.add_parser("pull", help="sync via git: pull + reconstrói o .db da view mergeada")
+    ppull = sub.add_parser("pull", help="git sync: pull + rebuild the .db from the merged view")
     ppull.add_argument("--out", default=DEFAULT_OUT)
-    pclone = sub.add_parser("clone", help="git clone <url> <dir> e reconstrói o .db")
+    pclone = sub.add_parser("clone", help="git clone <url> <dir> and rebuild the .db")
     pclone.add_argument("url")
     pclone.add_argument("dest")
 
@@ -373,17 +373,17 @@ def main(argv=None) -> int:
     _STORE["kind"] = args.store                  # reset explícito a cada chamada (sem vazar entre runs)
     _STORE["line"] = args.line or "ledger"
     if args.store == "supabase" and args.cmd in _LOCAL_ONLY:
-        print(f"'{args.cmd}' é específico do store local (git/HITL/SQLite). "
-              f"Com --store supabase use: log, context, verify, rebuild, migrate.")
+        print(f"'{args.cmd}' is specific to the local store (git/HITL/SQLite). "
+              f"With --store supabase use: log, context, verify, rebuild, migrate.")
         return 1
 
     try:
         return _dispatch(args, db, out)
-    except ValueError as ex:                          # validação/uso → mensagem direta
-        print(f"erro: {ex}")
+    except ValueError as ex:                          # validation/usage → direct message
+        print(f"error: {ex}")
         return 1
-    except Exception as ex:                           # rede/HTTP/inesperado → sem traceback cru
-        print(f"erro inesperado ({type(ex).__name__}): {ex}")
+    except Exception as ex:                            # network/HTTP/unexpected → no raw traceback
+        print(f"unexpected error ({type(ex).__name__}): {ex}")
         return 1
 
 
@@ -391,21 +391,21 @@ def _dispatch(args, db, out) -> int:
     if args.cmd == "init":
         bootstrapped, n = asyncio.run(cmd_init(db, out))
         if bootstrapped:
-            print(f"Esta line já tem contexto ({n} entradas) — nada a fazer. Veja: lifeline context")
+            print(f"This line already has context ({n} entries) — nothing to do. See: lifeline context")
         else:
             print(BOOTSTRAP_HEADER.replace("## ", "").strip())
             for line in BOOTSTRAP_PROTOCOL:
                 print(line)
-            print("\nPropor:  lifeline propose --kind bootstrap --summary \"…\" --body \"o porquê\"")
-            print("Aprovar: lifeline review   →   lifeline approve all")
+            print("\nPropose: lifeline propose --kind bootstrap --summary \"…\" --body \"the why\"")
+            print("Approve: lifeline review   →   lifeline approve all")
         return 0
 
     if args.cmd == "log":
         e, inserted, n = asyncio.run(cmd_log(
             db, out, args.kind, args.summary, args.body, args.author, args.agent,
             args.provider, args.model, _parents_arg(args.parents)))
-        print(f"#{n:04d} {'registrada' if inserted else 'duplicada (idempotente)'}: {e.kind} — {e.id[:12]}…")
-        print(f"{out} regenerado ({n} entradas).")
+        print(f"#{n:04d} {'recorded' if inserted else 'duplicate (idempotent)'}: {e.kind} — {e.id[:12]}…")
+        print(f"{out} regenerated ({n} entries).")
         return 0
 
     if args.cmd == "propose":
@@ -413,60 +413,60 @@ def _dispatch(args, db, out) -> int:
             pid = asyncio.run(cmd_propose(db, args.kind, args.summary, args.body, args.author,
                                           args.agent, args.provider, args.model, _parents_arg(args.parents)))
         except ValueError as ex:
-            print(f"recusado: {ex}")
+            print(f"rejected: {ex}")
             return 1
-        print(f"proposta #{pid} enfileirada (PENDENTE). Curadoria: lifeline review")
+        print(f"proposal #{pid} queued (PENDING). Curate: lifeline review")
         return 0
 
     if args.cmd == "review":
         rows = asyncio.run(cmd_review(db))
         if not rows:
-            print("Nenhuma proposta pendente.")
+            print("No pending proposals.")
             return 0
-        print(f"{len(rows)} proposta(s) pendente(s) (HITL):\n")
+        print(f"{len(rows)} pending proposal(s) (HITL):\n")
         for r in rows:
-            print(f"  #{r['pid']} [{r['kind']}] {r['summary']}  — por {r['provider']}/{r['model']}")
+            print(f"  #{r['pid']} [{r['kind']}] {r['summary']}  — by {r['provider']}/{r['model']}")
             if r["body"]:
                 s = r["body"].strip().replace("\n", " ")
                 print(f"        {s[:160] + ('…' if len(s) > 160 else '')}")
-        print("\nAprovar: lifeline approve <pid|all>    ·    Rejeitar: lifeline reject <pid|all>")
+        print("\nApprove: lifeline approve <pid|all>    ·    Reject: lifeline reject <pid|all>")
         return 0
 
     if args.cmd == "approve":
         approved, n, duplicates, errors = asyncio.run(cmd_approve(db, out, args.pids))
         if approved:
-            print(f"{approved} proposta(s) aprovada(s) e seladas na line. {out} regenerado ({n} entradas).")
+            print(f"{approved} proposal(s) approved and sealed into the line. {out} regenerated ({n} entries).")
         elif not duplicates and not errors:
-            print("Nada aprovado (pids inválidos ou sem pendências).")
+            print("Nothing approved (invalid pids or no pending proposals).")
         if duplicates:
-            print(f"{duplicates} proposta(s) já existiam na line (dedup) — marcadas 'duplicate', não reentraram.")
+            print(f"{duplicates} proposal(s) already in the line (dedup) — marked 'duplicate', not re-entered.")
         for pid, reason in errors:
-            print(f"proposta #{pid} NÃO aprovada (segue pendente): {reason}")
+            print(f"proposal #{pid} NOT approved (still pending): {reason}")
         return 0
 
     if args.cmd == "reject":
-        print(f"{asyncio.run(cmd_reject(db, args.pids))} proposta(s) rejeitada(s).")
+        print(f"{asyncio.run(cmd_reject(db, args.pids))} proposal(s) rejected.")
         return 0
 
     if args.cmd == "rebuild":
-        print(f"{out} regenerado ({asyncio.run(cmd_rebuild(db, out))} entradas).")
+        print(f"{out} regenerated ({asyncio.run(cmd_rebuild(db, out))} entries).")
         return 0
 
     if args.cmd == "verify":
         ok, n, tampered, dangling = asyncio.run(cmd_verify(db))
         if ok:
-            print(f"OK: {n} entradas íntegras (conteúdo ancorado + DAG fechado).")
+            print(f"OK: {n} entries intact (content anchored + DAG closed).")
         else:
-            print(f"BROKEN: {n} entradas, COM FALHA.")
+            print(f"BROKEN: {n} entries, WITH FAILURES.")
             for i in tampered:
-                print(f"  adulterada (id ≠ conteúdo): {i[:12]}…")
+                print(f"  tampered (id ≠ content): {i[:12]}…")
             for child, parent in dangling:
-                print(f"  pai fantasma: {child[:12]}… aponta p/ {parent[:12]}… (inexistente — omissão?)")
+                print(f"  ghost parent: {child[:12]}… points to {parent[:12]}… (missing — omission?)")
         return 0 if ok else 1
 
     if args.cmd == "migrate":
         n = asyncio.run(cmd_migrate(args.src, db))
-        print(f"Migradas {n} entradas de {args.src} para {db}.")
+        print(f"Migrated {n} entries from {args.src} to {db}.")
         return 0
 
     if args.cmd == "schema":
@@ -480,30 +480,30 @@ def _dispatch(args, db, out) -> int:
     if args.cmd == "lines":
         rows = asyncio.run(cmd_lines())
         if not rows:
-            print("Nenhuma line ainda. Crie com: lifeline log [--line <nome>] --kind … --summary …")
+            print("No lines yet. Create one with: lifeline log [--line <name>] --kind … --summary …")
             return 0
         for name, n in rows:
             label = f"{name} (default)" if name == "ledger" else name
             view = "LIFELINE.md" if name == "ledger" else f"LIFELINE.{name}.md"
-            print(f"  {label:<22} {n:>4} entradas   → {view}")
+            print(f"  {label:<22} {n:>4} entries   → {view}")
         return 0
 
     if args.cmd == "push":
         try:
             ok, msg = asyncio.run(cmd_push(db, out))
         except ValueError as ex:
-            print(f"erro: {ex}")
+            print(f"error: {ex}")
             return 1
-        print(("push OK — line sincronizada. " if ok else "push falhou: ") + msg)
+        print(("push OK — line synced. " if ok else "push failed: ") + msg)
         return 0 if ok else 1
 
     if args.cmd == "pull":
         try:
             ok, msg = asyncio.run(cmd_pull(db, out))
         except ValueError as ex:
-            print(f"erro: {ex}")
+            print(f"error: {ex}")
             return 1
-        print(("pull OK — .db reconstruído da view mergeada. " if ok else "") + msg)
+        print(("pull OK — .db rebuilt from the merged view. " if ok else "") + msg)
         return 0 if ok else 1
 
     if args.cmd == "clone":

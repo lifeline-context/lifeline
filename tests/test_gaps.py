@@ -102,9 +102,9 @@ class TestG2_RecallMarksSuperseded(_Tmp):
                                    body="x", parents=[dec.id]))
         text = await ContextAssembler(StateEngine(self.store)).assemble(
             query="nats bus", recall=SemanticRecall(self.store))
-        rel = text.split("## Relevante para:")[1].split("\n##")[0]
+        rel = text.split("## Relevant to:")[1].split("\n##")[0]
         self.assertIn("usar NATS como bus", rel)
-        self.assertIn("revertido", rel)       # com marca, não como verdade viva
+        self.assertIn("reverted", rel)       # com marca, não como verdade viva
 
 
 # ----------------------------------------------------------------------------- #G3
@@ -132,7 +132,7 @@ class TestG3_ReadVerifiesAnchor(_Tmp):
         self.assertEqual(st["decisions"], [])                         # NÃO funde adulterado
         text = await ContextAssembler(StateEngine(self.store)).assemble()
         self.assertNotIn("usar MySQL", text)                          # não serve o forjado
-        self.assertIn("INTEGRIDADE", text)                            # avisa alto
+        self.assertIn("INTEGRITY", text)                            # avisa alto
 
 
 # ----------------------------------------------------------------------------- #G4

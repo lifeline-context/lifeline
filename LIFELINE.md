@@ -1,41 +1,41 @@
 # LIFELINE — lifeline
 
-> Cadeia append-only de *porquês*. O projeto guarda *por que* ele é o que é, e qualquer
-> mente que conecta herda esse porquê na hora — sem ninguém reexplicar.
+> An append-only chain of *whys*. The project records *why* it is what it is, and any mind that
+> connects inherits that why instantly — with no one re-explaining.
 >
-> **Este arquivo é GERADO** a partir do ledger (em `.lifeline/`), que é a fonte de verdade.
-> NÃO edite à mão — anexe com `lifeline log` e ele se regenera.
+> **This file is GENERATED** from the ledger (in `.lifeline/`), which is the source of truth.
+> Do NOT hand-edit — append with `lifeline log` and it regenerates.
 >
-> **Comece pela #0001.** Ela é o projeto inteiro em linguagem humana.
+> **Start at #0001.** It's the whole project in human language.
 
-## Protocolo
+## Protocol
 
-1. **Append-only.** Nunca edite entradas; uma correção é uma entrada nova (`kind: correction`)
-   que referencia em `parents` o `id` que corrige — e o supersede na verdade atual.
-2. **Uma entrada por unidade de trabalho com significado.** Não por arquivo, não por tool
-   call. O *porquê* pesa mais que o *quê* (Lei #5).
-3. **Identidade content-addressed (Lei #3):** `id = sha256(kind, author, agent, provider,
-   model, summary, body, parents-ordenados)`. `ts` e `dedup_key` ficam FORA do hash — o
-   mesmo conteúdo gera o mesmo `id` em qualquer máquina. `parents` formam o DAG causal;
-   não há prev_hash (o ledger é um grafo, não uma lista).
-4. **Integridade:** `lifeline verify` confere que todo `id` bate com seu conteúdo.
-5. **Anexar:** `lifeline log --kind … --summary … --body …`. Ver o contexto montado que uma
-   IA receberia: `lifeline context`.
+1. **Append-only.** Never edit entries; a correction is a new entry (`kind: correction`) that
+   references in `parents` the `id` it corrects — superseding it in the current truth.
+2. **One entry per unit of work with meaning.** Not per file, not per tool call. The *why*
+   outweighs the *what* (Law #5).
+3. **Content-addressed identity (Law #3):** `id = sha256(kind, author, agent, provider, model,
+   summary, body, sorted-parents)`. `ts` and `dedup_key` stay OUT of the hash — the same content
+   yields the same `id` on any machine. `parents` form the causal DAG; there is no prev_hash (the
+   ledger is a graph, not a list).
+4. **Integrity:** `lifeline verify` checks that every `id` matches its content.
+5. **Append:** `lifeline log --kind … --summary … --body …`. To see the assembled context an AI
+   would receive: `lifeline context`.
 
-## Leis do projeto (a constituição)
+## Project laws (the constitution)
 
-1. **Nenhuma memória sem âncora imutável.** Todo item de contexto carrega o hash do evento
-   de origem. Espinha anti-alucinação.
-2. **Append-only.** Correções são entradas novas referenciando o id anterior.
-3. **Content-addressing determinístico.** Mesmo conteúdo+pais → mesmo id, em qualquer nó.
-4. **Storage agnóstico de provider; entrega no formato do provider.**
-5. **O *porquê* pesa mais que o *quê*.**
-6. **Budget é first-class.** Contexto cabe na janela; truncamento é explícito, nunca silencioso.
-7. **MCP-native.** A interface da IA é a superfície do produto, não um apêndice.
+1. **No memory without an immutable anchor.** Every context item carries the hash of its source
+   event. The anti-hallucination spine.
+2. **Append-only.** Corrections are new entries referencing the prior id.
+3. **Deterministic content-addressing.** Same content + parents → same id, on any node.
+4. **Provider-agnostic storage; deliver in the provider's format.**
+5. **The *why* outweighs the *what*.**
+6. **Budget is first-class.** Context fits the window; truncation is explicit, never silent.
+7. **MCP-native.** The AI's interface is the product surface, not an appendix.
 
-**Non-goals (lei por omissão):** Lifeline NÃO é sistema operacional cognitivo, NÃO é MMU,
-NÃO é orquestrador/sandbox de agentes, NÃO é workflow engine, NÃO substitui git, NÃO é
-executor/curador (self-healing) nem treinador (fine-tuning/DL). Registra raciocínio.
+**Non-goals (law by omission):** Lifeline is NOT a cognitive OS, NOT an MMU, NOT an agent
+orchestrator/sandbox, NOT a workflow engine, does NOT replace git, is NOT an executor/curator
+(self-healing) or a trainer (fine-tuning/DL). It records reasoning.
 
 ---
 
@@ -1752,5 +1752,21 @@ O servidor MCP agora anuncia o logo do Lifeline via serverInfo.icons (SEP-973, s
 
 **Body**:
 Dois bugs introduzidos nas adições recentes: (1) o painel 'Proof' mostrava a saida REAL do lifeline context em portugues, num site nativo EN — traduzido pra ingles (entradas reais, hashes preservados; reframe de 'real output' p/ 'the context a fresh AI reads' ja que e renderizacao EN, com link pro LIFELINE.md real). (2) O diagrama SVG do loop deixou o painel da landing alto demais (707px); como os paineis sao altura-da-viewport com conteudo centralizado, em telas baixas (~640-700px) o titulo saia de vista. Fix: removi o SVG do loop da landing (painel volta a 467px) e MOVI o diagrama pro getting-started (pagina de scroll vertical, sem esse problema), em ingles. Verificado no preview: todos os paineis da landing cabem ate 640px de altura (over=0); o diagrama do loop renderiza no getting-started (720x189, labels EN). O DAG em concepts continua (EN, scroll vertical, ok).
+
+<!-- lifeline:end -->
+
+### #0093 — 2026-06-23T19:33:53.813336+00:00 — decision
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: decision
+- **summary**: Tool output is now English (EN-first product)
+- **parents**: a889d1def3efc06cea1569c2a5fe13736368a3c9c8e81f4ecf7757c361341a2e
+- **id**: cf75ca4e8c92c7d16e4c93539ba9cecaf39845f1d6bc5d7be59166ba0695d97e
+
+**Body**:
+The user-facing output of the tool is now English: the assembled context (context.py — what every AI reads), the CLI messages (cli.py), the LIFELINE.md preamble, and the MCP instructions + tool descriptions (mcp_server.py). Why: the product is English-first (README, site, org, domain), but the tool was hardcoded Portuguese — an English user's AI received PT-headed context, and the README could not show real output without reintroducing the pt-BR-on-EN-site bug. Entry content stays whatever language it is written in; only the structural strings changed. Tests updated to assert the EN strings (142 pass). The README quickstart now shows the real EN 'lifeline context' output.
 
 <!-- lifeline:end -->

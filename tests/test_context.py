@@ -45,11 +45,11 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         text = await ContextAssembler(self.engine).assemble()
         self.assertIn("claude-opus-4-8", text)            # qual modelo
         self.assertIn("anthropic", text)                  # qual provider
-        self.assertIn("Contribuíram:", text)              # agregado de autoria
+        self.assertIn("Contributors:", text)              # agregado de autoria
 
     async def test_payload_shows_open_threads(self):
         text = await ContextAssembler(self.engine).assemble()
-        self.assertIn("Em aberto", text)
+        self.assertIn("Open / next", text)
         self.assertIn("transplantar recall do SDK antigo", text)
 
     async def test_recent_marks_superseded(self):
@@ -60,7 +60,7 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         await self.store.append(Entry(author="a", agent="claude-code", provider="anthropic",
                                       model="m", kind="correction", summary="X resolvido", parents=[o.id]))
         text = await ContextAssembler(self.engine).assemble()
-        self.assertIn("[fechado/revertido]", text)            # marcada como superseded
+        self.assertIn("[closed/reverted]", text)            # marcada como superseded
         # e não aparece mais como aberta
         self.assertNotIn("- `[" + o.id[:8] + "]` thread efêmera X", text)
 
@@ -68,21 +68,21 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         from lifeline.recall import SemanticRecall
         recall = SemanticRecall(self.store)
         text = await ContextAssembler(self.engine).assemble(query="ledger sqlite", recall=recall)
-        self.assertIn("Relevante para:", text)
+        self.assertIn("Relevant to:", text)
         self.assertIn("ledger SQLite pronto", text)  # relevância lexical achou a entrada certa
 
     async def test_budget_truncation_is_explicit(self):
         text = await ContextAssembler(self.engine, budget_chars=120).assemble()
         self.assertLessEqual(len(text), 120)
-        self.assertIn("truncado", text)
+        self.assertIn("truncated", text)
 
     async def test_empty_ledger_is_graceful(self):
         # primeira execução (ledger vazio) → payload válido com placeholder, sem crash
         empty = SQLiteEventStore(os.path.join(self.dir, "empty.db"))
         await empty.initialize()
         text = await ContextAssembler(StateEngine(empty)).assemble()
-        self.assertIn("sem entrada bootstrap", text)
-        self.assertIn("0 entradas", text)
+        self.assertIn("no bootstrap entry", text)
+        self.assertIn("0 entries", text)
 
     async def test_empty_ledger_shows_bootstrap_cta(self):
         # brownfield: line vazia → o contexto entrega o CTA de bootstrap (gatilho do checkpoint)
@@ -90,8 +90,8 @@ class TestContextAssembler(unittest.IsolatedAsyncioTestCase):
         await empty.initialize()
         text = await ContextAssembler(StateEngine(empty)).assemble()
         self.assertIn(BOOTSTRAP_HEADER, text)            # bloco de bootstrap presente
-        self.assertIn("GRANULARES", text)                # protocolo: entradas granulares (não bloco único)
-        self.assertIn("NÃO infira", text)                # guardrail: nunca inferir do código (Leis #1/#5)
+        self.assertIn("GRANULAR", text)                # protocolo: entradas granulares (não bloco único)
+        self.assertIn("Do NOT infer", text)                # guardrail: nunca inferir do código (Leis #1/#5)
         self.assertIn("HITL", text)                      # entra como proposta; humano aprova
 
     async def test_bootstrap_cta_absent_when_populated(self):

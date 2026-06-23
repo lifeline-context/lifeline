@@ -129,7 +129,7 @@ class TestCLIMain(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertTrue(os.path.exists(self.out))          # a view foi criada
         self.assertIn("checkpoint", out.lower())           # protocolo de bootstrap impresso
-        self.assertIn("GRANULARES", out)
+        self.assertIn("GRANULAR", out)
         self.assertIn("propose", out)                       # aponta o próximo comando (HITL)
 
     def test_main_init_bootstrapped_says_nothing_to_do(self):
@@ -138,8 +138,8 @@ class TestCLIMain(unittest.TestCase):
                    "--kind", "bootstrap", "--summary", "Funda X", "--body", "porquê"])
         rc, out = self._run(["--db", self.db, "init", "--out", self.out])
         self.assertEqual(rc, 0)
-        self.assertIn("já tem contexto", out)
-        self.assertNotIn("GRANULARES", out)
+        self.assertIn("already has context", out)
+        self.assertNotIn("GRANULAR", out)
 
     def test_main_error_net_returns_1(self):
         # erro inesperado (migrate de arquivo inexistente) → mensagem amigavel + exit 1, sem traceback

@@ -53,13 +53,36 @@ Dependencies: `pydantic`, `aiosqlite`, `mcp`, `httpx`. Python ≥ 3.10.
 
 ```bash
 # In ANY of your projects — each gets its own .lifeline/ledger.db:
-lifeline log --kind bootstrap --summary "Bootstrap project X" --body "Multi-tenant billing API."
-lifeline log --kind decision  --summary "DB: PostgreSQL"      --body "ACID required by audit."
+lifeline log --kind bootstrap --summary "Bootstrap project X"   --body "Multi-tenant billing API."
+lifeline log --kind decision  --summary "DB: PostgreSQL"        --body "ACID required by audit."
+lifeline log --kind open      --summary "Queue: SQS vs RabbitMQ" --body "Decide after the load test."
 
 lifeline context                       # prints the assembled current truth (what an AI reads)
 lifeline context --query "database"    # prioritizes what's relevant to the task (Layer 3)
 lifeline verify                        # checks the chain's integrity
 ```
+
+…and `lifeline context` prints exactly what a fresh AI reads (real output, no mockup):
+
+```text
+# Lifeline — project context
+**What:** Bootstrap project X  _(founded by none/human)_
+_3 entries · head 99676780_
+
+## Open / next
+- `[99676780]` Queue: SQS vs RabbitMQ
+
+## Why / what's decided (decisions in force)
+- **DB: PostgreSQL** `[b023ddc6]` — _none/human_
+  > ACID required by audit.
+
+## Recent (what's next)
+- [bootstrap] Bootstrap project X
+- [decision] DB: PostgreSQL
+- [open] Queue: SQS vs RabbitMQ
+```
+
+Every line is anchored to its event id (`[b023ddc6]`) — the AI can verify it, not just trust it.
 
 `LIFELINE.md` regenerates on every `log` — **don't hand-edit it**. On a fresh clone without
 `.lifeline/`, rebuild the cache with `lifeline migrate --from LIFELINE.md`.

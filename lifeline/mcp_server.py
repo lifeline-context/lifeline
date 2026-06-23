@@ -46,22 +46,20 @@ _ICONS = [
 # Manual de uso entregue a TODA IA que conecta (FastMCP envia no initialize). AI-first: a IA
 # se onboarda sozinha, segue o loop, e sabe explicar/organizar pro humano.
 _INSTRUCTIONS = (
-    "Lifeline é o ledger de RACIOCÍNIO deste projeto (o *porquê*), append-only e "
-    "content-addressed. AO CONECTAR: leia PRIMEIRO o resource `lifeline://project/context` — "
-    "é a verdade montada (o quê / por quê / decidido / próximo); aja a partir dela. SE o "
-    "contexto vier VAZIO (line nova / projeto em andamento sem histórico): ofereça-se para "
-    "fazer o BOOTSTRAP — leia os artefatos de raciocínio do repo (README, ADRs, descrições de "
-    "PR, design docs), faça 3 a 7 perguntas do *porquê* ao humano, e PROPONHA o checkpoint como "
-    "entradas GRANULARES (1 `bootstrap` + N `decision` + M `open`) via `lifeline_append` (HITL). "
-    "NUNCA infira o *porquê* a partir do código/diff. Use "
-    "`lifeline_recall(query)` para 'já decidimos algo sobre X?'. AO TRABALHAR: a cada "
-    "decisão/feature/fix/incidente com significado, PROPONHA via `lifeline_append(kind, summary, "
-    "body)` — o body é o *porquê* (obrigatório). Reverteu/atualizou algo: "
-    "`lifeline_recontextualize(parent_id, ...)`. Você NÃO grava na verdade: a escrita é HITL — "
-    "entra como PROPOSTA e o humano aprova/rejeita. NUNCA invente: toda afirmação ancora numa "
-    "entrada. SEU PAPEL com o humano: explique o que o Lifeline é, mantenha o contexto "
-    "ORGANIZADO (aponte as decisões em vigor, sinalize threads fechadas, proponha entradas pelo "
-    "trabalho feito) — mas quem cura é ele. Não aceite sujeira."
+    "Lifeline is this project's REASONING ledger (the *why*), append-only and content-addressed. "
+    "ON CONNECT: read the `lifeline://project/context` resource FIRST — it's the assembled truth "
+    "(what / why / decided / next); act from it. IF the context comes back EMPTY (a new line / an "
+    "ongoing project with no history): offer to BOOTSTRAP — read the repo's reasoning artifacts "
+    "(README, ADRs, PR descriptions, design docs), ask the human 3-7 *why* questions, and PROPOSE "
+    "the checkpoint as GRANULAR entries (1 `bootstrap` + N `decision` + M `open`) via "
+    "`lifeline_append` (HITL). NEVER infer the *why* from code/diffs. Use `lifeline_recall(query)` "
+    "for 'did we already decide something about X?'. WHILE WORKING: on each meaningful "
+    "decision/feature/fix/incident, PROPOSE via `lifeline_append(kind, summary, body)` — the body is "
+    "the *why* (required). Reverted/updated something: `lifeline_recontextualize(parent_id, ...)`. "
+    "You do NOT write the truth: writes are HITL — they enter as a PROPOSAL and a human "
+    "approves/rejects. NEVER invent: every claim anchors to an entry. YOUR ROLE with the human: "
+    "explain what Lifeline is, keep the context ORGANIZED (point out the decisions in force, flag "
+    "closed threads, propose entries for the work done) — but the human curates. Don't accept junk."
 )
 
 
@@ -118,7 +116,7 @@ def _staging_request():
 # ---- handlers (registrados em qualquer instância FastMCP por _register) -------------------
 
 async def project_context() -> str:
-    """O contexto do projeto, montado e dentro do budget — leia isto ao conectar."""
+    """The project context, assembled and within budget — read this on connect."""
     from lifeline.context import ContextAssembler
     from lifeline.state import StateEngine
     store = await _open_request()
@@ -128,50 +126,51 @@ async def project_context() -> str:
 async def lifeline_append(kind: str, summary: str, body: str = "",
                           agent: str = "mcp-agent", provider: str = "none",
                           model: str = "unknown") -> str:
-    """PROPÕE uma entrada (decisão/feature/fix/incident/milestone/note/open). Entra como
-    PENDENTE — um humano aprova via `lifeline review`/`approve` antes de virar parte da line
-    (HITL). O *porquê* importa mais que o *quê* — diga-o no body (obrigatório)."""
+    """PROPOSE an entry (decision/feature/fix/incident/milestone/note/open). It enters as PENDING —
+    a human approves it via `lifeline review`/`approve` before it becomes part of the line (HITL).
+    The *why* matters more than the *what* — state it in the body (required)."""
     try:
         _validate(kind, body)
     except ValueError as ex:
-        return f"recusado: {ex}"
+        return f"rejected: {ex}"
     staging = _staging_request()
     await staging.initialize()
     pid = await staging.propose(kind=kind, summary=summary, body=body, author=_AUTHOR,
                                 agent=agent, provider=provider, model=model, parents=None)
-    return f"proposta #{pid} enfileirada ({kind}) — PENDENTE de aprovação humana (lifeline review)"
+    return f"proposal #{pid} queued ({kind}) — PENDING human approval (lifeline review)"
 
 
 async def lifeline_recontextualize(parent_id: str, summary: str, body: str = "",
                                    agent: str = "mcp-agent", provider: str = "none",
                                    model: str = "unknown") -> str:
-    """PROPÕE uma correção que supersede a entrada `parent_id` (decisão revertida, thread
-    fechada, fato atualizado). Append-only, nunca edição (Lei #2). Fica PENDENTE até um
-    humano aprovar (HITL). Diga o *porquê* da mudança no body (obrigatório)."""
+    """PROPOSE a correction that supersedes entry `parent_id` (reverted decision, closed thread,
+    updated fact). Append-only, never an edit (Law #2). Stays PENDING until a human approves (HITL).
+    State the *why* of the change in the body (required)."""
     try:
         _validate("correction", body)
     except ValueError as ex:
-        return f"recusado: {ex}"
+        return f"rejected: {ex}"
     staging = _staging_request()
     await staging.initialize()
     pid = await staging.propose(kind="correction", summary=summary, body=body, author=_AUTHOR,
                                 agent=agent, provider=provider, model=model, parents=[parent_id])
-    return f"correção proposta #{pid} (supersede {parent_id[:12]}) — PENDENTE de aprovação"
+    return f"correction proposal #{pid} (supersedes {parent_id[:12]}) — PENDING approval"
 
 
 async def lifeline_recall(query: str, k: int = 5) -> str:
-    """Recupera as entradas mais RELEVANTES à tarefa atual (Camada 3 — ancoradas).
-    Use para "já decidimos algo sobre X?" sem ler o ledger inteiro. Relevância, não recência.
-    Hits REVERTIDOS/fechados vêm marcados [REVERTIDO] (gap #G2) — não aja sobre verdade morta."""
+    """Retrieve the entries most RELEVANT to the current task (Layer 3 — anchored).
+    Use it for "did we already decide something about X?" without reading the whole ledger.
+    Relevance, not recency. REVERTED/closed hits come marked [REVERTED] (gap #G2) — don't act on
+    dead truth."""
     from lifeline.recall import SemanticRecall, make_embedder
     from lifeline.state import StateEngine
     store = await _open_request()
     superseded = set((await StateEngine(store).reduce()).get("superseded", []))
     hits = await SemanticRecall(store, make_embedder()).search(query, k=k, superseded=superseded)
     if not hits:
-        return "Nada relevante encontrado no ledger."
+        return "Nothing relevant found in the ledger."
     return "\n".join(
-        f"[{h['kind']}]{' [REVERTIDO]' if h.get('superseded') else ''} {h['summary']} "
+        f"[{h['kind']}]{' [REVERTED]' if h.get('superseded') else ''} {h['summary']} "
         f"(id={h['id'][:12]}, score={h['score']})" for h in hits
     )
 
@@ -193,7 +192,7 @@ async def _oauth_consent(_request):
         with open(path, encoding="utf-8") as f:
             html = f.read()
     except FileNotFoundError:
-        return PlainTextResponse("consent page não empacotada neste deploy", status_code=404)
+        return PlainTextResponse("consent page not bundled in this deploy", status_code=404)
     from lifeline.cloud import clean_url
     html = (html.replace("__LIFELINE_SUPABASE_URL__", clean_url(os.environ.get("SUPABASE_URL", "")))
                 .replace("__LIFELINE_SUPABASE_ANON__", (os.environ.get("SUPABASE_KEY", "") or "").strip()))
@@ -337,8 +336,8 @@ def _build_remote() -> FastMCP:
             miss.append("SUPABASE_URL")
         if not os.environ.get("SUPABASE_KEY"):
             miss.append("SUPABASE_KEY")
-        print(f"[lifeline] AVISO: LIFELINE_OAUTH{'_AS' if want_as else ''}=1 pedido, mas "
-              f"caindo em AUTHLESS — falta definir: {', '.join(miss)}", flush=True)
+        print(f"[lifeline] WARNING: LIFELINE_OAUTH{'_AS' if want_as else ''}=1 requested, but "
+              f"falling back to AUTHLESS — missing: {', '.join(miss)}", flush=True)
 
     if want_as and have_supa:
         from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions
@@ -360,10 +359,10 @@ def _build_remote() -> FastMCP:
                               client_registration_options=ClientRegistrationOptions(enabled=True)),
             transport_security=ts))
         provider.register_login_routes(server)        # /oauth/login + /oauth/callback (delega ao Supabase)
-        login_mode = (f"HOSPEDADO via {login_provider}" if login_provider else "form de senha (dev)")
-        store_mode = "persistente (lifeline_oauth_clients)" if svc else "em memória"
-        print(f"[lifeline] modo: AUTHORIZATION SERVER (DCR + auth-code/PKCE) · login={login_mode} "
-              f"· clients={store_mode} · público={public}", flush=True)
+        login_mode = (f"HOSTED via {login_provider}" if login_provider else "password form (dev)")
+        store_mode = "persistent (lifeline_oauth_clients)" if svc else "in-memory"
+        print(f"[lifeline] mode: AUTHORIZATION SERVER (DCR + auth-code/PKCE) · login={login_mode} "
+              f"· clients={store_mode} · public={public}", flush=True)
         return server
 
     if want_rs and have_supa:
@@ -375,15 +374,15 @@ def _build_remote() -> FastMCP:
         # Supabase, e o login hospedado (inclui Google/GitHub) é deles. Validamos por JWKS.
         issuer = os.environ.get("LIFELINE_OAUTH_ISSUER",
                                 f"{clean_url(os.environ['SUPABASE_URL'])}/auth/v1")
-        print(f"[lifeline] modo: RESOURCE SERVER (AS = OAuth Server do Supabase, JWKS) · "
-              f"issuer={issuer} · público={public}", flush=True)
+        print(f"[lifeline] mode: RESOURCE SERVER (AS = Supabase OAuth Server, JWKS) · "
+              f"issuer={issuer} · public={public}", flush=True)
         return _register(FastMCP(
             "Lifeline", instructions=_INSTRUCTIONS, icons=_ICONS, website_url=_WEBSITE,
             token_verifier=SupabaseJWKSVerifier(),
             auth=AuthSettings(issuer_url=issuer, resource_server_url=public, required_scopes=[]),
             transport_security=ts,
         ))
-    print(f"[lifeline] modo: AUTHLESS (single-tenant) · público={public}", flush=True)
+    print(f"[lifeline] mode: AUTHLESS (single-tenant) · public={public}", flush=True)
     return _register(FastMCP("Lifeline", instructions=_INSTRUCTIONS, icons=_ICONS, website_url=_WEBSITE,
                              transport_security=ts))
 
