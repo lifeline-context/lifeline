@@ -1786,3 +1786,19 @@ The user-facing output of the tool is now English: the assembled context (contex
 Deep gap analysis before publishing flagged blockers that would ship a broken/inconsistent pip install; fixed the ones that matter. (1) Packaging: pin mcp>=1.20 — Icon/website_url + the JWKS/multipart transitive deps the server imports crash below 1.15; made the [remote] extra self-sufficient (PyJWT[crypto], python-multipart, starlette). (2) The OAuth consent page lived OUTSIDE the package (read from ../site) so a pip install 404'd; moved it into lifeline/templates/consent.html, served via importlib.resources, shipped via package-data. (3) Finished the EN switch the prior pass missed — oauth login form + error strings, the consent page, cli _validate, store resolve_parents, cloud credentials, recall dense (the *why* an AI reads must be English). (4) Budget bug: the assembler under-reserved the decisions header/omit-marker, so a tight budget could mid-cut the always-include 'Recent' block; the reservation is now exact and the safety net is provably unreachable (Law #6). (5) Security: authorize() allow-lists redirect_uri (open-redirect/code-exfiltration), and schema.sql enables RLS on lifeline_oauth_clients (was exposed to anon). (6) Proved content-addressing under races: concurrent identical appends -> exactly 1 entry; two divergent views merge as a union with no dupes. Version 0.2.0->0.4.0 (was 2 releases stale); posture alpha->beta — cloud + OAuth + GitHub App are validated live, 'alpha' undersold it. 153 tests green. Tag/publish stays pending owner authorization (public action).
 
 <!-- lifeline:end -->
+
+### #0095 — 2026-06-23T21:26:15.739448+00:00 — release
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: release
+- **summary**: 0.4.0 (beta) published to PyPI
+- **parents**: debdd809e02fc0581e6bec7e23d2180dc5e92f3577e164810fc53824878d0bbe
+- **id**: ed2fc63b2fc70b18677b759eecf77823580f6b9214c51087969cc80340edd19b
+
+**Body**:
+Tag v0.4.0 (at e3dd95f) triggered publish.yml -> OIDC Trusted Publishing -> PyPI; the run succeeded in 26s and lifeline-context 0.4.0 is live (wheel + sdist). Closes the 'tag/publish pending owner authorization' note from the #0094 milestone. What shipped: mcp>=1.20 pin + self-sufficient [remote] extra, consent page bundled in the wheel (served via importlib.resources), English tool/CLI/MCP output, exact context-budget reservation (no more mid-cut of the always-include Recent block), authorize() redirect_uri allow-list + RLS on lifeline_oauth_clients, and a content-addressing concurrency proof; posture alpha->beta (cloud/OAuth/GitHub App validated live). 148 tests green. Also repaired the local MCP install (editable -> the lifeline-mcp console script now serves 0.4.0/EN instead of a stale 0.3.0) and validated the full read->recall->propose->HITL loop live against the local server.
+
+<!-- lifeline:end -->
