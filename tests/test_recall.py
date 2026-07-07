@@ -83,6 +83,38 @@ class TestSemanticRecall(unittest.IsolatedAsyncioTestCase):
         hits = await recall.search("xkcd zzz qwerty nonsense", k=5)
         self.assertEqual(hits, [])  # honestidade: sem sobreposição, não inventa relevância
 
+    async def test_embeddings_cached_by_entry_id(self):
+        # id é content-addressed → o cache nunca fica stale; re-indexar não re-embeda o que já
+        # foi visto (o denso pagava O(ledger) chamadas de modelo POR QUERY — auditoria).
+        from lifeline import recall as recall_mod
+
+        class CountingEmbedder(recall_mod.LexicalEmbedder):
+            def __init__(self):
+                super().__init__()
+                self.name = "counting-test"      # namespace próprio no cache
+                self.calls = 0
+
+            def embed(self, text):
+                self.calls += 1
+                return super().embed(text)
+
+        emb = CountingEmbedder()
+        r1 = SemanticRecall(self.store, emb)
+        await r1.index()
+        first = emb.calls                        # 3 entradas + nada em cache
+        self.assertEqual(first, 3)
+
+        r2 = SemanticRecall(self.store, emb)     # instância NOVA (como cada `context --query`)
+        await r2.index()
+        self.assertEqual(emb.calls, first)       # re-index → 0 embeds novos (cache por id)
+
+        # entrada nova → só ELA é embedada (incremental)
+        await self.store.append(Entry(author="a", agent="x", provider="p", model="m",
+                                      kind="note", summary="nova entrada"))
+        r3 = SemanticRecall(self.store, emb)
+        await r3.index()
+        self.assertEqual(emb.calls, first + 1)
+
 
 class TestDenseEmbedder(unittest.TestCase):
     """#0029 — embedder semântico denso (opt-in). Default segue lexical (zero-dep)."""

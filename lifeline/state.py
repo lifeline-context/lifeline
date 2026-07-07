@@ -6,6 +6,7 @@ ordem causal. O reducer padrão `ledger_projection` entrega uma verdade útil de
 respeita correções (Lei #2: uma `correction` supersede seus pais) e carrega a autoria
 (quem/qual provider/modelo) — proveniência que importa em contexto multiprovider.
 """
+import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from lifeline.entry import Entry
@@ -26,7 +27,11 @@ def _effective_superseded(corrections: List[Dict[str, Any]]) -> set:
     """
     ids = {c["id"] for c in corrections}
     active = set(ids)
-    while True:
+    # Teto defensivo: o content-addressing garante DAG (pai existe antes do filho), então o
+    # fixpoint converge em <= |corrections|+1 passos. O teto protege contra um grafo cíclico
+    # vindo de um caminho de import futuro/não-confiável: melhor uma verdade conservadora do
+    # que um reduce() pendurado (ele roda em TODO assemble/recall).
+    for _ in range(len(corrections) + 2):
         superseded = set()
         for c in corrections:
             if c["id"] in active:
@@ -35,6 +40,10 @@ def _effective_superseded(corrections: List[Dict[str, Any]]) -> set:
         if new_active == active:
             return superseded
         active = new_active
+    logging.getLogger("lifeline.state").warning(
+        "supersession fixpoint did not converge in %d iterations (cyclic correction graph?) — "
+        "returning the last stable set", len(corrections) + 2)
+    return superseded
 
 
 def ledger_projection(state: Dict[str, Any], e: Entry) -> Dict[str, Any]:

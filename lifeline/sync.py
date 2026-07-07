@@ -6,6 +6,7 @@ deduplicam por id na re-ingestão), e o GitHub vira o hub. Sem infra nova.
 Estes são wrappers finos sobre o `git` (subprocess). A orquestração (rebuild antes do push,
 migrate+rebuild depois do pull) vive na CLI.
 """
+import os
 import subprocess
 
 
@@ -17,8 +18,19 @@ def is_repo(cwd=".") -> bool:
     return _git(["rev-parse", "--is-inside-work-tree"], cwd).returncode == 0
 
 
+def _view_files(cwd):
+    """Só as views do Lifeline (LIFELINE.md + LIFELINE.<line>.md) — o que o sync move."""
+    return [f for f in os.listdir(cwd)
+            if f == "LIFELINE.md" or (f.startswith("LIFELINE.") and f.endswith(".md"))]
+
+
 def add_commit(cwd, message):
-    _git(["add", "-A"], cwd)                       # .db é gitignored → só a view textual entra
+    # Stage CIRÚRGICO (auditoria): `git add -A` varria a árvore inteira — WIP, segredos,
+    # qualquer sujeira não-commitada entrava num commit chamado "lifeline: sync". O sync só
+    # tem mandato sobre as views do ledger; é só isso que ele toca.
+    views = _view_files(cwd)
+    if views:
+        _git(["add", "--", *views], cwd)
     return _git(["commit", "-m", message], cwd)    # returncode != 0 se não houver nada a commitar
 
 

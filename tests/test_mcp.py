@@ -119,34 +119,8 @@ class TestMCPBackendAndHITL(unittest.IsolatedAsyncioTestCase):
 
 
 class TestOAuthResourceServer(unittest.IsolatedAsyncioTestCase):
-    def _verifier(self, handler):
-        return srv.SupabaseTokenVerifier(url="https://proj.supabase.co", key="anon",
-                                         transport=httpx.MockTransport(handler))
-
-    async def test_valid_token_returns_access_token(self):
-        seen = []
-
-        def handler(req):
-            seen.append(req)
-            return httpx.Response(200, json={"id": "user-123", "email": "a@b.c"})
-
-        at = await self._verifier(handler).verify_token("jwt-xyz")
-        self.assertIsNotNone(at)
-        self.assertEqual(at.token, "jwt-xyz")        # carrega o JWT p/ escopar a RLS por usuário
-        self.assertEqual(at.client_id, "user-123")   # user id do Supabase
-        req = seen[0]
-        self.assertTrue(str(req.url).endswith("/auth/v1/user"))
-        self.assertEqual(req.headers["apikey"], "anon")
-        self.assertEqual(req.headers["authorization"], "Bearer jwt-xyz")
-
-    async def test_invalid_token_returns_none(self):
-        at = await self._verifier(lambda req: httpx.Response(401, json={"msg": "bad"})).verify_token("nope")
-        self.assertIsNone(at)                         # 401 → rejeitado
-
-    async def test_missing_config_returns_none(self):
-        with mock.patch.dict(os.environ, {}, clear=True):
-            v = srv.SupabaseTokenVerifier()           # sem url/key
-        self.assertIsNone(await v.verify_token("whatever"))
+    # (o introspection-verifier /auth/v1/user foi REMOVIDO — código morto desde que o JWKS
+    # offline o supersedeu (#0049); o RS valida por assinatura, não por chamada por request.)
 
     async def test_jwks_verifier_accepts_valid_rejects_bad(self):
         # #0049 trocou o AS próprio pelo OAuth Server do Supabase → validamos por JWKS/ES256.

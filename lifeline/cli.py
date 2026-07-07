@@ -15,6 +15,7 @@ import asyncio
 import glob
 import json
 import os
+import shutil
 import sys
 
 from lifeline import sync
@@ -35,7 +36,7 @@ LINES_DIR = ".lifeline"
 _STORE = {"kind": "sqlite", "line": "ledger"}
 # Comandos que só fazem sentido no store local (git e glob de .db). O HITL
 # (propose/review/approve/reject) já funciona na nuvem via SupabaseStagingStore.
-_LOCAL_ONLY = {"push", "pull", "clone", "lines"}
+_LOCAL_ONLY = {"push", "pull", "clone", "rehash", "promote"}
 
 PREAMBLE = """# LIFELINE — lifeline
 
@@ -233,15 +234,104 @@ async def cmd_verify(db):
     return ok, len(entries), tampered, dangling
 
 
-async def cmd_migrate(src, db):
+async def cmd_migrate(src, db, strict=False):
     store = await _open(db)
-    return await ingest_markdown(src, store)
+    return await ingest_markdown(src, store, strict=strict)
+
+
+async def cmd_rehash(db, out):
+    """Recomputa TODO id sob o esquema canônico ATUAL (Lei #3), remapeando parents old→new em
+    ordem topológica (seq) num store novo. Migração one-shot para upgrades do canônico (ex.:
+    v1→v2 injetivo): ids "tampered" são ESPERADOS aqui — é exatamente o que o rehash conserta.
+    Recusa só dano ESTRUTURAL (pai fantasma). Backup em <db>.bak; verify no fim tem de dar OK."""
+    _ok, _n, _tampered, dangling = await cmd_verify(db)
+    if dangling:
+        raise ValueError("refusing to rehash: dangling parents (omission) — fix the DAG first.")
+    store = await _open(db)
+    entries = [e async for e in store.stream()]
+    if not entries:
+        return 0, 0, 0
+    shutil.copyfile(db, db + ".bak")                      # rollback barato
+    tmp = db + ".rehash"
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    new_store = SQLiteEventStore(tmp)
+    await new_store.initialize()
+    idmap, changed = {}, 0
+    for e in entries:                                     # seq = pais antes dos filhos
+        ne = Entry(kind=e.kind, author=e.author, agent=e.agent, provider=e.provider,
+                   model=e.model, summary=e.summary, body=e.body,
+                   parents=[idmap.get(p, p) for p in e.parents],
+                   ts=e.ts, dedup_key=e.dedup_key)        # ts/dedup preservados (fora do hash)
+        idmap[e.id] = ne.id
+        if ne.id != e.id:
+            changed += 1
+        await new_store.append(ne)
+    for side in ("-wal", "-shm"):                         # sidecars velhos não podem "recuperar"
+        for base in (db, tmp):                            # por cima do arquivo trocado
+            if os.path.exists(base + side):
+                os.remove(base + side)
+    os.replace(tmp, db)
+    n_view = await _write_view(await _open(db), out)
+    ok2, n2, t2, d2 = await cmd_verify(db)
+    if not ok2:
+        raise ValueError(f"rehash produced a BROKEN ledger (bug) — restore from {db}.bak")
+    return changed, n2, n_view
 
 
 def cmd_schema() -> str:
     """O schema SQL da nuvem (Supabase), empacotado — cole no SQL Editor ou `lifeline schema | psql`."""
     from importlib.resources import files
     return files("lifeline").joinpath("schema.sql").read_text(encoding="utf-8")
+
+
+def _line_paths(name):
+    """(db, view) de uma line pelo NOME — 'ledger'/None = a default. Reusa resolve_paths
+    (única fonte do mapeamento nome→arquivos)."""
+    return resolve_paths(None if name in (None, "ledger") else name, DEFAULT_DB, DEFAULT_OUT)
+
+
+async def cmd_promote(src_line, dst_line, ids=None, kind=None):
+    """Copia entrada(s) da line origem para a destino como ROOT (parents=[]), com nota de
+    proveniência no body. Idempotente por content-addressing: mesmo conteúdo → mesmo id →
+    re-promover deduplica (Lei #3). Corrections são recusadas (uma correção sem os pais dela
+    não supersede nada no destino — seria ruído semântico)."""
+    if src_line == dst_line:
+        raise ValueError("promote: source and destination are the same line.")
+    src_db, _ = _line_paths(src_line)
+    dst_db, dst_out = _line_paths(dst_line)
+    if not os.path.exists(src_db):
+        raise ValueError(f"promote: source line '{src_line}' has no ledger ({src_db}).")
+    src = await _open(src_db)
+    if ids:
+        targets = []
+        for eid in await resolve_parents(src, ids):     # reusa expansão de prefixo (#G1)
+            targets.append(await src.get(eid))
+    else:
+        st = await StateEngine(src).reduce()
+        superseded = set(st.get("superseded", []))
+        targets = [e async for e in src.stream()
+                   if e.kind == kind and e.id not in superseded]
+        if not targets:
+            raise ValueError(f"promote: no live '{kind}' entries on line '{src_line}'.")
+    dst = await _open(dst_db)
+    promoted, dups = [], 0
+    for e in targets:
+        if e.kind == "correction":
+            raise ValueError(f"promote: {e.id[:12]}… is a correction — corrections supersede "
+                             "their parents and don't stand alone; promote the corrected truth instead.")
+        prov = f"[promoted from {src_line}#{e.id[:8]}]"
+        body = (e.body or "").strip()
+        ne = Entry(kind=e.kind, author=e.author, agent=e.agent, provider=e.provider,
+                   model=e.model, summary=e.summary,
+                   body=f"{body}\n\n{prov}" if body else prov,
+                   parents=[], ts=e.ts)                  # ROOT no destino; ts preserva o momento
+        if await dst.append(ne):
+            promoted.append(ne)
+        else:
+            dups += 1
+    n = await _write_view(dst, dst_out) if promoted else 0
+    return promoted, dups, n
 
 
 async def cmd_init(db, out):
@@ -264,6 +354,9 @@ async def cmd_context(db, budget, query=None):
 
 
 async def cmd_lines(root=LINES_DIR):
+    if _STORE["kind"] == "supabase":                     # bug L4: a nuvem também tem lines
+        from lifeline.cloud import SupabaseEventStore
+        return await SupabaseEventStore(line=_STORE["line"]).lines()
     rows = []
     for path in sorted(glob.glob(os.path.join(root, "*.db"))):
         name = os.path.splitext(os.path.basename(path))[0]
@@ -293,19 +386,45 @@ async def cmd_pull(db, out):
         return False, "merge CONFLICT in the view — resolve it in LIFELINE.md (it's readable) and run pull again."
     await cmd_migrate(out, db)                   # ingere o markdown mergeado (dedup por id)
     await cmd_rebuild(db, out)                   # normaliza a view a partir do .db unido
+    ok, _n, _t, _d = await cmd_verify(db)        # merge que não verifica é sucesso mentiroso
+    if not ok:
+        return False, "merged, but the ledger is BROKEN after ingest — run `lifeline verify` for details."
     return r.returncode == 0, (r.stderr or r.stdout).strip()
+
+
+def _view_line_name(basename):
+    """Nome da line a partir do arquivo de view: LIFELINE.md → 'ledger';
+    LIFELINE.<name>.md → '<name>'; qualquer outro → None (não é view)."""
+    if basename == "LIFELINE.md":
+        return "ledger"
+    if basename.startswith("LIFELINE.") and basename.endswith(".md"):
+        name = basename[len("LIFELINE."):-len(".md")]
+        return name or None
+    return None
 
 
 async def cmd_clone(url, dest):
     r = sync.clone(url, dest)
     if r.returncode != 0:
         return False, (r.stderr or r.stdout).strip()
-    src = os.path.join(dest, DEFAULT_OUT)
-    if os.path.exists(src):                      # reconstrói o .db a partir da view clonada
-        db = os.path.join(dest, LINES_DIR, "ledger.db")
+    # Reconstrói o .db de CADA line clonada (bug L3: antes só a default era reconstruída —
+    # LIFELINE.<name>.md ficava sem ledger). E VERIFICA cada uma: clone que não verifica é
+    # sucesso mentiroso.
+    rebuilt, broken = [], []
+    for src in sorted(glob.glob(os.path.join(dest, "LIFELINE*.md"))):
+        name = _view_line_name(os.path.basename(src))
+        if not name:
+            continue
+        db = os.path.join(dest, LINES_DIR, f"{name}.db")
         await cmd_migrate(src, db)
         await cmd_rebuild(db, src)
-    return True, f"cloned into {dest} (.db rebuilt from the view)"
+        ok, _n, _t, _d = await cmd_verify(db)
+        (rebuilt if ok else broken).append(name)
+    if broken:
+        return False, (f"cloned into {dest}, but verify FAILED for line(s): "
+                       f"{', '.join(broken)} — run `lifeline verify` there.")
+    names = ", ".join(rebuilt) if rebuilt else "none"
+    return True, f"cloned into {dest} ({len(rebuilt)} line(s) rebuilt + verified: {names})"
 
 
 def _parents_arg(s):
@@ -353,9 +472,21 @@ def main(argv=None) -> int:
     sub.add_parser("verify", help="check the ledger's integrity")
     pm = sub.add_parser("migrate", help="ingest an existing markdown into the store")
     pm.add_argument("--from", dest="src", required=True)
+    pm.add_argument("--strict", action="store_true",
+                    help="fail if a recorded id doesn't match the recomputed content (tamper check)")
     pc = sub.add_parser("context", help="print the assembled context")
     pc.add_argument("--budget", type=int, default=8000)
     pc.add_argument("--query", default=None, help="prioritize what's relevant to the task (Layer 3)")
+    prh = sub.add_parser("rehash", help="recompute every id under the current canonical scheme "
+                                        "(one-shot migration after a hash-scheme upgrade)")
+    prh.add_argument("--out", default=DEFAULT_OUT)
+    ppro = sub.add_parser("promote", help="copy entries from one line into another as roots "
+                                          "(idempotent — re-promoting dedups by content)")
+    ppro.add_argument("--from", dest="src_line", required=True, help="source line name")
+    ppro.add_argument("--to", dest="dst_line", required=True, help="destination line name")
+    ppro.add_argument("--id", dest="ids", default=None, help="comma-separated ids (prefixes ok)")
+    ppro.add_argument("--kind", dest="pkind", default=None,
+                      help="promote every non-superseded entry of this kind instead of --id")
     sub.add_parser("lines", help="list the project's lines (.lifeline/*.db)")
     sub.add_parser("schema", help="print the cloud SQL schema (Supabase) — paste it into the SQL Editor")
 
@@ -465,8 +596,32 @@ def _dispatch(args, db, out) -> int:
         return 0 if ok else 1
 
     if args.cmd == "migrate":
-        n = asyncio.run(cmd_migrate(args.src, db))
+        n = asyncio.run(cmd_migrate(args.src, db, strict=args.strict))
         print(f"Migrated {n} entries from {args.src} to {db}.")
+        return 0
+
+    if args.cmd == "rehash":
+        changed, total, _nv = asyncio.run(cmd_rehash(db, out))
+        if total == 0:
+            print("Nothing to rehash (empty ledger).")
+        else:
+            print(f"Rehashed {total} entries ({changed} id(s) changed) — verify OK. "
+                  f"Backup: {db}.bak · {out} regenerated.")
+        return 0
+
+    if args.cmd == "promote":
+        if bool(args.ids) == bool(args.pkind):
+            print("error: use exactly one of --id or --kind")
+            return 1
+        promoted, dups, n = asyncio.run(cmd_promote(
+            args.src_line, args.dst_line, _parents_arg(args.ids), args.pkind))
+        for e in promoted:
+            print(f"promoted [{e.kind}] {e.summary[:60]} -> {args.dst_line} ({e.id[:12]}…)")
+        if dups:
+            print(f"{dups} already promoted (dedup by content) — no-op.")
+        if promoted:
+            print(f"LIFELINE.{args.dst_line}.md regenerated ({n} entries)."
+                  if args.dst_line != "ledger" else f"LIFELINE.md regenerated ({n} entries).")
         return 0
 
     if args.cmd == "schema":
@@ -484,7 +639,7 @@ def _dispatch(args, db, out) -> int:
             return 0
         for name, n in rows:
             label = f"{name} (default)" if name == "ledger" else name
-            view = "LIFELINE.md" if name == "ledger" else f"LIFELINE.{name}.md"
+            _, view = _line_paths(name)                 # fonte única do mapeamento nome→view
             print(f"  {label:<22} {n:>4} entries   → {view}")
         return 0
 

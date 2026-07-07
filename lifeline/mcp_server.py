@@ -64,9 +64,23 @@ _INSTRUCTIONS = (
 
 
 def _configure() -> None:
-    """Escolhe backend/line pelo ambiente (mesmo `_STORE` que a CLI usa em _open/_staging)."""
+    """Escolhe backend/line pelo ambiente (mesmo `_STORE` que a CLI usa em _open/_staging).
+
+    LIFELINE_LINE vale TAMBÉM no modo local (SQLite): sem isto, o env documentado era um
+    no-op fora da nuvem — o servidor abria sempre o db de LIFELINE_DB e ignorava a line
+    (bug L1 da auditoria). Precedência: LIFELINE_DB explícito vence (aponta um arquivo
+    exato); senão LIFELINE_LINE deriva `.lifeline/<line>.db` pelo MESMO mapeamento da CLI
+    (resolve_paths — fonte única do nome→arquivo); senão o default `ledger`."""
+    global _DB
     _STORE["kind"] = os.environ.get("LIFELINE_STORE", "sqlite")
     _STORE["line"] = os.environ.get("LIFELINE_LINE", "ledger")
+    if os.environ.get("LIFELINE_DB"):
+        _DB = os.environ["LIFELINE_DB"]
+    elif os.environ.get("LIFELINE_LINE"):
+        from lifeline.cli import resolve_paths
+        _DB, _ = resolve_paths(os.environ["LIFELINE_LINE"], None, None)
+    else:
+        _DB = os.path.join(".lifeline", "ledger.db")
 
 
 # ---- multi-tenant: token do usuário (do request OAuth) escopa o store por RLS -------------
@@ -216,28 +230,6 @@ mcp = _register(FastMCP("Lifeline", instructions=_INSTRUCTIONS, icons=_ICONS, we
 
 
 # ---- OAuth Resource Server (multi-tenant) -------------------------------------------------
-
-class SupabaseTokenVerifier(TokenVerifier):
-    """Valida o Bearer JWT contra o Supabase (`/auth/v1/user`). Token válido → AccessToken
-    carregando o próprio JWT (usado p/ escopar a RLS por usuário) e o user id. `transport`
-    injetável p/ teste."""
-
-    def __init__(self, url: Optional[str] = None, key: Optional[str] = None, transport=None):
-        self.url = (url or os.environ.get("SUPABASE_URL", "")).rstrip("/")
-        self.key = key or os.environ.get("SUPABASE_KEY")
-        self._transport = transport
-
-    async def verify_token(self, token: str) -> Optional[AccessToken]:
-        if not (self.url and self.key and token):
-            return None
-        async with httpx.AsyncClient(timeout=15, transport=self._transport) as c:
-            r = await c.get(f"{self.url}/auth/v1/user",
-                            headers={"apikey": self.key, "Authorization": f"Bearer {token}"})
-        if r.status_code != 200:
-            return None  # inválido/expirado → 401
-        uid = (r.json() or {}).get("id", "unknown")
-        return AccessToken(token=token, client_id=uid, scopes=["lifeline"], expires_at=None)
-
 
 class SupabaseJWKSVerifier(TokenVerifier):
     """Valida o Bearer JWT do **OAuth Server nativo do Supabase** (decisão de trocar o AS

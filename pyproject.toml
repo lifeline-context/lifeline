@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lifeline-context"
-version = "0.4.0"
+version = "0.5.0"
 description = "A context runtime for AI development — the project records why it is what it is; any AI connects and already knows."
 readme = "README.md"
 requires-python = ">=3.10"

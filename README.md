@@ -174,9 +174,10 @@ Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | `lifeline review` · `approve <pid\|all>` · `reject <pid\|all>` | HITL curation: list / seal / discard |
 | `lifeline context [--query "…"] [--budget N]` | print the assembled current truth (relevance if `--query`) |
 | `lifeline verify` | check that every `id` matches its content |
-| `lifeline rebuild` · `migrate --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown |
+| `lifeline rebuild` · `migrate [--strict] --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown (`--strict` fails if a recorded id doesn't match its content — tamper check) |
 | `lifeline schema` | print the bundled Supabase SQL schema (paste into the SQL Editor for cloud mode) |
-| `lifeline lines` | list the project's lines (`.lifeline/*.db`) |
+| `lifeline lines` | list the project's lines (local `.lifeline/*.db`, or the cloud's with `--store supabase`) |
+| `lifeline promote --from <line> --to <line> --id <id>[,…] \| --kind <kind>` | copy entries across lines as roots — **idempotent** (same content → same id, re-promoting dedups) |
 | `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
 
 **Write tiering (like approving a shell command):** the human's `log` commits directly (they're

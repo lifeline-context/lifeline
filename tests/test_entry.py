@@ -54,5 +54,45 @@ class TestEntryDeterminism(unittest.TestCase):
         self.assertFalse(e.verify())  # id não bate com o conteúdo → detectável
 
 
+class TestCanonicalInjectivity(unittest.TestCase):
+    """The canonical form must be INJECTIVE: two distinct Entries can never share an id.
+    The old join-by-newline scheme provably collided (audit finding #1) — these lock the fix."""
+
+    def test_audited_collision_is_closed(self):
+        # The exact pair proven to collide under the old scheme: a "\n" inside a field shifted
+        # every boundary, making (agent="b\nc", ...) equal (..., body="f\ng") byte-for-byte.
+        a = Entry(kind="decision", author="a", agent="b\nc", provider="d",
+                  model="e", summary="f", body="g")
+        b = Entry(kind="decision", author="a", agent="b", provider="c",
+                  model="d", summary="e", body="f\ng")
+        self.assertNotEqual(a.id, b.id)
+
+    def test_boundary_characters_do_not_collide(self):
+        # No delimiter-looking content ("\n", "|", ":", digits) may merge adjacent fields.
+        cases = [
+            (make(summary="s\nx", body="b"), make(summary="s", body="x\nb")),
+            (make(summary="s|x"), make(summary="s", body="|x" + "\nb")),
+            (make(parents=["aa", "bb"]), make(parents=["aa|bb"])),
+            (make(parents=["aa", "bb"]), make(parents=["aabb"])),
+            (make(summary="3:abc"), make(summary="3", body="abc\nb")),
+        ]
+        for x, y in cases:
+            self.assertNotEqual(x.id, y.id, f"collision: {x.summary!r} vs {y.summary!r}")
+
+    def test_field_shift_does_not_collide(self):
+        # Sliding the same text across neighbouring fields must change the id.
+        a = make(agent="xy", provider="z")
+        b = make(agent="x", provider="yz")
+        self.assertNotEqual(a.id, b.id)
+
+    def test_empty_vs_missing_parent_distinct(self):
+        self.assertNotEqual(make(parents=[]).id, make(parents=[""]).id)
+
+    def test_utf8_length_is_byte_based(self):
+        # Multibyte content must still round-trip: same content → same id; different → different.
+        self.assertEqual(make(body="porquê ✓").id, make(body="porquê ✓").id)
+        self.assertNotEqual(make(body="porquê ✓").id, make(body="porque v").id)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

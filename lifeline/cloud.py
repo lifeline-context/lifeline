@@ -149,6 +149,16 @@ class SupabaseEventStore(_SupabaseBase, EventStore):
                 "select": "payload", "order": "seq.asc"})
         return [self._to_entry(row["payload"]) for row in _ensure_ok(r).json()]
 
+    async def lines(self) -> List[tuple]:
+        """Todas as lines do tenant (nome, nº de entradas) — o `lifeline lines` da nuvem.
+        A RLS já limita ao owner; contagem client-side (escala modesta por design)."""
+        async with self._client() as c:
+            r = await c.get(self.base, headers=self._headers(), params={"select": "line"})
+        counts: Dict[str, int] = {}
+        for row in _ensure_ok(r).json():
+            counts[row["line"]] = counts.get(row["line"], 0) + 1
+        return sorted(counts.items())
+
 
 class SupabaseStagingStore(_SupabaseBase, StagingStore):
     """Fila HITL remota via PostgREST. MUTÁVEL (status muda) — a RLS permite UPDATE, não DELETE."""
@@ -182,14 +192,18 @@ class SupabaseStagingStore(_SupabaseBase, StagingStore):
         return [self._norm(row) for row in _ensure_ok(r).json()]
 
     async def get(self, pid: int) -> Optional[Dict]:
+        # line-scoped (bug L2): sem o filtro, um approve/reject por pid alcançava proposta de
+        # OUTRA line do mesmo dono (a RLS limita ao owner, não à line). No SQLite isso é por
+        # arquivo (um db por line); na nuvem todas as lines dividem a tabela → o filtro é aqui.
         async with self._client() as c:
             r = await c.get(self.base, headers=self._headers(), params={
-                "pid": f"eq.{pid}", "select": "*"})
+                "pid": f"eq.{pid}", "line": f"eq.{self.line}", "select": "*"})
         rows = _ensure_ok(r).json()
         return self._norm(rows[0]) if rows else None
 
     async def set_status(self, pid: int, status: str) -> None:
         async with self._client() as c:
-            r = await c.patch(self.base, params={"pid": f"eq.{pid}"},
+            r = await c.patch(self.base,
+                              params={"pid": f"eq.{pid}", "line": f"eq.{self.line}"},
                               json={"status": status}, headers=self._headers())
         _ensure_ok(r)

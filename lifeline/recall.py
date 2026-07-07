@@ -111,6 +111,14 @@ def make_embedder(spec: Optional[str] = None) -> Embedder:
     return SentenceTransformerEmbedder(model=spec)
 
 
+# Cache de embeddings por (embedder, entry-id) — processo-vivo (servidor MCP). Como o id é
+# content-addressed (Lei #3), o cache NUNCA fica stale: mesmo id ⇒ mesmo conteúdo ⇒ mesmo
+# vetor. Sem isto, o recall DENSO re-embedava o ledger INTEIRO a cada query (O(N) chamadas de
+# modelo por `context --query`); com ele a indexação é incremental — só entradas novas custam.
+_EMB_CACHE: Dict[tuple, Any] = {}
+_EMB_CACHE_MAX = 50_000   # ledgers têm centenas de entradas; o teto é só um guarda-chuva
+
+
 class SemanticRecall:
     """Indexa as entradas do ledger e recupera as mais relevantes a uma query — ancoradas."""
 
@@ -121,8 +129,14 @@ class SemanticRecall:
 
     async def index(self) -> int:
         self._records = []
+        if len(_EMB_CACHE) > _EMB_CACHE_MAX:
+            _EMB_CACHE.clear()
         async for e in self.store.stream():
-            vec = self.embedder.embed(f"{e.summary}\n{e.body}")
+            key = (self.embedder.name, e.id)
+            vec = _EMB_CACHE.get(key)
+            if vec is None:
+                vec = self.embedder.embed(f"{e.summary}\n{e.body}")
+                _EMB_CACHE[key] = vec
             self._records.append({"id": e.id, "vector": vec, "summary": e.summary, "kind": e.kind})
         return len(self._records)
 

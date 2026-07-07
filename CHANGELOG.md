@@ -6,6 +6,47 @@ versions may still break.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-07
+
+> **BREAKING — hash scheme v2.** A line-by-line audit proved the v1 canonical form was **not
+> injective**: a `\n` inside any field could collide two *different* entries into the same id —
+> the exact anti-hallucination anchor the product stands on. v2 length-prefixes every field, so
+> distinct content can never share an id. **Existing ledgers must run `lifeline rehash` once**
+> (topological old→new remap; automatic `.bak` backup; verify enforced before/after). Views
+> regenerate with the new ids; `migrate --strict` proves a clean round-trip.
+
+### Fixed
+- **Content-addressing is now injective (Law #1/#3)** — the audited collision
+  (`agent="b\nc"` vs `body="f\ng"`) is closed and locked by property tests.
+- **Lines are now first-class end-to-end** (the audit found four holes):
+  - `LIFELINE_LINE` now works for the **local** MCP server too (it was a silent no-op outside
+    the cloud — the server always opened `LIFELINE_DB`); precedence: explicit `LIFELINE_DB` >
+    `LIFELINE_LINE` > default.
+  - Cloud HITL queue is **line-scoped** on `get`/`set_status` (an approve/reject by pid could
+    reach a *different line* of the same owner).
+  - `lifeline clone` rebuilds (and verifies) **every** cloned line, not just the default.
+  - `lifeline lines` now works against the cloud store as well.
+- **Text→store integrity**: ingest validates the recorded id against the recomputed content —
+  a hand-edited view now warns (or fails with `migrate --strict`) instead of silently
+  re-hashing; generated views with explicit empty `parents` round-trip as true roots.
+- **`lifeline push` stages surgically** (`LIFELINE*.md` only) — it no longer runs `git add -A`,
+  which could sweep unrelated WIP (or worse, secrets) into a "lifeline: sync" commit.
+- **`pull`/`clone` verify after merging** — a merge that breaks the DAG now reports BROKEN
+  instead of returning success.
+
+### Added
+- **`lifeline promote --from <line> --to <line> --id …|--kind …`** — copy entries across
+  parallel lines as roots, with provenance notes; idempotent by content-addressing
+  (re-promoting dedups; superseded entries are skipped with `--kind`).
+- **`lifeline rehash`** — one-shot migration for hash-scheme upgrades.
+
+### Changed
+- Dense-recall embeddings are **cached by entry id** (content-addressed → the cache can never
+  go stale); indexing is incremental instead of re-embedding the whole ledger per query.
+- Supersession fixpoint gained a defensive iteration cap (a cyclic correction graph can no
+  longer hang `reduce()`).
+- Removed the dead `/auth/v1/user` introspection verifier (JWKS superseded it in #0049).
+
 ## [0.4.0] — 2026-06-23
 
 ### Fixed
@@ -116,6 +157,7 @@ First public release. 🧬
 
 The full *why* behind every decision lives in [`LIFELINE.md`](LIFELINE.md), starting at #0001.
 
+[0.5.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.5.0
 [0.4.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.4.0
 [0.3.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.3.0
 [0.2.0]: https://github.com/lifeline-context/lifeline/releases/tag/v0.2.0

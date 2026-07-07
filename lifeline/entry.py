@@ -43,12 +43,22 @@ class Entry(BaseModel):
     dedup_key: Optional[str] = None                # idempotência — FORA do hash
 
     def _canonical(self) -> str:
-        """Forma canônica determinística. Pais ordenados → id invariante à ordem."""
-        fields = [
+        """Deterministic canonical form — INJECTIVE by construction.
+
+        Every field (and every parent) is encoded as `<utf8-byte-length>:<value>\\n`, then
+        concatenated. The explicit length makes each field boundary unambiguous: no value can
+        shift content into a neighbouring field, so two distinct Entries can never share a
+        canonical form (the old `"\\n".join(fields)` was ambiguous — a `\\n` INSIDE a field
+        moved the boundary and provably collided two different Entries into one id).
+        Parents are sorted → the id is invariant to parent order. The leading `v2` versions
+        the scheme so any future change gets its own, non-overlapping id space.
+        """
+        parts = [
             self.kind, self.author, self.agent, self.provider,
             self.model, self.summary, self.body.strip(),
+            *sorted(self.parents),
         ]
-        return "\n".join(fields) + "\n" + "|".join(sorted(self.parents)) + "\n"
+        return "v2\n" + "".join(f"{len(p.encode('utf-8'))}:{p}\n" for p in parts)
 
     def compute_id(self) -> str:
         return hashlib.sha256(self._canonical().encode("utf-8")).hexdigest()

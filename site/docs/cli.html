@@ -89,8 +89,8 @@ line (ledger <strong>and</strong> view together: <code>.lifeline/&lt;name&gt;.db
 <td>check that every id matches its content</td>
 </tr>
 <tr>
-<td><code>lifeline rebuild</code> · <code>migrate --from LIFELINE.md</code></td>
-<td>regenerate the view / rebuild the <code>.db</code> from markdown</td>
+<td><code>lifeline rebuild</code> · <code>migrate [--strict] --from LIFELINE.md</code></td>
+<td>regenerate the view / rebuild the <code>.db</code> from markdown (<code>--strict</code> fails on recorded-id mismatch — tamper check)</td>
 </tr>
 <tr>
 <td><code>lifeline schema</code></td>
@@ -98,7 +98,15 @@ line (ledger <strong>and</strong> view together: <code>.lifeline/&lt;name&gt;.db
 </tr>
 <tr>
 <td><code>lifeline lines</code></td>
-<td>list the project's lines (<code>.lifeline/*.db</code>)</td>
+<td>list the project's lines (local <code>.lifeline/*.db</code>, or the cloud's with <code>--store supabase</code>)</td>
+</tr>
+<tr>
+<td><code>lifeline promote --from &lt;line&gt; --to &lt;line&gt; --id &lt;id&gt;[,…] \| --kind &lt;kind&gt;</code></td>
+<td>copy entries across lines as roots — <strong>idempotent</strong> (same content → same id → re-promoting dedups)</td>
+</tr>
+<tr>
+<td><code>lifeline rehash</code></td>
+<td>one-shot migration after a hash-scheme upgrade: recompute every id, remap parents, backup + verify</td>
 </tr>
 <tr>
 <td><code>lifeline push</code> · <code>pull</code> · <code>clone &lt;url&gt; &lt;dir&gt;</code></td>
@@ -107,10 +115,11 @@ line (ledger <strong>and</strong> view together: <code>.lifeline/&lt;name&gt;.db
 </tbody>
 </table>
 <blockquote>
-<p>With <code>--store supabase</code>, the cloud is the source — <code>push</code> / <code>pull</code> / <code>clone</code> / <code>lines</code> are
-<strong>local-only</strong> and not available there; use <code>log</code>, <code>context</code>, <code>verify</code>, <code>rebuild</code>, <code>migrate</code>.
-<code>lifeline init</code> is <strong>idempotent</strong> (re-running won't clobber an existing line). Dense recall is
-opt-in: <code>pip install "lifeline-context[embeddings]"</code> + <code>LIFELINE_EMBEDDER=dense</code>.</p>
+<p>With <code>--store supabase</code>, the cloud is the source — <code>push</code> / <code>pull</code> / <code>clone</code> / <code>rehash</code> /
+<code>promote</code> are <strong>local-only</strong>; <code>log</code>, <code>context</code>, <code>verify</code>, <code>rebuild</code>, <code>migrate</code>, and <code>lines</code>
+all work against the cloud. <code>lifeline init</code> is <strong>idempotent</strong> (re-running won't clobber an
+existing line). Dense recall is opt-in: <code>pip install "lifeline-context[embeddings]"</code> +
+<code>LIFELINE_EMBEDDER=dense</code>.</p>
 </blockquote>
 <h2>Write tiering (like approving a shell command)</h2>
 <p>The human's <code>log</code> commits directly — they're the approver. The <strong>AI via MCP <code>propose</code></strong> enters as a

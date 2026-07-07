@@ -1,6 +1,6 @@
 # Lifeline Architecture
 
-`lifeline-context` **0.4.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
+`lifeline-context` **0.5.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
 years). Technical document. For *the why* behind each decision, the source is `LIFELINE.md` (the
 `decision` entries cited in brackets, e.g.: `#0002`).
 

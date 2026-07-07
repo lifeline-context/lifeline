@@ -250,7 +250,7 @@ the costume off before evaluating it.
 
 # Lifeline Architecture
 
-`lifeline-context` **0.4.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
+`lifeline-context` **0.5.0** · licensed **FSL-1.1-MIT** (source-available; converts to MIT after two
 years). Technical document. For *the why* behind each decision, the source is `LIFELINE.md` (the
 `decision` entries cited in brackets, e.g.: `#0002`).
 
@@ -662,15 +662,18 @@ line (ledger **and** view together: `.lifeline/<name>.db` + `LIFELINE.<name>.md`
 | `lifeline review` · `approve <pid\|all>` · `reject <pid\|all>` | HITL curation: list / seal / discard |
 | `lifeline context [--query "…"] [--budget N]` | print the assembled current truth (relevance if `--query`); `--budget` defaults to **8000** chars |
 | `lifeline verify` | check that every id matches its content |
-| `lifeline rebuild` · `migrate --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown |
+| `lifeline rebuild` · `migrate [--strict] --from LIFELINE.md` | regenerate the view / rebuild the `.db` from markdown (`--strict` fails on recorded-id mismatch — tamper check) |
 | `lifeline schema` | print the bundled Supabase schema (cloud) |
-| `lifeline lines` | list the project's lines (`.lifeline/*.db`) |
+| `lifeline lines` | list the project's lines (local `.lifeline/*.db`, or the cloud's with `--store supabase`) |
+| `lifeline promote --from <line> --to <line> --id <id>[,…] \| --kind <kind>` | copy entries across lines as roots — **idempotent** (same content → same id → re-promoting dedups) |
+| `lifeline rehash` | one-shot migration after a hash-scheme upgrade: recompute every id, remap parents, backup + verify |
 | `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
 
-> With `--store supabase`, the cloud is the source — `push` / `pull` / `clone` / `lines` are
-> **local-only** and not available there; use `log`, `context`, `verify`, `rebuild`, `migrate`.
-> `lifeline init` is **idempotent** (re-running won't clobber an existing line). Dense recall is
-> opt-in: `pip install "lifeline-context[embeddings]"` + `LIFELINE_EMBEDDER=dense`.
+> With `--store supabase`, the cloud is the source — `push` / `pull` / `clone` / `rehash` /
+> `promote` are **local-only**; `log`, `context`, `verify`, `rebuild`, `migrate`, and `lines`
+> all work against the cloud. `lifeline init` is **idempotent** (re-running won't clobber an
+> existing line). Dense recall is opt-in: `pip install "lifeline-context[embeddings]"` +
+> `LIFELINE_EMBEDDER=dense`.
 
 ## Write tiering (like approving a shell command)
 

@@ -26,6 +26,27 @@ class TestSyncBasics(unittest.TestCase):
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_add_commit_stages_only_lifeline_views(self):
+        # Auditoria: `git add -A` varria a árvore toda — WIP/segredos entravam num commit
+        # "lifeline: sync". O stage tem de ser cirúrgico: só LIFELINE.md + LIFELINE.<line>.md.
+        d = tempfile.mkdtemp()
+        try:
+            _git(["init", "-b", "main"], d)
+            _git(["config", "user.email", "t@t"], d)
+            _git(["config", "user.name", "t"], d)
+            for name, content in [("LIFELINE.md", "view"), ("LIFELINE.strategy.md", "view2"),
+                                  ("secrets.env", "TOKEN=leak"), ("wip.py", "draft")]:
+                with open(os.path.join(d, name), "w") as f:
+                    f.write(content)
+            sync.add_commit(d, "lifeline: sync")
+            committed = _git(["ls-tree", "-r", "--name-only", "HEAD"], d).stdout.split()
+            self.assertIn("LIFELINE.md", committed)
+            self.assertIn("LIFELINE.strategy.md", committed)
+            self.assertNotIn("secrets.env", committed)     # a sujeira NÃO entra
+            self.assertNotIn("wip.py", committed)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
 
 class TestGitRoundtrip(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
