@@ -1967,3 +1967,51 @@ A line-by-line audit (ignoring all docs) found the keystone cracked and lines ha
 The capture loop -- the product's existential gap -- is now wired end-to-end and proven against production. Hub (private repo): pull_request closed+merged -> handle_merged_pr resolves the repo's line, gathers ONLY human-written text (PR body + best-effort review bodies; the diff is never fetched -- Laws #1/#5 enforced by construction), drafts via Claude (plain HTTP, optional ANTHROPIC_API_KEY) with a zero-LLM heuristic fallback, abstains when no rationale is written (no proposal, no nagging comment), and queues PENDING proposals with a provenance marker that doubles as the redelivery-dedup key. Dashboard Review tab gained EDIT-BEFORE-APPROVE (PATCH, pending-only) -- machine drafts are raw material, curators fix then seal -- plus a PR-origin link; capture metrics (PRs captured, status breakdown, approval/noise rate) derive from the markers, no new tables. Core: `lifeline capture` drafts from git commit messages (conventional prefix -> kind; commit body = the why, required; trailers stripped; idempotent via capture.head). Live e2e (signed webhook, synthetic PR #999901): captured -> proposal #6 PENDING with correct kind/attribution/provenance; redelivery -> already_proposed; artifact curated (rejected). The gate also caught real infra truth: the free-tier Supabase project had PAUSED silently (ConnectError from prod) -- restored (Max paused to free the slot), data intact, and the pending GitHub install claim was completed (line_owner backfilled to the owner's account). Standing lesson for F3: a paid hub cannot sit on a pausable free tier -- upgrade or add boot-time schema self-check before design partners. Suites: core 183 green, hub 80 green (14 new).
 
 <!-- lifeline:end -->
+
+### #0100 — 2026-07-08T00:58:49.764287+00:00 — open
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: open
+- **summary**: F2 remainder: 60s demo + verified integration recipes
+- **parents**: f7290853c30fcb3cc5c60d6a128d0989c9e47c1c117ebea91a3d083dfbb3328c
+- **id**: c00f3eda03f2d563704b9ba370d5f259a2dbd838209891c1a433953ceac95bf1
+
+**Body**:
+The exam's TTC probe flagged the ledger had no open threads — a fresh AI couldn't see what's next. This is next: the landing demo asset (AI connects -> what/why/decided/next; PR merge -> proposal in Review) and integration recipes verified per client (Claude Code validated; Cursor/Gemini/ChatGPT to verify honestly). The demo is the artifact that carries any launch.
+
+<!-- lifeline:end -->
+
+### #0101 — 2026-07-08T00:58:50.799037+00:00 — open
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: open
+- **summary**: F3: revenue activation — team lines, billing, and hub infra posture
+- **parents**: c00f3eda03f2d563704b9ba370d5f259a2dbd838209891c1a433953ceac95bf1
+- **id**: 3de58fcb032b11da8f67681bf369802bb8d23a724f239f21bde8978bdfe28b46
+
+**Body**:
+After F2: team-line RLS (line_members seam) + invite flow, Stripe checkout wired to tiers (Marketplace tier_for reused), hosted onboarding under 10 minutes, and the standing infra lesson from the F1 gate: a paid hub cannot sit on a pausable free tier — upgrade the Supabase project or add boot-time schema self-check BEFORE design partners.
+
+<!-- lifeline:end -->
+
+### #0102 — 2026-07-08T01:06:59.618211+00:00 — correction
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: correction
+- **summary**: F2 delivered: exam command, 60s demo asset, verified integration recipes
+- **parents**: c00f3eda03f2d563704b9ba370d5f259a2dbd838209891c1a433953ceac95bf1
+- **id**: 5bb17ab90787eb0e90ac49fdc0d1af043564018c13bb86e179bedf55e92127d1
+
+**Body**:
+Closes the F2-remainder thread. `lifeline exam` shipped as a product command (Context Health 0-100, integrity-gated, every gap paired with the command that fixes it; the dogfood run scored 81/B, caught the missing open threads, and after recording them scored 100/A — the score is actionable, not vanity). The 60s demo shipped as a self-contained animated SVG built from REAL outputs (connect -> capture -> prove), wired into getting-started with a landing link, and the stale landing proof panel was refreshed to current truth (101 entries, hash-v2 head, exam line). INTEGRATION.md now states the honest verification level per client (Claude Code + remote OAuth validated live; Cursor/Desktop/Gemini config-checked, e2e reports invited) and documents the capture loop (local zero-LLM + GitHub App). 188 tests green.
+
+<!-- lifeline:end -->

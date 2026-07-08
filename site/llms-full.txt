@@ -69,6 +69,19 @@ lifeline verify                     # checks the chain's integrity → OK
 <figcaption>Read the assembled context on connect; propose entries while working — a human approves. Both sides, every session.</figcaption>
 </figure>
 
+<a id="demo"></a>
+
+### Watch the loop run — 60 seconds
+
+Three scenes, all **real outputs from this repo's own ledger** (no mockups): a fresh AI connects
+and already knows the what/why/decided/next · a merged PR drafts its own context proposal (you
+curate) · `lifeline exam` proves the health with a number.
+
+<figure class="diagram-fig">
+<img src="../assets/demo.svg" alt="60-second demo: a fresh AI connects and already knows; a merged PR captures itself; lifeline exam scores 100/100" style="width:100%;max-width:860px;border-radius:14px" loading="lazy">
+<figcaption>The whole product in one loop: connect → capture → prove. Every line anchored to an event id.</figcaption>
+</figure>
+
 ## Connect it to your AI
 
 Lifeline ships a local MCP server (`lifeline-mcp`, stdio). On connect, the AI gets the
@@ -668,6 +681,7 @@ line (ledger **and** view together: `.lifeline/<name>.db` + `LIFELINE.<name>.md`
 | `lifeline promote --from <line> --to <line> --id <id>[,…] \| --kind <kind>` | copy entries across lines as roots — **idempotent** (same content → same id → re-promoting dedups) |
 | `lifeline rehash` | one-shot migration after a hash-scheme upgrade: recompute every id, remap parents, backup + verify |
 | `lifeline capture [--last N]` | draft proposals from recent **git commit messages** (zero-LLM): the commit body is the *why* — no body, no draft; everything lands **PENDING** (HITL) |
+| `lifeline exam [--json]` | **Context Health 0–100**: how ready this line leaves a fresh AI (what/why/decided/next) — integrity gates the score; every gap comes with the command that fixes it |
 | `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
 
 > With `--store supabase`, the cloud is the source — `push` / `pull` / `clone` / `rehash` /

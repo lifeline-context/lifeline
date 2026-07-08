@@ -59,6 +59,19 @@ lifeline verify                     # checks the chain's integrity → OK
 <figcaption>Read the assembled context on connect; propose entries while working — a human approves. Both sides, every session.</figcaption>
 </figure>
 
+<a id="demo"></a>
+
+### Watch the loop run — 60 seconds
+
+Three scenes, all **real outputs from this repo's own ledger** (no mockups): a fresh AI connects
+and already knows the what/why/decided/next · a merged PR drafts its own context proposal (you
+curate) · `lifeline exam` proves the health with a number.
+
+<figure class="diagram-fig">
+<img src="../assets/demo.svg" alt="60-second demo: a fresh AI connects and already knows; a merged PR captures itself; lifeline exam scores 100/100" style="width:100%;max-width:860px;border-radius:14px" loading="lazy">
+<figcaption>The whole product in one loop: connect → capture → prove. Every line anchored to an event id.</figcaption>
+</figure>
+
 ## Connect it to your AI
 
 Lifeline ships a local MCP server (`lifeline-mcp`, stdio). On connect, the AI gets the

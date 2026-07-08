@@ -22,6 +22,8 @@ $env:LIFELINE_DB=".lifeline/ledger.db"; lifeline-mcp    # PowerShell
 - **Resource:** `lifeline://project/context` — read it when opening the session.
 - **Tools:** `lifeline_append(kind, summary, body, …)`, `lifeline_recontextualize(parent_id, summary, body, …)`, `lifeline_recall(query, …)`.
 - **Server command:** `lifeline-mcp` (or `python -m lifeline.mcp_server` from the repo root).
+- **Named line:** set `LIFELINE_LINE=<name>` instead of `LIFELINE_DB` — the server derives
+  `.lifeline/<name>.db` (an explicit `LIFELINE_DB` always wins).
 
 ## Per-client snippets (copy-and-paste)
 
@@ -44,6 +46,22 @@ $env:LIFELINE_DB=".lifeline/ledger.db"; lifeline-mcp    # PowerShell
 
 > WEB chat apps (claude.ai, ChatGPT) do **not** belong here — they require a remote server + OAuth
 > (see `docs/MCP_REMOTE.md`). These snippets are for dev/CLI/IDE clients (stdio, local).
+
+**Verification status (honest):** Claude Code (stdio, `.mcp.json`, named lines) and the remote
+path (claude.ai connector via OAuth RS mode: 401 without a token, 200 with a valid JWT, consent
+page) are **validated live** on this very repo. The Cursor / Claude Desktop / Gemini CLI snippets
+follow each client's documented config format but haven't been exercised end-to-end by us yet —
+if you run one, [tell us what happened](https://github.com/lifeline-context/lifeline/issues/new)
+(works-fine reports are as valuable as bugs).
+
+## Capture while you work (close the loop automatically)
+
+- **Local, zero-LLM:** `lifeline capture` drafts proposals from your recent **git commit
+  messages** (the commit body is the *why*; commits without one are skipped). Run it at the end
+  of a work session; curate with `lifeline review`.
+- **Team, on GitHub:** the Lifeline GitHub App drafts proposals from every **merged PR**'s
+  human-written text (description + reviews) into the hub's Review queue — edit, approve or
+  reject there. Opt-in per repo; PRs with no written rationale are skipped silently.
 
 ## Auto-connect in Claude Code (SessionStart hook)
 

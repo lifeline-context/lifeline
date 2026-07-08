@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 480" font-family="ui-monospace,'JetBrains Mono','SF Mono',Menlo,Consolas,monospace" role="img" aria-label="60-second demo: a fresh AI connects and already knows; a merged PR captures itself; the exam proves it">
+  <style>
+    .bg{fill:#0b0c0f}.frame{fill:#111318;stroke:rgba(255,255,255,.09)}
+    .dot1{fill:#ff5f57}.dot2{fill:#febc2e}.dot3{fill:#28c840}
+    text{font-size:13px;fill:#b7bdc6}
+    .p{fill:#7c89ff}.g{fill:#41d6c3}.w{fill:#f7f8f8}.c{fill:#5b606b}.y{fill:#e8c268}
+    .t{font-size:11.5px;fill:#5b606b;letter-spacing:.08em}
+    /* 42s master cycle; each line owns a visibility window (appear staggered, scene clears) */
+    .l{opacity:0;animation:w 42s linear infinite}
+    @keyframes w{0%,100%{opacity:0}}
+    .s1a{animation-name:s1a}@keyframes s1a{2%,31%{opacity:1}0%,33%,100%{opacity:0}}
+    .s1b{animation-name:s1b}@keyframes s1b{4%,31%{opacity:1}0%,2%,33%,100%{opacity:0}}
+    .s1c{animation-name:s1c}@keyframes s1c{6%,31%{opacity:1}0%,4%,33%,100%{opacity:0}}
+    .s1d{animation-name:s1d}@keyframes s1d{8%,31%{opacity:1}0%,6%,33%,100%{opacity:0}}
+    .s1e{animation-name:s1e}@keyframes s1e{10%,31%{opacity:1}0%,8%,33%,100%{opacity:0}}
+    .s1f{animation-name:s1f}@keyframes s1f{12%,31%{opacity:1}0%,10%,33%,100%{opacity:0}}
+    .s1g{animation-name:s1g}@keyframes s1g{14%,31%{opacity:1}0%,12%,33%,100%{opacity:0}}
+    .s1h{animation-name:s1h}@keyframes s1h{16%,31%{opacity:1}0%,14%,33%,100%{opacity:0}}
+    .s1i{animation-name:s1i}@keyframes s1i{18%,31%{opacity:1}0%,16%,33%,100%{opacity:0}}
+    .s2a{animation-name:s2a}@keyframes s2a{35%,64%{opacity:1}0%,33%,66%,100%{opacity:0}}
+    .s2b{animation-name:s2b}@keyframes s2b{38%,64%{opacity:1}0%,35%,66%,100%{opacity:0}}
+    .s2c{animation-name:s2c}@keyframes s2c{41%,64%{opacity:1}0%,38%,66%,100%{opacity:0}}
+    .s2d{animation-name:s2d}@keyframes s2d{44%,64%{opacity:1}0%,41%,66%,100%{opacity:0}}
+    .s2e{animation-name:s2e}@keyframes s2e{47%,64%{opacity:1}0%,44%,66%,100%{opacity:0}}
+    .s2f{animation-name:s2f}@keyframes s2f{50%,64%{opacity:1}0%,47%,66%,100%{opacity:0}}
+    .s2g{animation-name:s2g}@keyframes s2g{53%,64%{opacity:1}0%,50%,66%,100%{opacity:0}}
+    .s3a{animation-name:s3a}@keyframes s3a{68%,97%{opacity:1}0%,66%,100%{opacity:0}}
+    .s3b{animation-name:s3b}@keyframes s3b{70%,97%{opacity:1}0%,68%,100%{opacity:0}}
+    .s3c{animation-name:s3c}@keyframes s3c{72%,97%{opacity:1}0%,70%,100%{opacity:0}}
+    .s3d{animation-name:s3d}@keyframes s3d{74%,97%{opacity:1}0%,72%,100%{opacity:0}}
+    .s3e{animation-name:s3e}@keyframes s3e{76%,97%{opacity:1}0%,74%,100%{opacity:0}}
+    .s3f{animation-name:s3f}@keyframes s3f{78%,97%{opacity:1}0%,76%,100%{opacity:0}}
+    .s3g{animation-name:s3g}@keyframes s3g{81%,97%{opacity:1}0%,78%,100%{opacity:0}}
+  </style>
+
+  <rect class="bg" width="860" height="480" rx="14"/>
+  <rect class="frame" x="10" y="10" width="840" height="460" rx="10"/>
+  <circle class="dot1" cx="34" cy="34" r="6"/><circle class="dot2" cx="56" cy="34" r="6"/><circle class="dot3" cx="78" cy="34" r="6"/>
+  <text class="t" x="430" y="38" text-anchor="middle">the loop — real outputs from this repo's own ledger</text>
+
+  <!-- scene 1: a fresh AI connects -->
+  <g transform="translate(38,80)">
+    <text class="l s1a" y="0"><tspan class="c"># scene 1 — a FRESH AI connects (zero prior knowledge)</tspan></text>
+    <text class="l s1b" y="28"><tspan class="g">$</tspan> <tspan class="w">lifeline context</tspan></text>
+    <text class="l s1c" y="56"><tspan class="p"># Lifeline — project context</tspan>   <tspan class="c">101 entries · head 3de58fcb</tspan></text>
+    <text class="l s1d" y="84"><tspan class="w">What:</tspan> a context runtime — the project keeps the WHY; any AI inherits it on connect</text>
+    <text class="l s1e" y="112"><tspan class="p">## Why / what's decided</tspan>  <tspan class="c">12 decisions in force, each anchored</tspan></text>
+    <text class="l s1f" y="140">- Adopt Supabase's native OAuth Server; we are the RS <tspan class="y">[04ac751c]</tspan></text>
+    <text class="l s1g" y="168">- Hash v2: injective content-addressing (no id collisions) <tspan class="y">[e9a37ea2]</tspan></text>
+    <text class="l s1h" y="196"><tspan class="p">## Open / next</tspan>  - F2: 60s demo · F3: revenue activation</text>
+    <text class="l s1i" y="230"><tspan class="g">✓ the AI answers what / why / decided / next — nobody re-explained anything</tspan></text>
+  </g>
+
+  <!-- scene 2: a merged PR captures itself -->
+  <g transform="translate(38,80)">
+    <text class="l s2a" y="0"><tspan class="c"># scene 2 — you just work: a merged PR captures its own why</tspan></text>
+    <text class="l s2b" y="28"><tspan class="w">PR #42 merged</tspan> <tspan class="c">→ github → lifeline hub</tspan></text>
+    <text class="l s2c" y="60"><tspan class="p">🤖 lifeline-app</tspan> commented:</text>
+    <text class="l s2d" y="88">   “📝 1 context proposal drafted from this merged PR <tspan class="c">(pending human review)</tspan>”</text>
+    <text class="l s2e" y="122"><tspan class="c">dashboard → Review:</tspan> <tspan class="y">[feature]</tspan> <tspan class="w">adopt outbox — dual writes dropped events</tspan></text>
+    <text class="l s2f" y="150">   <tspan class="g">[approve]</tspan> <tspan class="c">[edit]</tspan> <tspan class="c">[reject]</tspan>   <tspan class="c">← you curate; the AI never writes truth</tspan></text>
+    <text class="l s2g" y="184"><tspan class="g">✓ sealed into the ledger, anchored to the merge SHA — no rationale left behind</tspan></text>
+  </g>
+
+  <!-- scene 3: prove it -->
+  <g transform="translate(38,80)">
+    <text class="l s3a" y="0"><tspan class="c"># scene 3 — don't trust it: MEASURE it</tspan></text>
+    <text class="l s3b" y="28"><tspan class="g">$</tspan> <tspan class="w">lifeline exam</tspan></text>
+    <text class="l s3c" y="60"><tspan class="w">Context Health:</tspan> <tspan class="g" font-size="16" font-weight="bold">100/100 (A)</tspan></text>
+    <text class="l s3d" y="92">  [+] integrity   20/20  <tspan class="c">chain verifies (101 anchored entries)</tspan></text>
+    <text class="l s3e" y="120">  [+] why-density 25/25  <tspan class="c">every decision in force carries a written why</tspan></text>
+    <text class="l s3f" y="148">  [+] ttc-probe   15/15  <tspan class="c">a fresh AI can answer what / why / decided / next</tspan></text>
+    <text class="l s3g" y="188"><tspan class="p">Time-to-Context → 0.</tspan> <tspan class="c">pip install lifeline-context</tspan></text>
+  </g>
+</svg>

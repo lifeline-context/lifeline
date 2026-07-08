@@ -350,6 +350,100 @@ async def cmd_capture(db, author, last=20):
     return proposed, skipped
 
 
+# ---- exam: Context Health (F2) — o quão pronto este ledger deixa uma IA nova -------------
+# Score determinístico e transparente, 0–100. Não é vaidade: cada dimensão mede uma condição
+# NECESSÁRIA para TTC→0 (uma IA conectar e responder o quê/por quê/decidido/próximo).
+_EXAM_WHY_MIN = 40      # chars de porquê pra uma decisão contar como "com racional"
+_EXAM_FRESH = ((7, 15), (30, 10), (90, 5))   # dias desde a última entrada → pontos
+
+
+async def cmd_exam(db, budget=8000):
+    """Examina a saúde de contexto da line. Integridade é PORTÃO (cadeia quebrada = reprovado):
+    um score alto sobre um ledger adulterado seria a mentira perfeita. Retorna
+    (score, grade, dims, suggestions, failed)."""
+    from datetime import datetime, timezone
+    ok, n_entries, tampered, dangling = await cmd_verify(db)
+    if not ok:
+        return 0, "F", [("integrity", 0, 20,
+                         f"chain BROKEN: {len(tampered)} tampered, {len(dangling)} dangling")], \
+               ["run `lifeline verify` and repair before anything else — a broken chain "
+                "means the context can't be trusted at all"], True
+
+    store = await _open(db)
+    st = await StateEngine(store).reduce()
+    now = datetime.now(timezone.utc)
+    entries = [e async for e in store.stream()]
+    dims, tips = [], []
+
+    # 1) integridade (20) — já passou no portão
+    dims.append(("integrity", 20, 20, f"chain verifies ({n_entries} anchored entries)"))
+
+    # 2) identidade (10) — sem bootstrap, a IA não sabe nem O QUE é o projeto
+    if st.get("project"):
+        dims.append(("identity", 10, 10, "bootstrap present (the project knows what it is)"))
+    else:
+        dims.append(("identity", 0, 10, "no bootstrap entry"))
+        tips.append("record the project's identity: lifeline log --kind bootstrap "
+                    "--summary \"<what this is>\" --body \"<why it exists>\"")
+
+    # 3) densidade de porquê (25) — decisões sem racional são o começo do ledger rot
+    decisions = st.get("decisions", [])
+    if decisions:
+        with_why = sum(1 for d in decisions if len((d.get("body") or "").strip()) >= _EXAM_WHY_MIN)
+        pts = round(25 * with_why / len(decisions))
+        dims.append(("why-density", pts, 25,
+                     f"{with_why}/{len(decisions)} decisions in force carry a written why"))
+        if with_why < len(decisions):
+            tips.append(f"{len(decisions) - with_why} decision(s) have no real why — supersede "
+                        "each with a corrected entry that states the rationale")
+    else:
+        dims.append(("why-density", 0, 25, "no decisions in force"))
+        tips.append("record the decisions that shape this project (kind=decision, body=the why)")
+
+    # 4) direção (15) — sem thread aberta, a IA não sabe O QUE VEM a seguir
+    opens = st.get("open_items", [])
+    superseded = set(st.get("superseded", []))
+    open_ts = [e.ts for e in entries if e.kind == "open" and e.id not in superseded]
+    pts = 10 if opens else 0
+    if open_ts and (now - max(open_ts)).days <= 45:
+        pts += 5
+    label = (f"{len(opens)} open thread(s)" + ("" if not open_ts else
+             f", newest {max(0, (now - max(open_ts)).days)}d old")) if opens else "no open threads"
+    dims.append(("direction", pts, 15, label))
+    if not opens:
+        tips.append("record what's next: lifeline log --kind open --summary \"<the thread>\" "
+                    "--body \"<why it matters>\"")
+
+    # 5) frescor (15) — ledger que ninguém alimenta é diário que ninguém mantém
+    if entries:
+        age = (now - max(e.ts for e in entries)).days
+        pts = next((p for lim, p in _EXAM_FRESH if age <= lim), 0)
+        dims.append(("freshness", pts, 15, f"last entry {age}d ago"))
+        if pts < 15:
+            tips.append("the ledger is going stale — wire capture (`lifeline capture` locally, "
+                        "or the GitHub App on merged PRs) so the why records itself")
+    else:
+        dims.append(("freshness", 0, 15, "empty ledger"))
+
+    # 6) sonda TTC (15) — o payload montado responde o quê/por quê/decidido/próximo?
+    ctx = await ContextAssembler(StateEngine(store), budget_chars=budget).assemble()
+    probes = [("what", bool(st.get("project"))),
+              ("why/decided", "## Why / what's decided" in ctx and bool(decisions)),
+              ("next", "## Open / next" in ctx),
+              ("recent", "## Recent" in ctx)]
+    hit = sum(1 for _, okp in probes if okp)
+    dims.append(("ttc-probe", round(15 * hit / 4), 15,
+                 "context answers: " + ", ".join(k for k, okp in probes if okp)))
+    if hit < 4:
+        tips.append("the assembled context is missing: "
+                    + ", ".join(k for k, okp in probes if not okp))
+
+    score = sum(p for _, p, _, _ in dims)
+    grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 60 \
+        else "D" if score >= 40 else "F"
+    return score, grade, dims, tips, False
+
+
 def _line_paths(name):
     """(db, view) de uma line pelo NOME — 'ledger'/None = a default. Reusa resolve_paths
     (única fonte do mapeamento nome→arquivos)."""
@@ -552,6 +646,11 @@ def main(argv=None) -> int:
     ppro.add_argument("--id", dest="ids", default=None, help="comma-separated ids (prefixes ok)")
     ppro.add_argument("--kind", dest="pkind", default=None,
                       help="promote every non-superseded entry of this kind instead of --id")
+    pex = sub.add_parser("exam", help="Context Health: score 0-100 of how ready this line leaves "
+                                      "a fresh AI (what/why/decided/next) + concrete gaps")
+    pex.add_argument("--json", action="store_true", dest="as_json",
+                     help="machine-readable output (score, dims, suggestions)")
+    pex.add_argument("--budget", type=int, default=8000)
     pcap = sub.add_parser("capture", help="draft proposals from recent git commit messages "
                                           "(zero-LLM; the commit body is the why — no body, no draft)")
     pcap.add_argument("--last", type=int, default=20, help="commits to scan on the FIRST run "
@@ -669,6 +768,25 @@ def _dispatch(args, db, out) -> int:
         n = asyncio.run(cmd_migrate(args.src, db, strict=args.strict))
         print(f"Migrated {n} entries from {args.src} to {db}.")
         return 0
+
+    if args.cmd == "exam":
+        score, grade, dims, tips, failed = asyncio.run(cmd_exam(db, budget=args.budget))
+        if args.as_json:
+            print(json.dumps({"score": score, "grade": grade, "failed": failed,
+                              "dimensions": [{"name": n, "points": p, "max": m, "detail": d}
+                                             for n, p, m, d in dims],
+                              "suggestions": tips}, indent=2))
+            return 1 if failed else 0
+        print(f"Context Health: {score}/100  ({grade})")
+        for name, pts, mx, detail in dims:
+            mark = "x" if pts == 0 else ("~" if pts < mx else "+")
+            print(f"  [{mark}] {name:<12} {pts:>3}/{mx:<3} {detail}")
+        if tips:
+            print("\nSuggestions:")
+            for t in tips:
+                print(f"  - {t}")
+        print(f"\nShareable: Lifeline Context Health {score}/100 ({grade})")
+        return 1 if failed else 0
 
     if args.cmd == "capture":
         proposed, skipped = asyncio.run(cmd_capture(db, args.author, last=args.last))
