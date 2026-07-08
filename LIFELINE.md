@@ -2047,3 +2047,19 @@ A deep adversarial self-review of everything F0-F2 shipped (the parallel reviewe
 Revenue activation, the honest slice: (1) the PAID feature (team-line sharing) is now actually gated by tier — free gets 1 shared member per line (a taste), team gets the seat cap, resharing is idempotent; before this, org seats were capped but line sharing was unlimited, so the paywall was decorative. (2) Stripe direct-sale implemented without SDK: owner/admin-only checkout carrying org_id/tier in metadata, webhook signature-verified (HMAC t.v1 + anti-replay) before any work, lifecycle events mapped to hub_subscriptions; turning it on is 3 env vars — GitHub Marketplace remains the live path. (3) The pause incident became code: a boot-time read-only schema self-check logs CRITICAL and surfaces truth in /healthz instead of letting the hub look healthy while every DB route dies. Closes the infra half of open #0101; the remaining half (Supabase Pro upgrade + Stripe keys + price) is owner action. Hub 90 tests green.
 
 <!-- lifeline:end -->
+
+### #0105 — 2026-07-08T22:35:46.723411+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: Independent adversarial review of hub F1+F3 applied: marker injection closed, Stripe robustness
+- **parents**: 4b9403f0687f4d180d49c3e470cbf475b3503431fb9955cd6ed995c14c64e864
+- **id**: 2f26819175ea9a5a91c80078e070b935a6f29cdde1feecb1fc5ebabab8609688
+
+**Body**:
+With subagents back (the earlier reviewers died on the account spend limit), an independent adversarial pass covered capture/merge-handler/edit/metrics/tier-gate/billing/self-check. Verdict: no CRITICALs — RLS backing and the Stripe metadata trust chain are sound (a signed-but-crafted event cannot set a tier for an org the payer doesn't own). Real findings applied: (M1) untrusted PR/review text could plant our provenance marker to suppress another PR's capture or poison metrics -- forged marker lines are now stripped at draft time and all marker matches are line-anchored; (L1) Stripe secret rotation sends multiple v1 signatures and we kept only the last (401ing legit events) -- any match now passes; (L3) an out-of-order subscription.deleted could downgrade a newer subscription -- guarded by the stored sub id; plus tier clamp on garbage metadata and 502 on url-less checkout. Hub 95 tests green (5 new). Noted as design-intent: a member of a paid org inherits sharing caps for personal lines.
+
+<!-- lifeline:end -->
