@@ -11,7 +11,12 @@ import subprocess
 
 
 def _git(args, cwd="."):
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    # encoding="utf-8" é OBRIGATÓRIO: git fala UTF-8; no Windows, text=True decodifica com a
+    # page do locale (cp1252) e um commit com "✓"/"č" CRASHAVA a thread leitora do subprocess
+    # (UnicodeDecodeError → stdout None → TypeError no capture). errors="replace" garante que
+    # byte estranho vira U+FFFD em vez de derrubar o comando (achado do checkpoint F2→F3).
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
 
 
 def is_repo(cwd=".") -> bool:

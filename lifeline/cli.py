@@ -372,6 +372,10 @@ async def cmd_exam(db, budget=8000):
     store = await _open(db)
     st = await StateEngine(store).reduce()
     now = datetime.now(timezone.utc)
+
+    def _aware(ts):
+        # view artesanal pode carregar ts NAIVE; aware-naive subtração é TypeError — trata como UTC
+        return ts if ts.tzinfo is not None else ts.replace(tzinfo=timezone.utc)
     entries = [e async for e in store.stream()]
     dims, tips = [], []
 
@@ -403,7 +407,7 @@ async def cmd_exam(db, budget=8000):
     # 4) direção (15) — sem thread aberta, a IA não sabe O QUE VEM a seguir
     opens = st.get("open_items", [])
     superseded = set(st.get("superseded", []))
-    open_ts = [e.ts for e in entries if e.kind == "open" and e.id not in superseded]
+    open_ts = [_aware(e.ts) for e in entries if e.kind == "open" and e.id not in superseded]
     pts = 10 if opens else 0
     if open_ts and (now - max(open_ts)).days <= 45:
         pts += 5
@@ -416,7 +420,7 @@ async def cmd_exam(db, budget=8000):
 
     # 5) frescor (15) — ledger que ninguém alimenta é diário que ninguém mantém
     if entries:
-        age = (now - max(e.ts for e in entries)).days
+        age = (now - max(_aware(e.ts) for e in entries)).days
         pts = next((p for lim, p in _EXAM_FRESH if age <= lim), 0)
         dims.append(("freshness", pts, 15, f"last entry {age}d ago"))
         if pts < 15:

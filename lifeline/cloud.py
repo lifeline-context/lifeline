@@ -151,7 +151,10 @@ class SupabaseEventStore(_SupabaseBase, EventStore):
 
     async def lines(self) -> List[tuple]:
         """Todas as lines do tenant (nome, nº de entradas) — o `lifeline lines` da nuvem.
-        A RLS já limita ao owner; contagem client-side (escala modesta por design)."""
+        A RLS já limita ao owner; contagem client-side. LIMITE explícito: o PostgREST corta a
+        resposta no max-rows do servidor (default 1000) — acima disso as CONTAGENS saem
+        truncadas (os nomes das lines dificilmente somem: precisariam de 1000+ entradas antes
+        da primeira linha de outra line). Paginação entra se a escala pedir."""
         async with self._client() as c:
             r = await c.get(self.base, headers=self._headers(), params={"select": "line"})
         counts: Dict[str, int] = {}

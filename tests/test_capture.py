@@ -74,6 +74,18 @@ class TestLocalCapture(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(p3), 1)                              # só o commit NOVO
         self.assertEqual(len(await cmd_review(self.db)), 2)
 
+    async def test_utf8_commit_bodies_survive_on_any_locale(self):
+        # Checkpoint finding: on Windows, subprocess text-mode decoded git output with the
+        # locale codepage (cp1252) — a body with "✓"/"č" CRASHED the reader thread. sync._git
+        # now pins UTF-8; the why must come back intact.
+        _commit(self.dir, "feat: acentuação",
+                "porquê: auditoria exige ACID — decisão validada č ✓ em produção.")
+        proposed, skipped = await cmd_capture(self.db, "me")
+        self.assertEqual(len(proposed), 1)
+        body = (await cmd_review(self.db))[0]["body"]
+        self.assertIn("porquê", body)
+        self.assertIn("✓", body)                                  # UTF-8 intacto, sem mojibake
+
     async def test_outside_a_repo_fails_loud(self):
         os.chdir(self.prev)
         outside = tempfile.mkdtemp()
