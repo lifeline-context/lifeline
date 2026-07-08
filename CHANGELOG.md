@@ -43,6 +43,12 @@ versions may still break.
   messages** (conventional prefix → kind; the commit body is the *why* — commits without one
   are skipped, honest abstention). Idempotent via a `capture.head` marker; everything lands
   **PENDING** in the HITL queue, never directly on the line.
+- **`lifeline exam`** — Context Health 0–100: integrity **gates** the score (a broken chain is
+  0/F), then identity, why-density, direction, freshness, and a TTC probe (does the assembled
+  context answer what/why/decided/next?). Every gap is paired with the command that fixes it;
+  `--json` for CI.
+- Git subprocess decoding pinned to **UTF-8** — on Windows, a commit body with non-codepage
+  characters (e.g. `✓`) crashed `capture`/sync via the locale decoder.
 
 ### Changed
 - Dense-recall embeddings are **cached by entry id** (content-addressed → the cache can never

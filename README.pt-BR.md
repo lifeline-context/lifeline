@@ -5,7 +5,7 @@
 
 🌐 **Português** · [English](README.md)
 
-[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-beta-blue) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-153%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
+[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-beta-blue) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-195%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
 
 É, em uma frase, **o "git do raciocínio"**: assim como o git versiona *o quê* mudou no
 código, o Lifeline versiona *por quê* — decisões, reversões, incidentes, o estado atual —
@@ -37,8 +37,8 @@ O Lifeline guarda a "linha de vida" do projeto (a `LIFELINE.md`) e a torna
 ## Instalação
 
 ```bash
-pip install lifeline-context        # quando publicado no PyPI
-pip install -e .                    # ou, da raiz do repo (dev) → instala lifeline, lifeline-mcp, lifeline-mcp-remote
+pip install lifeline-context        # instala lifeline, lifeline-mcp, lifeline-mcp-remote
+pip install -e .                    # ou, da raiz do repo (dev)
 pip install -e ".[cloud]"           # opcional: modo nuvem (Supabase) — puxa httpx explicitamente
 ```
 
@@ -117,7 +117,7 @@ Setup da nuvem: [`docs/M3_TIER1_SUPABASE.md`](docs/M3_TIER1_SUPABASE.md). Conect
 **Beta.** Núcleo **local single-user** sólido — correção travada por testes (determinismo,
 anti-adulteração, detecção de omissão, supersessão reversível, round-trip ponto-fixo, abstenção
 do recall, idempotência sob appends concorrentes). **Nuvem (M3) funcional e validada ao vivo.**
-153 testes verdes (147 offline + 6 live-gated); CI no GitHub Actions. Conectores web hospedados
+195 testes verdes (189 offline + 6 live-gated); CI no GitHub Actions. Conectores web hospedados
 funcionam via o **OAuth Server nativo do Supabase** (o MCP remoto é um Resource Server que valida o
 JWT por JWKS); validação end-to-end ao vivo **concluída** (401 sem token, 200 com JWT; #0049, #0079, #0090).
 

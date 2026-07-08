@@ -5,7 +5,7 @@
 
 🌐 **English** · [Português](README.pt-BR.md)
 
-[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-beta-blue) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-153%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
+[![pypi](https://img.shields.io/pypi/v/lifeline-context)](https://pypi.org/project/lifeline-context/) ![status](https://img.shields.io/badge/status-beta-blue) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![tests](https://img.shields.io/badge/tests-195%20passing-brightgreen) ![license](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)
 
 In one line, it's **"git for reasoning"**: just as git versions *what* changed in the code,
 Lifeline versions *why* — decisions, reversals, incidents, the current state — in an
@@ -241,8 +241,8 @@ reasoning, not execution.**
 
 **Beta.** Solid, proven **local single-user** core — correctness locked by tests (determinism,
 anti-tamper, omission detection, supersession + un-supersession, round-trip fixed-point, recall
-abstention, concurrent-append idempotency). **Cloud (M3) functional and live-validated.** 153
-tests green (147 offline + 6 live-gated); CI on GitHub Actions.
+abstention, concurrent-append idempotency). **Cloud (M3) functional and live-validated.** 195
+tests green (189 offline + 6 live-gated); CI on GitHub Actions.
 
 | Milestone | State |
 |---|---|
