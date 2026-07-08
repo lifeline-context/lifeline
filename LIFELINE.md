@@ -2015,3 +2015,19 @@ After F2: team-line RLS (line_members seam) + invite flow, Stripe checkout wired
 Closes the F2-remainder thread. `lifeline exam` shipped as a product command (Context Health 0-100, integrity-gated, every gap paired with the command that fixes it; the dogfood run scored 81/B, caught the missing open threads, and after recording them scored 100/A — the score is actionable, not vanity). The 60s demo shipped as a self-contained animated SVG built from REAL outputs (connect -> capture -> prove), wired into getting-started with a landing link, and the stale landing proof panel was refreshed to current truth (101 entries, hash-v2 head, exam line). INTEGRATION.md now states the honest verification level per client (Claude Code + remote OAuth validated live; Cursor/Desktop/Gemini config-checked, e2e reports invited) and documents the capture loop (local zero-LLM + GitHub App). 188 tests green.
 
 <!-- lifeline:end -->
+
+### #0103 — 2026-07-08T22:08:07.862832+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: Checkpoint review (F2->F3): UTF-8 git decoding crash in capture, exam naive-ts hardening, explicit dedup/caps
+- **parents**: 5bb17ab90787eb0e90ac49fdc0d1af043564018c13bb86e179bedf55e92127d1
+- **id**: 61fab29030c0eb411656a4374f99a72852c283a08796fa8793a2372233500d7c
+
+**Body**:
+A deep adversarial self-review of everything F0-F2 shipped (the parallel reviewer agents died on an account spend limit, so the review ran inline with empirical probes instead of trust). CONFIRMED+FIXED: sync._git decoded git output with the locale codepage — on Windows (cp1252) a commit body containing certain UTF-8 chars crashed the subprocess reader thread and took `lifeline capture` down with it; decoding is now pinned to UTF-8 with errors=replace (regression test with an accented body). HARDENED: `lifeline exam` coerces naive timestamps to UTC (a hand-crafted view could TypeError the freshness math). REFUTED by experiment: the suspicion that surgical `git add` aborts when one view is gitignored — git skips the ignored path and stages the rest, so push in this very repo (with the ignored strategy view) is fine. MADE EXPLICIT (no silent caps): merge-capture redelivery dedup only spans the pending queue — safe because identical drafts dedup at the ledger by content-addressing; and cloud `lines()` counts truncate at PostgREST max-rows (~1000). Also verified: dashboard esc() covers attribute-quote injection for untrusted PR text in the edit form. Gate: core 189 green, hub 80 green, both ledgers verify OK, exam 100/A.
+
+<!-- lifeline:end -->
