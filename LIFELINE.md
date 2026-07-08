@@ -2031,3 +2031,19 @@ Closes the F2-remainder thread. `lifeline exam` shipped as a product command (Co
 A deep adversarial self-review of everything F0-F2 shipped (the parallel reviewer agents died on an account spend limit, so the review ran inline with empirical probes instead of trust). CONFIRMED+FIXED: sync._git decoded git output with the locale codepage — on Windows (cp1252) a commit body containing certain UTF-8 chars crashed the subprocess reader thread and took `lifeline capture` down with it; decoding is now pinned to UTF-8 with errors=replace (regression test with an accented body). HARDENED: `lifeline exam` coerces naive timestamps to UTC (a hand-crafted view could TypeError the freshness math). REFUTED by experiment: the suspicion that surgical `git add` aborts when one view is gitignored — git skips the ignored path and stages the rest, so push in this very repo (with the ignored strategy view) is fine. MADE EXPLICIT (no silent caps): merge-capture redelivery dedup only spans the pending queue — safe because identical drafts dedup at the ledger by content-addressing; and cloud `lines()` counts truncate at PostgREST max-rows (~1000). Also verified: dashboard esc() covers attribute-quote injection for untrusted PR text in the edit form. Gate: core 189 green, hub 80 green, both ledgers verify OK, exam 100/A.
 
 <!-- lifeline:end -->
+
+### #0104 — 2026-07-08T22:23:09.416160+00:00 — milestone
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: milestone
+- **summary**: F3 core shipped: tier gate on line sharing, real Stripe path, boot schema self-check
+- **parents**: 61fab29030c0eb411656a4374f99a72852c283a08796fa8793a2372233500d7c
+- **id**: 4b9403f0687f4d180d49c3e470cbf475b3503431fb9955cd6ed995c14c64e864
+
+**Body**:
+Revenue activation, the honest slice: (1) the PAID feature (team-line sharing) is now actually gated by tier — free gets 1 shared member per line (a taste), team gets the seat cap, resharing is idempotent; before this, org seats were capped but line sharing was unlimited, so the paywall was decorative. (2) Stripe direct-sale implemented without SDK: owner/admin-only checkout carrying org_id/tier in metadata, webhook signature-verified (HMAC t.v1 + anti-replay) before any work, lifecycle events mapped to hub_subscriptions; turning it on is 3 env vars — GitHub Marketplace remains the live path. (3) The pause incident became code: a boot-time read-only schema self-check logs CRITICAL and surfaces truth in /healthz instead of letting the hub look healthy while every DB route dies. Closes the infra half of open #0101; the remaining half (Supabase Pro upgrade + Stripe keys + price) is owner action. Hub 90 tests green.
+
+<!-- lifeline:end -->
