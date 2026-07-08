@@ -18,6 +18,7 @@ line (ledger **and** view together: `.lifeline/<name>.db` + `LIFELINE.<name>.md`
 | `lifeline lines` | list the project's lines (local `.lifeline/*.db`, or the cloud's with `--store supabase`) |
 | `lifeline promote --from <line> --to <line> --id <id>[,…] \| --kind <kind>` | copy entries across lines as roots — **idempotent** (same content → same id → re-promoting dedups) |
 | `lifeline rehash` | one-shot migration after a hash-scheme upgrade: recompute every id, remap parents, backup + verify |
+| `lifeline capture [--last N]` | draft proposals from recent **git commit messages** (zero-LLM): the commit body is the *why* — no body, no draft; everything lands **PENDING** (HITL) |
 | `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
 
 > With `--store supabase`, the cloud is the source — `push` / `pull` / `clone` / `rehash` /

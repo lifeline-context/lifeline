@@ -39,6 +39,10 @@ versions may still break.
   parallel lines as roots, with provenance notes; idempotent by content-addressing
   (re-promoting dedups; superseded entries are skipped with `--kind`).
 - **`lifeline rehash`** — one-shot migration for hash-scheme upgrades.
+- **`lifeline capture`** — zero-LLM local capture: drafts proposals from recent **git commit
+  messages** (conventional prefix → kind; the commit body is the *why* — commits without one
+  are skipped, honest abstention). Idempotent via a `capture.head` marker; everything lands
+  **PENDING** in the HITL queue, never directly on the line.
 
 ### Changed
 - Dense-recall embeddings are **cached by entry id** (content-addressed → the cache can never

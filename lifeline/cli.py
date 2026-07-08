@@ -15,6 +15,7 @@ import asyncio
 import glob
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -36,7 +37,7 @@ LINES_DIR = ".lifeline"
 _STORE = {"kind": "sqlite", "line": "ledger"}
 # Comandos que só fazem sentido no store local (git e glob de .db). O HITL
 # (propose/review/approve/reject) já funciona na nuvem via SupabaseStagingStore.
-_LOCAL_ONLY = {"push", "pull", "clone", "rehash", "promote"}
+_LOCAL_ONLY = {"push", "pull", "clone", "rehash", "promote", "capture"}
 
 PREAMBLE = """# LIFELINE — lifeline
 
@@ -285,6 +286,70 @@ def cmd_schema() -> str:
     return files("lifeline").joinpath("schema.sql").read_text(encoding="utf-8")
 
 
+# capture (zero-LLM): prefixo convencional do commit → kind do core. Qualquer outro → note.
+_CAPTURE_KIND = {"feat": "feature", "feature": "feature", "fix": "fix", "bugfix": "fix",
+                 "hotfix": "fix", "perf": "note", "refactor": "note", "docs": "note",
+                 "chore": "note", "test": "note", "revert": "note"}
+# trailers de commit não são o *porquê* — saem do body capturado
+_TRAILER = re.compile(r"^(co-authored-by|signed-off-by|reviewed-by|cc|fixes|closes|refs?)[:#]",
+                      re.IGNORECASE)
+
+
+def _capture_kind(subject: str) -> str:
+    m = re.match(r"^\s*(\w+)\s*(?:\(.*?\))?\s*[:!]", subject or "")
+    return _CAPTURE_KIND.get(m.group(1).lower(), "note") if m else "note"
+
+
+def _capture_why(body: str) -> str:
+    """O *porquê* de um commit = o corpo escrito pelo humano, sem trailers. Curto demais
+    (< 20 chars) = não há porquê escrito → abstém (Lei #5: capturar sem porquê é ledger rot)."""
+    lines = [ln for ln in (body or "").splitlines() if not _TRAILER.match(ln.strip())]
+    why = "\n".join(lines).strip()
+    return why if len(why) >= 20 else ""
+
+
+async def cmd_capture(db, author, last=20):
+    """Captura LOCAL zero-LLM: rascunha PROPOSTAS a partir das MENSAGENS de commit (o texto
+    humano — nunca o diff). kind pelo prefixo convencional; o corpo do commit é o porquê
+    (obrigatório — sem corpo, abstém). Idempotente: o último sha visto fica em
+    `<db>.capture.head`; re-rodar só olha commits novos. Tudo entra PENDENTE (HITL)."""
+    if not sync.is_repo():
+        raise ValueError("not a git repository here — capture reads git commit messages.")
+    head_file = db + ".capture.head"
+    since = None
+    if os.path.exists(head_file):
+        with open(head_file, encoding="utf-8") as f:
+            since = f.read().strip() or None
+    rng = [f"{since}..HEAD"] if since else ["-n", str(last)]
+    r = sync._git(["log", "--no-merges", "--format=%H%x1f%s%x1f%b%x1e", *rng])
+    if r.returncode != 0:
+        raise ValueError(f"git log failed: {(r.stderr or '').strip()[:200]}")
+    staging = _staging(db)
+    await staging.initialize()
+    proposed, skipped = [], 0
+    records = [rec for rec in (r.stdout or "").split("\x1e") if rec.strip()]
+    for rec in reversed(records):                       # ordem cronológica (git log é reverso)
+        parts = rec.strip().split("\x1f")
+        if len(parts) < 2:
+            continue
+        sha, subject = parts[0].strip(), parts[1].strip()
+        why = _capture_why(parts[2] if len(parts) > 2 else "")
+        if not why:
+            skipped += 1                                # sem porquê escrito → não inventa
+            continue
+        pid = await staging.propose(
+            kind=_capture_kind(subject), summary=subject[:200],
+            body=f"{why}\n\n[captured from commit {sha[:12]}]",
+            author=author, agent="lifeline-capture", provider="git", model="conventional-commits",
+            parents=None)
+        proposed.append((pid, _capture_kind(subject), subject[:200]))
+    head = sync._git(["rev-parse", "HEAD"])
+    if head.returncode == 0 and head.stdout.strip():    # marca o ponto visto (mesmo se 0 propostas)
+        with open(head_file, "w", encoding="utf-8") as f:
+            f.write(head.stdout.strip())
+    return proposed, skipped
+
+
 def _line_paths(name):
     """(db, view) de uma line pelo NOME — 'ledger'/None = a default. Reusa resolve_paths
     (única fonte do mapeamento nome→arquivos)."""
@@ -487,6 +552,11 @@ def main(argv=None) -> int:
     ppro.add_argument("--id", dest="ids", default=None, help="comma-separated ids (prefixes ok)")
     ppro.add_argument("--kind", dest="pkind", default=None,
                       help="promote every non-superseded entry of this kind instead of --id")
+    pcap = sub.add_parser("capture", help="draft proposals from recent git commit messages "
+                                          "(zero-LLM; the commit body is the why — no body, no draft)")
+    pcap.add_argument("--last", type=int, default=20, help="commits to scan on the FIRST run "
+                                                           "(after that, only commits newer than the last capture)")
+    pcap.add_argument("--author", default=os.environ.get("LIFELINE_AUTHOR", "unknown"))
     sub.add_parser("lines", help="list the project's lines (.lifeline/*.db)")
     sub.add_parser("schema", help="print the cloud SQL schema (Supabase) — paste it into the SQL Editor")
 
@@ -598,6 +668,19 @@ def _dispatch(args, db, out) -> int:
     if args.cmd == "migrate":
         n = asyncio.run(cmd_migrate(args.src, db, strict=args.strict))
         print(f"Migrated {n} entries from {args.src} to {db}.")
+        return 0
+
+    if args.cmd == "capture":
+        proposed, skipped = asyncio.run(cmd_capture(db, args.author, last=args.last))
+        for pid, kind, summary in proposed:
+            print(f"proposal #{pid} [{kind}] {summary[:70]}")
+        if proposed:
+            print(f"\n{len(proposed)} proposal(s) drafted from commit messages — PENDING "
+                  f"(curate: lifeline review).")
+        if skipped:
+            print(f"{skipped} commit(s) skipped — no written why in the commit body (honest abstention).")
+        if not proposed and not skipped:
+            print("Nothing new to capture.")
         return 0
 
     if args.cmd == "rehash":
