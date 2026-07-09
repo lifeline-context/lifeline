@@ -2063,3 +2063,19 @@ Revenue activation, the honest slice: (1) the PAID feature (team-line sharing) i
 With subagents back (the earlier reviewers died on the account spend limit), an independent adversarial pass covered capture/merge-handler/edit/metrics/tier-gate/billing/self-check. Verdict: no CRITICALs — RLS backing and the Stripe metadata trust chain are sound (a signed-but-crafted event cannot set a tier for an org the payer doesn't own). Real findings applied: (M1) untrusted PR/review text could plant our provenance marker to suppress another PR's capture or poison metrics -- forged marker lines are now stripped at draft time and all marker matches are line-anchored; (L1) Stripe secret rotation sends multiple v1 signatures and we kept only the last (401ing legit events) -- any match now passes; (L3) an out-of-order subscription.deleted could downgrade a newer subscription -- guarded by the stored sub id; plus tier clamp on garbage metadata and 502 on url-less checkout. Hub 95 tests green (5 new). Noted as design-intent: a member of a paid org inherits sharing caps for personal lines.
 
 <!-- lifeline:end -->
+
+### #0106 — 2026-07-09T00:40:25.092456+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: AI-ops G1-G3: drafter provenance + LLM state, uptime cron with keep-alive, daily hub backup
+- **parents**: 2f26819175ea9a5a91c80078e070b935a6f29cdde1feecb1fc5ebabab8609688
+- **id**: f9023a73a641afbfc7e8391196738f67ab846fe12659d1bb71f55e23dac06e52
+
+**Body**:
+The architecture review's AI-ops pass found the trio the pause incident exposed: detect, don't degrade silently, be able to restore. (G1) The capture drafter now has provenance and observability: each proposal's model field records WHO drafted it (real Claude model id or 'heuristic'), LLM_STATE counts llm_ok/fallbacks (a configured-but-dying key is visible, not a log whisper), /healthz exposes it and capture-metrics break down by drafter. (G2) /readyz does a live 1-row DB probe (503+CRITICAL on failure) and a GitHub Actions cron pings it every 15min -- failure emails the owner via red workflow, and the real DB touch keeps the Supabase free tier from pausing and both Render services awake; validated live (run green). (G3) A daily workflow exports all hub_*/lifeline_* tables to private-repo artifacts (90d) -- hub state (pending proposals, provisioning, subscriptions) is no longer restore-or-lose; awaiting the owner's ok to store the service-role secret in Actions. Hub 97 tests green. Remaining from the ops review, tracked not blocking: hub migration ledger, drafter daily cost cap, staging env, head-id context cache.
+
+<!-- lifeline:end -->
