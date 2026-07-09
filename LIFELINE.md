@@ -2079,3 +2079,19 @@ With subagents back (the earlier reviewers died on the account spend limit), an 
 The architecture review's AI-ops pass found the trio the pause incident exposed: detect, don't degrade silently, be able to restore. (G1) The capture drafter now has provenance and observability: each proposal's model field records WHO drafted it (real Claude model id or 'heuristic'), LLM_STATE counts llm_ok/fallbacks (a configured-but-dying key is visible, not a log whisper), /healthz exposes it and capture-metrics break down by drafter. (G2) /readyz does a live 1-row DB probe (503+CRITICAL on failure) and a GitHub Actions cron pings it every 15min -- failure emails the owner via red workflow, and the real DB touch keeps the Supabase free tier from pausing and both Render services awake; validated live (run green). (G3) A daily workflow exports all hub_*/lifeline_* tables to private-repo artifacts (90d) -- hub state (pending proposals, provisioning, subscriptions) is no longer restore-or-lose; awaiting the owner's ok to store the service-role secret in Actions. Hub 97 tests green. Remaining from the ops review, tracked not blocking: hub migration ledger, drafter daily cost cap, staging env, head-id context cache.
 
 <!-- lifeline:end -->
+
+### #0107 — 2026-07-09T01:00:04.236349+00:00 — fix
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: fix
+- **summary**: AI-ops G4-G8 closed: migration trail, drafter cost cap, head-id context cache, ops runbook
+- **parents**: f9023a73a641afbfc7e8391196738f67ab846fe12659d1bb71f55e23dac06e52
+- **id**: f252d9f15addbb872729409af7b071da96c99432ab46eacbf2c663b8d15d10df
+
+**Body**:
+The last gaps from the ops review are shut. (G4) hub_migrations table applied to prod (RLS on, service-role-only) with 001-005 backfilled -- hand-applied migrations now leave a trail. (G5) LIFELINE_CAPTURE_DAILY_MAX (default 200) caps drafter LLM calls per day with date rollover; beyond it capture continues on the heuristic and LLM_STATE counts budget_capped -- spend stops, capture never does; test proves the LLM is not even called when capped. (G8) the hosted context endpoint caches by (owner, line, HEAD id): the head is content-addressed, so the cache is stale-proof BY CONSTRUCTION -- a new entry changes the head and thus the key; one 1-row head query replaces O(ledger) streaming on repeat reads, query path stays uncached. (G6/G7) docs/OPS.md is the runbook: monitors, backup/restore steps, migration discipline, and the explicit known limits (drafter prompt-injection contained by the HITL + body-fencing rings; main=prod staging posture with the pre-design-partner plan; single-instance counters; PostgREST caps). Hub 101 tests green. The system now detects, refuses to degrade silently, restores, remembers its schema history, caps its own spend, and scales its hottest read.
+
+<!-- lifeline:end -->
