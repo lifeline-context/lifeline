@@ -6,7 +6,7 @@ versions may still break.
 
 ## [Unreleased]
 
-## [0.5.0] — 2026-07-07
+## [0.5.0] — 2026-07-09
 
 > **BREAKING — hash scheme v2.** A line-by-line audit proved the v1 canonical form was **not
 > injective**: a `\n` inside any field could collide two *different* entries into the same id —
