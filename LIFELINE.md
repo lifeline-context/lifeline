@@ -2095,3 +2095,19 @@ The architecture review's AI-ops pass found the trio the pause incident exposed:
 The last gaps from the ops review are shut. (G4) hub_migrations table applied to prod (RLS on, service-role-only) with 001-005 backfilled -- hand-applied migrations now leave a trail. (G5) LIFELINE_CAPTURE_DAILY_MAX (default 200) caps drafter LLM calls per day with date rollover; beyond it capture continues on the heuristic and LLM_STATE counts budget_capped -- spend stops, capture never does; test proves the LLM is not even called when capped. (G8) the hosted context endpoint caches by (owner, line, HEAD id): the head is content-addressed, so the cache is stale-proof BY CONSTRUCTION -- a new entry changes the head and thus the key; one 1-row head query replaces O(ledger) streaming on repeat reads, query path stays uncached. (G6/G7) docs/OPS.md is the runbook: monitors, backup/restore steps, migration discipline, and the explicit known limits (drafter prompt-injection contained by the HITL + body-fencing rings; main=prod staging posture with the pre-design-partner plan; single-instance counters; PostgREST caps). Hub 101 tests green. The system now detects, refuses to degrade silently, restores, remembers its schema history, caps its own spend, and scales its hottest read.
 
 <!-- lifeline:end -->
+
+### #0108 — 2026-07-09T01:20:11.812975+00:00 — release
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: release
+- **summary**: 0.5.0 (beta) published to PyPI — hash v2, first-class lines, the capture loop, exam
+- **parents**: f252d9f15addbb872729409af7b071da96c99432ab46eacbf2c663b8d15d10df
+- **id**: 9e42b00179be4f0fdc6efef70ca0060042d203a8ca351dfcdfbe84357534af75
+
+**Body**:
+Tag v0.5.0 -> publish.yml -> PyPI (34s), latest confirmed 0.5.0. The category-changing release: BREAKING hash-scheme v2 (injective content-addressing; existing ledgers migrate once via `lifeline rehash` -- both real lines migrated and verifying), lines first-class end-to-end (local MCP LIFELINE_LINE, cloud scoping, clone-all, `promote` across lines), the CAPTURE LOOP (`lifeline capture` zero-LLM from commit messages + hub auto-capture on merged PRs, validated live), and `lifeline exam` (Context Health 0-100, integrity-gated). 195 tests. Site audited and refreshed to current truth before the cut (proof panel 107/f252d9f1; demo + CLI docs verified live). Stripe setup attempted next: the .env STRIPE_* vars turned out to be EMPTY placeholders -- no Stripe account exists yet; product/price/webhook creation is scripted and ready, blocked only on the owner creating the account and pasting a secret key (owner action).
+
+<!-- lifeline:end -->
