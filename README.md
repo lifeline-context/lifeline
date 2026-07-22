@@ -180,6 +180,8 @@ Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | `lifeline promote --from <line> --to <line> --id <id>[,…] \| --kind <kind>` | copy entries across lines as roots — **idempotent** (same content → same id, re-promoting dedups) |
 | `lifeline capture [--last N]` | draft proposals from recent **git commit messages** (zero-LLM): the commit body is the *why* — no body, no draft (honest abstention); everything lands **PENDING** |
 | `lifeline exam [--json]` | **Context Health 0–100**: how ready this line leaves a fresh AI (what/why/decided/next) — integrity gates the score; every gap comes with the command that fixes it |
+| `lifeline relate --from <id> --to <id> [--rel depends_on]` | record a **typed relation** between entities (a `kind=relation` entry; direction preserved, anchored) |
+| `lifeline graph --depends-on <id> \| --dependents <id> \| --of <id>` | query the **typed entity graph** — a structured answer ("what depends on X"), not relevance text |
 | `lifeline push` · `pull` · `clone <url> <dir>` | **git sync** (Tier 0, zero cost): the text view syncs; the `.db` rebuilds |
 
 **Write tiering (like approving a shell command):** the human's `log` commits directly (they're

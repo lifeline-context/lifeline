@@ -2111,3 +2111,19 @@ The last gaps from the ops review are shut. (G4) hub_migrations table applied to
 Tag v0.5.0 -> publish.yml -> PyPI (34s), latest confirmed 0.5.0. The category-changing release: BREAKING hash-scheme v2 (injective content-addressing; existing ledgers migrate once via `lifeline rehash` -- both real lines migrated and verifying), lines first-class end-to-end (local MCP LIFELINE_LINE, cloud scoping, clone-all, `promote` across lines), the CAPTURE LOOP (`lifeline capture` zero-LLM from commit messages + hub auto-capture on merged PRs, validated live), and `lifeline exam` (Context Health 0-100, integrity-gated). 195 tests. Site audited and refreshed to current truth before the cut (proof panel 107/f252d9f1; demo + CLI docs verified live). Stripe setup attempted next: the .env STRIPE_* vars turned out to be EMPTY placeholders -- no Stripe account exists yet; product/price/webhook creation is scripted and ready, blocked only on the owner creating the account and pasting a secret key (owner action).
 
 <!-- lifeline:end -->
+
+### #0109 — 2026-07-22T16:25:08.221701+00:00 — feature
+
+- **author**: unknown
+- **agent**: human
+- **provider**: none
+- **model**: human
+- **kind**: feature
+- **summary**: Typed knowledge graph (MVP-1): kind=relation + entity kinds + `lifeline graph` (Regente Phase-1 slice)
+- **parents**: 9e42b00179be4f0fdc6efef70ca0060042d203a8ca351dfcdfbe84357534af75
+- **id**: 42c83ccc23635c688a26d70a7c6c25eb39036dbc2be7cee2a0e9a4c2659cd750
+
+**Body**:
+First slice of the Regente evolution, landed in Lifeline as GENERIC MEMORY (not execution -- stays inside the non-goals). Added entity kinds (service/api/test/requirement/debt) and `kind=relation`: a relation is an Entry with parents=[from,to] (verify guarantees both ends exist -- referential closure for free) and the DIRECTION in the body, because parents are a sorted SET in the hash (Law #3) so order doesn't survive. New lifeline/graph.py projects the in-force graph (superseded relations drop, same as decisions); `lifeline relate` records one and `lifeline graph --depends-on/--dependents/--of` answers STRUCTURALLY, not as text. Purely additive: no canonical-form change, so NO rehash -- proven live (verify OK) and by test (existing ids unchanged). This is the Knowledge Kernel the Regente kernel will query. Decision: Regente is a SEPARATE repo importing lifeline+lifegs (pinned), never a fork -- orchestration is the sealed non-goal #6a66d39c, so only memory/typing enters the core. lifegs frozen at 0.2.0 (191 tests) as the pinned dependency. 195 tests green.
+
+<!-- lifeline:end -->

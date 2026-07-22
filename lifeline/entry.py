@@ -15,10 +15,17 @@ GENESIS = hashlib.sha256(b"GENESIS").hexdigest()
 
 Kind = Literal[
     "bootstrap", "decision", "feature", "fix",
-    "incident", "milestone", "release", "note", "open", "correction"
+    "incident", "milestone", "release", "note", "open", "correction",
+    # Entidades de projeto (grafo tipado de conhecimento) — aditivo, ainda é MEMÓRIA (o *quê* +
+    # o *porquê*), não execução. Uma `relation` liga duas entidades: body = {rel, from, to},
+    # parents = [from, to] → content-addressed, sem tabela nova, sem quebrar a forma canônica.
+    "service", "api", "test", "requirement", "debt", "relation",
 ]
 
 KINDS = get_args(Kind)  # tupla dos kinds válidos — usada pra validar propostas (anti-sujeira)
+
+# Relações tipadas que uma Entry `kind=relation` pode declarar no body (`rel:`).
+RELATION_TYPES = ("depends_on", "implements", "tests_covers", "supersedes")
 
 
 def utcnow() -> datetime:

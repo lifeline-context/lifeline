@@ -220,6 +220,38 @@ async def cmd_rebuild(db, out):
     return await _write_view(store, out)
 
 
+async def cmd_relate(db, out, rel, from_id, to_id, author):
+    """Registra uma RELAÇÃO tipada entre duas entidades (grafo do projeto). A relação é uma
+    Entry `kind=relation` com parents=[from,to] (o `verify` garante que existem) e a direção
+    no body. Escrita direta (humano), igual ao `log`."""
+    from lifeline.graph import relation_body
+    store = await _open(db)
+    [from_full, to_full] = await resolve_parents(store, [from_id, to_id])  # expande prefixos / recusa órfão
+    e = Entry(kind="relation", author=author, summary=f"{rel}: {from_full[:8]} → {to_full[:8]}",
+              body=relation_body(rel, from_full, to_full), parents=[from_full, to_full])
+    inserted = await store.append(e)
+    n = await _write_view(store, out)
+    return e, inserted, n
+
+
+async def cmd_graph(db, depends_on=None, dependents=None, of=None):
+    """Consulta o grafo tipado — resposta ESTRUTURADA. Reusa resolve_parents p/ prefixos."""
+    from lifeline.graph import ProjectGraph
+    store = await _open(db)
+    g = await ProjectGraph.build(store)
+    target = depends_on or dependents or of
+    [full] = await resolve_parents(store, [target])
+    node = g.nodes.get(full, {"kind": "?", "summary": "(unknown)"})
+    if depends_on:
+        return full, node, "depends on", g.outgoing(full, "depends_on")
+    if dependents:
+        return full, node, "is depended on by", g.incoming(full, "depends_on")
+    # --of: tudo que toca o nó (ambos os sentidos, qualquer relação)
+    both = ([{**h, "dir": "→"} for h in g.outgoing(full)]
+            + [{**h, "dir": "←"} for h in g.incoming(full)])
+    return full, node, "relates to", both
+
+
 async def cmd_verify(db):
     """Integridade do ledger. Checa DUAS coisas (#G3/#G4):
     (1) conteúdo — todo id bate com seu conteúdo (anti-adulteração, Lei #1);
@@ -632,6 +664,19 @@ def main(argv=None) -> int:
 
     pr = sub.add_parser("rebuild", help="regenerate the view from the store")
     pr.add_argument("--out", default=DEFAULT_OUT)
+    from lifeline.entry import RELATION_TYPES
+    prel = sub.add_parser("relate", help="record a typed relation between two entities "
+                                         "(depends_on / implements / tests_covers / supersedes)")
+    prel.add_argument("--from", dest="from_id", required=True, help="source entity id (prefix ok)")
+    prel.add_argument("--to", dest="to_id", required=True, help="target entity id (prefix ok)")
+    prel.add_argument("--rel", default="depends_on", choices=RELATION_TYPES)
+    prel.add_argument("--author", default=os.environ.get("LIFELINE_AUTHOR", "unknown"))
+    prel.add_argument("--out", default=DEFAULT_OUT)
+    pg = sub.add_parser("graph", help="query the typed entity graph (structured answer)")
+    gx = pg.add_mutually_exclusive_group(required=True)
+    gx.add_argument("--depends-on", dest="depends_on", metavar="ID", help="what ID depends on")
+    gx.add_argument("--dependents", metavar="ID", help="what depends on ID")
+    gx.add_argument("--of", metavar="ID", help="every relation touching ID")
     sub.add_parser("verify", help="check the ledger's integrity")
     pm = sub.add_parser("migrate", help="ingest an existing markdown into the store")
     pm.add_argument("--from", dest="src", required=True)
@@ -754,6 +799,23 @@ def _dispatch(args, db, out) -> int:
 
     if args.cmd == "rebuild":
         print(f"{out} regenerated ({asyncio.run(cmd_rebuild(db, out))} entries).")
+        return 0
+
+    if args.cmd == "relate":
+        e, inserted, n = asyncio.run(cmd_relate(db, out, args.rel, args.from_id, args.to_id, args.author))
+        print(f"#{n:04d} {'recorded' if inserted else 'duplicate (idempotent)'}: {e.summary} — {e.id[:12]}…")
+        return 0
+
+    if args.cmd == "graph":
+        full, node, verb, hits = asyncio.run(cmd_graph(
+            db, depends_on=args.depends_on, dependents=args.dependents, of=args.of))
+        print(f"[{node['kind']}] {node['summary']} `{full[:8]}` {verb}:")
+        if not hits:
+            print("  (nothing)")
+        for h in hits:
+            arrow = h.get("dir", "")
+            print(f"  {arrow + ' ' if arrow else ''}[{h['kind']}] {h['summary']} "
+                  f"`{h['id'][:8]}`" + (f"  ({h['rel']})" if h.get('rel') and not arrow else ""))
         return 0
 
     if args.cmd == "verify":
